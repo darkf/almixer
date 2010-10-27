@@ -66,6 +66,8 @@ void CircularQueueUnsignedInt_FreeQueue(CircularQueueUnsignedInt* queue)
  */
 unsigned int CircularQueueUnsignedInt_PushBack(CircularQueueUnsignedInt* queue, unsigned int value)
 {
+//	printf("pushBack: %d\n", value);
+	
 	unsigned int temp_index;
 	if(NULL == queue)
 	{
@@ -73,6 +75,8 @@ unsigned int CircularQueueUnsignedInt_PushBack(CircularQueueUnsignedInt* queue, 
 	}
 	if(queue->currentSize >= queue->maxSize)
 	{
+		printf("failed to pushBack: %d\n", value);
+		
 		return 0;
 	}
 	temp_index = queue->tailIndex + 1;
@@ -131,6 +135,8 @@ unsigned int CircularQueueUnsignedInt_PushFront(CircularQueueUnsignedInt* queue,
 unsigned int CircularQueueUnsignedInt_PopFront(CircularQueueUnsignedInt* queue)
 {
 	unsigned int temp_index;
+//	printf("PopFront: %d, %d\n", queue->headIndex,queue->internalQueue[queue->headIndex]  );
+	
 	if(NULL == queue)
 	{
 		return 0;
