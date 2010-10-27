@@ -93,6 +93,14 @@ extern "C" {
  * @endcode
  */
 
+/* This is a trick I picked up from Lua. Doing the typedef separately 
+ * (and I guess before the definition) instead of a single 
+ * entry: typedef struct {...} YourName; seems to allow me
+ * to use forward declarations. Doing it the other way (like SDL)
+ * seems to prevent me from using forward declarions as I get conflicting
+ * definition errors. I don't really understand why though.
+ */
+typedef struct CircularQueueUnsignedInt CircularQueueUnsignedInt;
 /**
  * This is the essentially the CircularQueue object.
  * This contains all the data associated with a CircularQueue instance.
@@ -101,14 +109,14 @@ extern "C" {
  * other data types.
  * This should be considered an opaque data type. 
  */
-typedef struct 
+struct CircularQueueUnsignedInt
 {
 	unsigned int maxSize; /**< Max size of the queue. */
 	unsigned int currentSize; /**< Current number of entries in the queue. */
 	unsigned int headIndex; /**< The index of where the current head is. */
 	unsigned int tailIndex; /**< The index of where the current tail is. */
 	unsigned int* internalQueue; /**< The array representing the queue. */
-} CircularQueueUnsignedInt;
+};
 
 /**
  * This creates a new CircularQueue (for unsigned int) instance.
@@ -266,7 +274,46 @@ void CircularQueueUnsignedInt_Clear(CircularQueueUnsignedInt* queue);
  */
 void CircularQueueUnsignedInt_Print(CircularQueueUnsignedInt* queue);
 
+/**
+ * This returns the element located at the specified index,
+ * where index=0 represents the head/front of the queue.
+ *
+ * @param queue The pointer to the CircularQueue instance.
+ * @param the_index The index of the element you want where 0 represents the 
+ * head/front of the queue and Size-1 is the back.
+ *
+ * @return Returns the value located at the index on success, or 0 on failure.
+ * Be careful to not to confuse an error for a legitmate 0 value.
+ * Any index from 0 to Size-1 (where Size>0) will be a valid index.
+ *
+ * This example traverses through the whole queue and prints out each value.
+ * @code
+ * fprintf(stderr, "Queue: ");
+ * for(i=0;i<CircularQueueUnsignedInt_Size(xValueQueue);i++)
+ * {
+ *     ret_val = CircularQueueUnsignedInt_ValueAtIndex(xValueQueue, i);
+ *     fprintf(stderr, "%d ", ret_val);
+ *
+ * }
+ * fprintf(stderr, "\n");
+ *
+ * @note The implementation uses a modulo operation to compute the index, so 
+ * this may not be the speediest operation in a tight loop.
+ * This implementation was not optimized for random access, though it still 
+ * is technically O(1).
+ *
+ */
+unsigned int CircularQueueUnsignedInt_ValueAtIndex(CircularQueueUnsignedInt* queue, unsigned int the_index);
 
+
+/* This is a trick I picked up from Lua. Doing the typedef separately 
+ * (and I guess before the definition) instead of a single 
+ * entry: typedef struct {...} YourName; seems to allow me
+ * to use forward declarations. Doing it the other way (like SDL)
+ * seems to prevent me from using forward declarions as I get conflicting
+ * definition errors. I don't really understand why though.
+ */
+typedef struct CircularQueueVoid CircularQueueVoid;
 /**
  * This is the essentially the CircularQueue object.
  * This contains all the data associated with a CircularQueue instance.
@@ -275,14 +322,14 @@ void CircularQueueUnsignedInt_Print(CircularQueueUnsignedInt* queue);
  * other data types.
  * This should be considered an opaque data type. 
  */
-typedef struct
+struct CircularQueueVoid
 {
 	unsigned int maxSize; /**< Max size of the queue. */
 	unsigned int currentSize; /**< Current number of entries in the queue. */
 	unsigned int headIndex; /**< The index of where the current head is. */
 	unsigned int tailIndex; /**< The index of where the current tail is. */
 	void** internalQueue; /**< The array representing the queue. */
-} CircularQueueVoid;
+};
 
 /**
  * This creates a new CircularQueue (for void* ) instance.
@@ -429,10 +476,47 @@ unsigned int CircularQueueVoid_MaxSize(CircularQueueVoid* queue);
  */
 void CircularQueueVoid_Clear(CircularQueueVoid* queue);
 
-/* Not implemented for void* */
-/*
+/**
+ * This is a debugging function that will print all the addresses
+ * of elements in the queue to stderr. 
+ * This function is provided as convenience, but should not be considered
+ * as part of the standard API. Treat this function as deprecated 
+ * as it's implementation may change or be removed entirely.
+ * 
+ * @param queue The pointer to the CircularQueue instance.
+ */
 void CircularQueueVoid_Print(CircularQueueVoid* queue);
-*/
+
+/**
+ * This returns the element located at the specified index,
+ * where index=0 represents the head/front of the queue.
+ *
+ * @param queue The pointer to the CircularQueue instance.
+ * @param the_index The index of the element you want where 0 represents the 
+ * head/front of the queue and Size-1 is the back.
+ *
+ * @return Returns the element located at the index on success, or NULL on failure.
+ * Be careful to not to confuse an error for a legitmate NULL value.
+ * Any index from 0 to Size-1 (where Size>0) will be a valid index.
+ *
+ * This example traverses through the whole queue and prints out each value.
+ * @code
+ * fprintf(stderr, "Queue: ");
+ * for(i=0;i<CircularQueueVoid_ValueAtIndex(xValueQueue);i++)
+ * {
+ *     void* ret_val = CircularQueueUnsignedInt_ValueAtIndex(xValueQueue, i);
+ *     fprintf(stderr, "%x ", ret_val);
+ *
+ * }
+ * fprintf(stderr, "\n");
+ *
+ * @note The implementation uses a modulo operation to compute the index, so 
+ * this may not be the speediest operation in a tight loop.
+ * This implementation was not optimized for random access, though it still 
+ * is technically O(1).
+ *
+ */
+void* CircularQueueVoid_ValueAtIndex(CircularQueueVoid* queue, unsigned int the_index);
 
 
 

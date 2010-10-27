@@ -266,6 +266,22 @@ void CircularQueueUnsignedInt_Print(CircularQueueUnsignedInt* queue)
 	fprintf(stderr, "\n");
 }
 
+unsigned int CircularQueueUnsignedInt_ValueAtIndex(CircularQueueUnsignedInt* queue, unsigned int the_index)
+{
+	unsigned int i;
+	if(NULL == queue)
+	{
+		return 0;
+	}
+	if(the_index >= queue->currentSize)
+	{
+		return 0;
+	}
+	i = (queue->headIndex + the_index) % queue->currentSize;
+//	fprintf(stderr, "%d\n", queue->internalQueue[i]);
+	return queue->internalQueue[i];
+}
+
 /*
  * Implementation for void* version starts here.
  */
@@ -485,8 +501,6 @@ void CircularQueueVoid_Clear(CircularQueueVoid* queue)
 	queue->tailIndex = 0;
 }
 
-/* Not implemented for void* */
-/*
 void CircularQueueVoid_Print(CircularQueueVoid* queue)
 {
 	unsigned int i;
@@ -502,11 +516,25 @@ void CircularQueueVoid_Print(CircularQueueVoid* queue)
 		{
 			i=0;
 		}
-		fprintf(stderr, "%d ", queue->internalQueue[i]);
+		fprintf(stderr, "%x ", (unsigned int)queue->internalQueue[i]);
 	}
 	fprintf(stderr, "\n");
 }
-*/
 
+void* CircularQueueVoid_ValueAtIndex(CircularQueueVoid* queue, unsigned int the_index)
+{
+	unsigned int i;
+	if(NULL == queue)
+	{
+		return NULL;
+	}
+	if(the_index >= queue->currentSize)
+	{
+		return NULL;
+	}
+	i = (queue->headIndex + the_index) % queue->currentSize;
+	//	fprintf(stderr, "%d\n", queue->internalQueue[i]);
+	return queue->internalQueue[i];
+}
 
 

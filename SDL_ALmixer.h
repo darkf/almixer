@@ -23,19 +23,25 @@
 #define _SDL_ALMIXER_H_
 
 #include "SDL_types.h"
-/*
 #include "SDL_rwops.h"
+#include "SDL_error.h"
+#include "SDL_version.h"
+/*
 #include "SDL_audio.h"
 #include "SDL_byteorder.h"
 */
-#include "SDL_version.h"
 
 /*
 #include "begin_code.h"
 */
 
+/*
 #include "SDL_sound.h"
+*/
+/* Crap! altypes.h is missing from 1.1
 #include "altypes.h"
+*/
+#include "al.h"
 
 /* Set up for C function definitions, even when using C++ */
 #ifdef __cplusplus
@@ -81,56 +87,43 @@ extern DECLSPEC const SDL_version * SDLCALL ALmixer_Linked_Version();
 /* Default startup buffers should be at least 1 */
 #define ALMIXER_DEFAULT_STARTUP_BUFFERS 2
 
+/*
 #define ALMIXER_DECODE_STREAM 	0
 #define ALMIXER_DECODE_ALL 		1
+*/
 
 
 #define ALmixer_GetError 	SDL_GetError
 #define ALmixer_SetError 	SDL_SetError
 
-typedef struct {
-	ALuint albuffer;
-	Sint32 index; /* might not need */
-	Uint8* data;
-	Uint32 num_bytes;
-} Buffer_Map;
 
-typedef struct {
-	Uint8 decoded_all; /* dictates different behaviors */
-	Sint32 total_time; /* total playing time of sample (msec) */
-	
-	Uint32 in_use; /* needed to prevent sharing for streams */
-	Uint8 eof; /* flag for eof, only used for streams  */
-	
-	Uint32 total_bytes; /* For predecoded */
-	Uint32 loaded_bytes; /* For predecoded (for seek) */
+/* This is a trick I picked up from Lua. Doing the typedef separately 
+* (and I guess before the definition) instead of a single 
+* entry: typedef struct {...} YourName; seems to allow me
+* to use forward declarations. Doing it the other way (like SDL)
+* seems to prevent me from using forward declarions as I get conflicting
+* definition errors. I don't really understand why though.
+*/
+typedef struct ALmixer_Data ALmixer_Data;
+typedef struct ALmixer_AudioInfo ALmixer_AudioInfo;
 
-	Sound_Sample* sample; /* SDL_Sound provides the data */
-	ALuint* buffer; /* array of OpenAL buffers (at least 1 for predecoded) */
-
-	/* Needed for streamed buffers */
-	Uint32 max_queue_buffers; /* Max number of queue buffers */
-	Uint32 num_startup_buffers; /* Number of ramp-up buffers */
-	Uint8 num_buffers_in_use; /* number of buffers in use */
-	
-	/* This stuff is for streamed buffers that require data access */
-	Buffer_Map* buffer_map_list; /* translate ALbuffer to index 
-									and holds pointer to copy of data for
-									data access */
-	ALuint current_buffer; /* The current playing buffer */
-
-	/* Nvidia distribution refuses to recognize a simple buffer query command
-	 * unlike all other distributions. It's forcing me to redo the code 
-	 * to accomodate this Nvidia flaw by making me maintain a "best guess"
-	 * copy of what I think the buffer queue state looks like.
-	 * A circular queue would a helpful data structure for this task,
-	 * but I wanted to avoid making an additional header requirement,
-	 * so I'm making it a void* 
-	 */
-	void* circular_buffer_queue; 
-		
-	
-} ALmixer_Data;
+/**
+ * Equvialent to the Sound_AudioInfo struct in SDL_sound.
+ * Originally, I just used the Sound_AudioInfo directly, but
+ * I've been trying to reduce the header dependencies for this file.
+ * But more to the point, I've been interested in dealing with the 
+ * WinMain override problem Josh faced when trying to use SDL components
+ * in an MFC app which didn't like losing control of WinMain. 
+ * My theory is that if I can purge the header of any thing that 
+ * #include's SDL_main.h, then this might work.
+ * So I am now introducing my own AudioInfo struct.
+ */
+struct ALmixer_AudioInfo
+{
+	Uint16 format;  /**< Equivalent of SDL_AudioSpec.format. */
+	Uint8 channels; /**< Number of sound channels. 1 == mono, 2 == stereo. */
+	Uint32 rate;    /**< Sample rate; frequency of sample points per second. */
+};
 
 
 #if 0
@@ -174,37 +167,37 @@ extern DECLSPEC Sint32 SDLCALL ALmixer_Init_Context(Uint32 frequency, Uint32 ref
 extern DECLSPEC Sint32 SDLCALL ALmixer_Init_Mixer(Sint32 num_sources);
 
 extern DECLSPEC void SDLCALL ALmixer_Quit();
-extern DECLSPEC Uint8 SDLCALL ALmixer_IsInitialized();
+extern DECLSPEC SDL_bool SDLCALL ALmixer_IsInitialized();
 
 extern DECLSPEC Uint32 SDLCALL ALmixer_GetFrequency();
 
 extern DECLSPEC Sint32 SDLCALL ALmixer_AllocateChannels(Sint32 numchans);
 extern DECLSPEC Sint32 SDLCALL ALmixer_ReserveChannels(Sint32 num);
 
-extern DECLSPEC ALmixer_Data * SDLCALL ALmixer_LoadSample_RW(SDL_RWops* rwops, const char* fileext, Uint32 buffersize, Uint8 decode_mode, Uint32 max_queue_buffers, Uint32 num_startup_buffers, Uint8 access_data);
+extern DECLSPEC ALmixer_Data * SDLCALL ALmixer_LoadSample_RW(SDL_RWops* rwops, const char* fileext, Uint32 buffersize, SDL_bool decode_mode_is_predecoded, Uint32 max_queue_buffers, Uint32 num_startup_buffers, SDL_bool access_data);
 
 
-#define ALmixer_LoadStream_RW(rwops,fileext,buffersize,max_queue_buffers,num_startup_buffers,access_data) ALmixer_LoadSample_RW(rwops,fileext,buffersize,ALMIXER_DECODE_STREAM, max_queue_buffers, num_startup_buffers,access_data)
+#define ALmixer_LoadStream_RW(rwops,fileext,buffersize,max_queue_buffers,num_startup_buffers,access_data) ALmixer_LoadSample_RW(rwops,fileext,buffersize, SDL_FALSE, max_queue_buffers, num_startup_buffers,access_data)
 
-#define ALmixer_LoadAll_RW(rwops,fileext,buffersize,access_data) ALmixer_LoadSample_RW(rwops,fileext,buffersize,ALMIXER_DECODE_ALL, 0, 0,access_data)
-
-
-
-extern DECLSPEC ALmixer_Data * SDLCALL ALmixer_LoadSample(const char* filename, Uint32 buffersize, Uint8 decode_mode, Uint32 max_queue_buffers, Uint32 num_startup_buffers, Uint8 access_data);
+#define ALmixer_LoadAll_RW(rwops,fileext,buffersize,access_data) ALmixer_LoadSample_RW(rwops,fileext,buffersize, SDL_TRUE, 0, 0,access_data)
 
 
-#define ALmixer_LoadStream(filename,buffersize,max_queue_buffers,num_startup_buffers,access_data) ALmixer_LoadSample(filename,buffersize,ALMIXER_DECODE_STREAM, max_queue_buffers, num_startup_buffers,access_data)
 
-#define ALmixer_LoadAll(filename,buffersize,access_data) ALmixer_LoadSample(filename,buffersize,ALMIXER_DECODE_ALL, 0, 0,access_data)
+extern DECLSPEC ALmixer_Data * SDLCALL ALmixer_LoadSample(const char* filename, Uint32 buffersize, SDL_bool decode_mode_is_predecoded, Uint32 max_queue_buffers, Uint32 num_startup_buffers, SDL_bool access_data);
 
 
-extern DECLSPEC ALmixer_Data * SDLCALL ALmixer_LoadSample_RAW_RW(SDL_RWops* rwops, const char* fileext, Sound_AudioInfo* desired, Uint32 buffersize, Uint8 decode_mode, Uint32 max_queue_buffers, Uint32 num_startup_buffers, Uint8 access_data);
+#define ALmixer_LoadStream(filename,buffersize,max_queue_buffers,num_startup_buffers,access_data) ALmixer_LoadSample(filename,buffersize, SDL_FALSE, max_queue_buffers, num_startup_buffers,access_data)
 
-#define ALmixer_LoadStream_RAW_RW(rwops,fileext,desired,buffersize,max_queue_buffers,num_startup_buffers,access_data) ALmixer_LoadSample_RAW_RW(rwops,fileext,desired,buffersize,ALMIXER_DECODE_STREAM, max_queue_buffers, num_startup_buffers,access_data)
+#define ALmixer_LoadAll(filename,buffersize,access_data) ALmixer_LoadSample(filename,buffersize, SDL_TRUE, 0, 0,access_data)
 
-#define ALmixer_LoadAll_RAW_RW(rwops,fileext,desired,buffersize,access_data) ALmixer_LoadSample_RAW_RW(rwops,fileext,desired,buffersize,ALMIXER_DECODE_ALL, 0, 0,access_data)
 
-extern DECLSPEC ALmixer_Data * SDLCALL ALmixer_LoadSample_RAW(const char* filename, Sound_AudioInfo* desired, Uint32 buffersize, Uint8 decode_mode, Uint32 max_queue_buffers, Uint32 num_startup_buffers, Uint8 access_data);
+extern DECLSPEC ALmixer_Data * SDLCALL ALmixer_LoadSample_RAW_RW(SDL_RWops* rwops, const char* fileext, ALmixer_AudioInfo* desired, Uint32 buffersize, SDL_bool decode_mode_is_predecoded, Uint32 max_queue_buffers, Uint32 num_startup_buffers, SDL_bool access_data);
+
+#define ALmixer_LoadStream_RAW_RW(rwops,fileext,desired,buffersize,max_queue_buffers,num_startup_buffers,access_data) ALmixer_LoadSample_RAW_RW(rwops,fileext,desired,buffersize, SDL_FALSE, max_queue_buffers, num_startup_buffers,access_data)
+
+#define ALmixer_LoadAll_RAW_RW(rwops,fileext,desired,buffersize,access_data) ALmixer_LoadSample_RAW_RW(rwops,fileext,desired,buffersize, SDL_TRUE, 0, 0,access_data)
+
+extern DECLSPEC ALmixer_Data * SDLCALL ALmixer_LoadSample_RAW(const char* filename, ALmixer_AudioInfo* desired, Uint32 buffersize, SDL_bool decode_mode_is_predecoded, Uint32 max_queue_buffers, Uint32 num_startup_buffers, SDL_bool access_data);
 
 
 
@@ -249,7 +242,82 @@ extern DECLSPEC Sint32 SDLCALL ALmixer_GetChannel(ALuint source);
 extern DECLSPEC Sint32 SDLCALL ALmixer_FindFreeChannel(Sint32 start_channel);
 
 extern DECLSPEC void SDLCALL ALmixer_ChannelFinished(void (*channel_finished)(Sint32 channel, void* userdata), void* userdata);
+
+/*
 extern DECLSPEC void SDLCALL ALmixer_ChannelData(void (*channel_data)(Sint32 which_chan, Uint8* data, Uint32 num_bytes, Uint32 frequency, Uint8 channels, Uint8 bitdepth, Uint16 format, Uint8 decode_mode));
+*/
+/**
+ * Audio data callback system.
+ * This is a callback function pointer that when set, will trigger a function
+ * anytime there is new data loaded for a sample. The appropriate load 
+ * parameter must be set in order for a sample to appear here.
+ * Keep in mind the the current backend implementation must do an end run
+ * around OpenAL because OpenAL lacks support for this kind of thing.
+ * As such, buffers are copied at decode time, and there is no attempt to do
+ * fine grained timing syncronization. You will be provided the entire buffer
+ * that is decoded regardless of length. So if you predecoded the entire 
+ * audio file, the entire data buffer will be provided in a single callback.
+ * If you stream the data, you will be getting chunk sizes that are the same as
+ * what you specified the decode size to be. Unfortunely, this means if you 
+ * pick smaller buffers, you get finer detail at the expense/risk of buffer 
+ * underruns. If you decode more data, you have to deal with the syncronization
+ * issues if you want to display the data during playback in something like an
+ * oscilloscope.
+ * 
+ * @param which_chan The ALmixer channel that the data is currently playing on.
+ * @param data This is a pointer to the data buffer containing ALmixer's 
+ * version of the decoded data. Consider this data as read-only. In the 
+ * non-threaded backend, this data will persist until potentially the next call
+ * to Update(). Currently, data buffers are preallocated and not destroyed
+ * until FreeData() is called (though this behavior is subject to change),
+ * but the contents will change when the buffer needs to be reused for a 
+ * future callback. The buffer reuse is tied to the amount of buffers that
+ * may be queued.
+ * But assuming I don't change this, this may allow for some optimization
+ * so you can try referencing data from these buffers without worrying 
+ * about crashing. (You still need to be aware that the data could be 
+ * modified behind the scenes on an Update().)
+ *
+ * The data type listed is an Unsigned 8-bit format, but the real data may
+ * not actually be this. Uint8 was chosen as a convenience. If you have 
+ * a 16 bit format, you will want to cast the data and also divide the num_bytes
+ * by 2. Typically, data is either Sint16 or Uint8. This seems to be a 
+ * convention audio people seem to follow though I'm not sure what the 
+ * underlying reasons (if any) are for this. I suspect that there may be 
+ * some nice alignment/conversion property if you need to cast from Uint8
+ * to Sint16.
+ * 
+ * @param num_bytes This is the total length of the data buffer. It presumes
+ * that this length is measured for Uint8. So if you have Sint16 data, you
+ * should divide num_bytes by two if you access the data as Sint16.
+ * 
+ * @param frequency The frequency the data was decoded at.
+ *
+ * @param channels 1 for mono, 2 for stereo.
+ *
+ * @param bit_depth Bits per sample. This is expected to be 8 or 16. This 
+ * number will tell you if you if you need to treat the data buffer as 
+ * 16 bit or not.
+ * 
+ * @param is_unsigned 1 if the data is unsigned, 0 if signed. Using this
+ * combined with bit_depth will tell you if you need to treat the data
+ * as Uint8, Sint8, Uint32, or Sint32.
+ *
+ * @param decode_mode_is_predecoded This is here to tell you if the data was totally 
+ * predecoded or loaded as a stream. If predecoded, you will only get 
+ * one data callback per playback instance. (This might also be true for 
+ * looping the same sample...I don't remember how it was implemented. 
+ * Maybe this should be fixed.)
+ * 0 (ALMIXER_DECODE_STREAM) for streamed.
+ * 1 (ALMIXER_DECODE_ALL) for predecoded.
+ *
+ * @param length_in_msec This returns the total length (time) of the data 
+ * buffer in milliseconds. This could be computed yourself, but is provided
+ * as a convenince.
+ *
+ * 
+ */
+extern DECLSPEC void SDLCALL ALmixer_ChannelData(void (*channel_data)(Sint32 which_chan, Uint8* data, Uint32 num_bytes, Uint32 frequency, Uint8 channels, Uint8 bit_depth, SDL_bool is_unsigned, SDL_bool decode_mode_is_predecoded, Uint32 length_in_msec, void* user_data), void* user_data);
 
 
 extern DECLSPEC Sint32 SDLCALL ALmixer_HaltChannel(Sint32 channel);
@@ -321,6 +389,8 @@ extern DECLSPEC Sint32 SDLCALL ALmixer_CountAllUsedChannels();
 extern DECLSPEC Sint32 SDLCALL ALmixer_CountUnreservedUsedChannels();
 #define ALmixer_CountTotalChannels() ALmixer_AllocateChannels(-1)
 #define ALmixer_CountReservedChannels() ALmixer_ReserveChannels(-1)
+
+extern DECLSPEC SDL_bool SDLCALL ALmixer_IsPredecoded(ALmixer_Data* data);
 
 
 
