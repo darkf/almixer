@@ -296,6 +296,7 @@ void CircularQueueUnsignedInt_Print(CircularQueueUnsignedInt* queue);
  *
  * }
  * fprintf(stderr, "\n");
+ * @endcode
  *
  * @note The implementation uses a modulo operation to compute the index, so 
  * this may not be the speediest operation in a tight loop.

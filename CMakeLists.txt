@@ -190,6 +190,74 @@ INCLUDE_DIRECTORIES(${OPENAL_INCLUDE_DIR} ${SDL_INCLUDE_DIR} ${SDL_SOUND_INCLUDE
 TARGET_LINK_LIBRARIES(ALMIXER_LIBRARY ${OPENAL_LIBRARY} ${SDL_SOUND_LIBRARIES} ${SDL_LIBRARY}) 
 
 
+
+# For Doxygen
+# This will find the Doxygen stuff on your system if you want it.
+# I need to use my version because the official version doesn't 
+# understand the OS X version of Doxygen. It also doesn't define
+# DOT_PATH which is a problem if dot is not in the path.
+INCLUDE(${CMAKE_ROOT}/Modules/Documentation.cmake OPTIONAL)
+#INCLUDE(${PROJECT_SOURCE_DIR}/CMakeModules/Documentation.cmake OPTIONAL)
+OPTION(BUILD_DOCUMENTATION "Build Almixer reference documentation using doxygen (use: make DoxygenDoc)" OFF)
+MARK_AS_ADVANCED(CLEAR BUILD_DOCUMENTATION)
+# To build the documention, you will have to enable it
+# and then do the equivalent of "make DoxygenDoc".
+IF(BUILD_DOCUMENTATION)
+
+    OPTION(BUILD_REF_DOCS_SEARCHENGINE "Enable doxygen's search engine (requires that documentation to be installed on a php enabled web server)" OFF)
+    IF(BUILD_REF_DOCS_SEARCHENGINE)
+        SET(SEARCHENGINE YES)
+    ELSE()
+        SET(SEARCHENGINE NO)
+    ENDIF()
+
+    OPTION(BUILD_REF_DOCS_TAGFILE "Generate a tag file named osg.tag on the documentation web server" OFF)
+    IF(BUILD_REF_DOCS_TAGFILE)
+		SET(GENERATE_TAGFILE "${PROJECT_BINARY_DIR}/doc/ALmixerDocumentation/ALmixer.tag")
+    ELSE()
+        SET(GENERATE_TAGFILE "")
+    ENDIF()
+
+    IF(DOT)
+        SET(HAVE_DOT YES)
+    ELSE()
+        SET(HAVE_DOT NO)
+    ENDIF()
+    
+    # If html help generation was requested. DOCUMENTATION_HTML_HELP is defined by Documentation.cmake
+    SET(GENERATE_HTMLHELP "NO")
+    IF(DOCUMENTATION_HTML_HELP)
+        # on windows Documentation.cmake finds the html help workshop fi it exists. On u*ix we might have it with wine but no way to point it out
+        IF(NOT WIN32)
+            SET(HTML_HELP_COMPILER "" CACHE FILEPATH "Enter location of the HTML help compiler to let doxygen compile html")
+            MARK_AS_ADVANCED(HTML_HELP_COMPILER)
+        ENDIF()
+        # this var sets a proper value in .doxygen files when coniguring them below
+        SET(GENERATE_HTMLHELP "YES")
+    endif()
+  
+    # This processes our doxyfile.cmake and substitutes paths to generate
+    # a final Doxyfile
+	CONFIGURE_FILE(${PROJECT_SOURCE_DIR}/doc/ALmixer.doxyfile.cmake
+		${PROJECT_BINARY_DIR}/doc/ALmixer.doxyfile
+    )
+# INSTALL(DIRECTORY ${PROJECT_BINARY_DIR}/doc/ALmixerDocumentation DESTINATION doc COMPONENT ALmixer-doc)
+
+
+    # This creates a new target to build documentation.
+    # It runs ${DOXYGEN} which is the full path and executable to
+    # Doxygen on your system, set by the FindDoxygen.cmake module
+    # (called by FindDocumentation.cmake).
+    # It runs the final generated Doxyfile against it.
+    # The DOT_PATH is substituted into the Doxyfile.
+    ADD_CUSTOM_TARGET(DoxygenDoc ${DOXYGEN}
+        ${PROJECT_BINARY_DIR}/doc/ALmixer.doxyfile
+    )
+ENDIF(BUILD_DOCUMENTATION)
+
+
+
+
 # Install commands below
 IF(APPLE AND WANTS_BUILD_SHARED_LIBRARY AND WANTS_BUILD_FRAMEWORK)
 	# Will install framework to /Library/Frameworks directory or user specified

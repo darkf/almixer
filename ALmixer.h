@@ -65,6 +65,8 @@
  * may still be bugs.
  *
  * @author Eric Wing
+ *
+ * Home Page: http://playcontrol.net/opensource/ALmixer
  */
 
 /**
@@ -112,6 +114,8 @@
  * may still be bugs.
  *
  * @author Eric Wing
+ *
+ * Home Page: http://playcontrol.net/opensource/ALmixer
  */
 
 

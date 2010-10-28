@@ -77,7 +77,7 @@ Many years passed.
 
 OpenAL 1.1 was ratified and many of the compatibility issues between OpenAL implementations started going away. Every so often, I re-pickup ALmixer and made small changes to update it to support OpenAL 1.1.
 
-Fast forward to 2010 (today). I still haven't cleaned up ALmixer. SDL_mixer has still not been rewritten. And there haven't been any great audio libraries that have emerged in all these years. Furthermore, with renewed interest in playing high performance audio with OpenAL due to the enormous success of iPhone, iPod touch, and iPad, I see there is a still a great void that needs to be filled. (In fact, I just authored possibly the most comprehensive book on OpenAL ever written: http://playcontrol.net/iphonegamebook)
+Fast forward to 2010 (today). I still haven't cleaned up ALmixer. SDL_mixer has still not been rewritten. And there haven't been any great audio libraries that have emerged in all these years. Furthermore, with renewed interest in playing high performance audio with OpenAL due to the enormous success of iPhone, iPod touch, and iPad, I see there is a still a great void that needs to be filled. (In fact, I just co-authored possibly the most comprehensive book on OpenAL ever written: http://playcontrol.net/iphonegamebook)
 
 And I have recently been working on a project that would benefit greatly from something like ALmixer. I realized that I don't have the time/money to do the clean-up, nor is it feasible for me to do an entire rewrite. I also realize that despite the scariness of the code, the library seems to generally work.
 
@@ -85,4 +85,6 @@ So I have decided to finally release ALmixer, even without the clean ups. My hop
 
 
 Eric Wing <ewing . public @ playcontrol.net>
+
+ALmixer Home Page: http://playcontrol.net/opensource/ALmixer
 
