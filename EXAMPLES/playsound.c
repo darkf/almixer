@@ -33,6 +33,10 @@ void Internal_SoundFinished_CallbackIntercept(ALint which_channel, ALuint al_sou
 
 int main(int argc, char* argv[])
 {
+	ALint i;
+	ALboolean still_playing = AL_TRUE;
+
+	ALmixer_Data* audio_data[MAX_SOURCES];
 	if(argc < 1)
 	{
 		printf("Pass a sound file (or files) as a parameter\n");
@@ -41,10 +45,7 @@ int main(int argc, char* argv[])
 	{
 		printf("Maximum supported files is %d\n", MAX_SOURCES);
 	}
-	size_t i;
-	ALboolean still_playing = AL_TRUE;
 
-	ALmixer_Data* audio_data[MAX_SOURCES];
 	ALmixer_Init(22050, 0, 0);
 	
 	for(i=1; i<argc; i++)
