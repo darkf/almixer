@@ -5,7 +5,7 @@
  * Eric Wing
  */
 
-#include "SDL_ALmixer.h"
+#include "ALmixer.h"
 
 #ifdef ALMIXER_COMPILE_WITHOUT_SDL
 	#include "ALmixer_rwops.h"
