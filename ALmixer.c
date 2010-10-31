@@ -1751,10 +1751,11 @@ static ALint Internal_HaltChannel(ALint channel, ALboolean did_finish_naturally)
 
 			ALmixer_Channel_List[channel].almixer_data->num_buffers_in_use  = 0;
 
-			Clean_Channel(channel);
-			Is_Playing_global--;
 			/* Launch callback for consistency? */
 			Invoke_Channel_Done_Callback(channel, did_finish_naturally);
+
+			Clean_Channel(channel);
+			Is_Playing_global--;
 			counter++;
 		}
 	}
@@ -1830,10 +1831,11 @@ static ALint Internal_HaltChannel(ALint channel, ALboolean did_finish_naturally)
 				
 				ALmixer_Channel_List[i].almixer_data->num_buffers_in_use  = 0;
 
-				Clean_Channel(i);
-				Is_Playing_global--;
 				/* Launch callback for consistency? */
 				Invoke_Channel_Done_Callback(i, did_finish_naturally);
+
+				Clean_Channel(i);
+				Is_Playing_global--;
 
 				/* Increment the counter */
 				counter++;
@@ -3369,7 +3371,7 @@ static ALint Internal_FadeOutChannel(ALint channel, ALuint ticks)
 	 */
 	if(0 == ticks)
 	{
-		return Internal_HaltChannel(channel, AL_TRUE);
+		return Internal_HaltChannel(channel, AL_FALSE);
 	}
 	
 	
@@ -4208,7 +4210,7 @@ static ALint Internal_ExpireChannel(ALint channel, ALint ticks)
 	 */
 	if(0 == ticks)
 	{
-		return Internal_HaltChannel(channel, AL_TRUE);
+		return Internal_HaltChannel(channel, AL_FALSE);
 	}
 	if(ticks < -1)
 	{
@@ -4608,7 +4610,7 @@ static ALint Update_ALmixer(void* data)
 					&& (state != AL_PAUSED) )
 				{
 					/* Stop the playback */
-					Internal_HaltChannel(i, AL_TRUE);
+					Internal_HaltChannel(i, AL_FALSE);
 					if((error = alGetError()) != AL_NO_ERROR)
 					{
 						fprintf(stderr, "07Testing errpr before unqueue because getting stuff, for OS X this is expected: %s\n",
@@ -4877,12 +4879,13 @@ static ALint Update_ALmixer(void* data)
 
 						}
 						
+						/* Launch callback */
+						Invoke_Channel_Done_Callback(i, AL_TRUE);
+
 						Clean_Channel(i);
 						/* Subtract counter */
 						Is_Playing_global--;
 
-						/* Launch callback */
-						Invoke_Channel_Done_Callback(i, AL_TRUE);
 
 						/* We're done for this loop.
 						 * Go to next channel 
@@ -5809,13 +5812,16 @@ static ALint Update_ALmixer(void* data)
 							 * Loop if necessary, or launch callback
 							 * and clear channel (or clear channel and
 							 * then launch callback?)
+							 * Update: Need to do callback first because I reference the mixer_data and source
 							 */
+
+							/* Launch callback */
+							Invoke_Channel_Done_Callback(i, AL_TRUE);
+
 							Clean_Channel(i);
 							/* Subtract counter */
 							Is_Playing_global--;
 	
-							/* Launch callback */
-							Invoke_Channel_Done_Callback(i, AL_TRUE);
 	
 							/* We're done for this loop.
 							 * Go to next channel 
