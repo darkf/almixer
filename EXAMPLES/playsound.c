@@ -50,7 +50,7 @@ int main(int argc, char* argv[])
 	
 	for(i=1; i<argc; i++)
 	{
-		if(!(audio_data[i-1]=ALmixer_LoadAll( argv[i], AL_TRUE) ))
+		if(!(audio_data[i-1]=ALmixer_LoadAll( argv[i], AL_FALSE) ))
 		{
 			printf("%s. Quiting program.\n", ALmixer_GetError());
 			exit(0);
