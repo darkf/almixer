@@ -183,7 +183,7 @@ void* LinkedList_PopBack(LinkedList* linked_list)
 	tail_node = linked_list->tailPtr;
 	return_data = tail_node->dataPtr;
 	
-	if(1 ==  linked_list->currentSize)
+	if(1 == linked_list->currentSize)
 	{
 		LinkedList_Clear(linked_list);
 	}
@@ -197,6 +197,48 @@ void* LinkedList_PopBack(LinkedList* linked_list)
 	}
 	return return_data;
 }
+
+
+void* LinkedList_Front(LinkedList* linked_list)
+{
+	LinkedListNode* head_node;
+	void* return_data;
+	
+	if(NULL == linked_list)
+	{
+		return 0;
+	}
+	if(0 == linked_list->currentSize)
+	{
+		return NULL;
+	}
+	
+	head_node = linked_list->headPtr;
+	return_data = head_node->dataPtr;
+	
+	return return_data;
+}
+
+void* LinkedList_Back(LinkedList* linked_list)
+{
+	LinkedListNode* tail_node;
+	void* return_data;
+	
+	if(NULL == linked_list)
+	{
+		return NULL;
+	}
+	if(0 == linked_list->currentSize)
+	{
+		return NULL;
+	}
+	
+	tail_node = linked_list->tailPtr;
+	return_data = tail_node->dataPtr;
+
+	return return_data;
+}
+
 
 size_t LinkedList_Size(LinkedList* linked_list)
 {
