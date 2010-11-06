@@ -168,7 +168,11 @@
 
 
 /* Needed for OpenAL types since altypes.h was removed in 1.1 */
-#include "al.h"
+#ifdef ANDROID_NDK
+	#include <AL/al.h>
+#else
+	#include "al.h"
+#endif
 
 /* Set up for C function definitions, even when using C++ */
 #ifdef __cplusplus
@@ -939,7 +943,7 @@ extern ALMIXER_DECLSPEC ALuint ALMIXER_CALL ALmixer_GetSource(ALint which_channe
 /**
  * This function will look up the channel for the corresponding source.
  * @param al_source The source id you want to find the corresponding channel number for.
- * If -1 is supplied, it will try to return the first channel not in use. 
+ * If 0 is supplied, it will try to return the first channel not in use. 
  * Returns -1 on error, or the channel.
  */
 extern ALMIXER_DECLSPEC ALint ALMIXER_CALL ALmixer_GetChannel(ALuint al_source);
@@ -1037,9 +1041,9 @@ extern ALMIXER_DECLSPEC ALint ALMIXER_CALL ALmixer_HaltSource(ALuint al_source);
  * Rewinds the actual data, but the effect
  * may not be noticed until the currently buffered data is played.
  * @param almixer_data The data to rewind.
- * @returns 0 on success or -1 on error.
+ * @returns true on success or false on error.
  */
-extern ALMIXER_DECLSPEC ALint ALMIXER_CALL ALmixer_RewindData(ALmixer_Data* almixer_data);
+extern ALMIXER_DECLSPEC ALboolean ALMIXER_CALL ALmixer_RewindData(ALmixer_Data* almixer_data);
 
 /**
  * Rewinds the sound to the beginning that is playing on a specific channel.
@@ -1048,7 +1052,7 @@ extern ALMIXER_DECLSPEC ALint ALMIXER_CALL ALmixer_RewindData(ALmixer_Data* almi
  * Streamed data will rewind the actual data, but the effect
  * may not be noticed until the currently buffered data is played.
  * @param which_channel The channel to rewind or -1 to rewind all channels.
- * @returns 0 on success or -1 on error.
+ * @return The actual number of channels rewound on success or -1 on error.
  */
 extern ALMIXER_DECLSPEC ALint ALMIXER_CALL ALmixer_RewindChannel(ALint which_channel);
 /**
@@ -1058,7 +1062,7 @@ extern ALMIXER_DECLSPEC ALint ALMIXER_CALL ALmixer_RewindChannel(ALint which_cha
  * Streamed data will rewind the actual data, but the effect
  * may not be noticed until the currently buffered data is played.
  * @param al_source The source to rewind or 0 to rewind all sources.
- * @returns 1 on success or 0 on error.
+ * @return The actual number of sources rewound on success or -1 on error.
  */
 extern ALMIXER_DECLSPEC ALint ALMIXER_CALL ALmixer_RewindSource(ALuint al_source);
 
@@ -1066,11 +1070,11 @@ extern ALMIXER_DECLSPEC ALint ALMIXER_CALL ALmixer_RewindSource(ALuint al_source
  * Seek the sound for a given data.
  * Seeks the actual data to the given millisecond. It
  * may not be noticed until the currently buffered data is played.
- * @param almixer_data
+ * @param almixer_data The data to seek on.
  * @param msec_pos The time position to seek to in the audio in milliseconds.
- * @returns 0 on success or -1 on error.
+ * @returns true on success or false on error.
  */
-extern ALMIXER_DECLSPEC ALint ALMIXER_CALL ALmixer_SeekData(ALmixer_Data* almixer_data, ALuint msec_pos);
+extern ALMIXER_DECLSPEC ALboolean ALMIXER_CALL ALmixer_SeekData(ALmixer_Data* almixer_data, ALuint msec_pos);
 
 /**
  * Pauses playback on a channel.
@@ -1458,7 +1462,7 @@ extern ALMIXER_DECLSPEC ALuint ALMIXER_CALL ALmixer_CountUnreservedUsedChannels(
  * This is just a convenience alias to ALmixer_AllocateChannels(-1).
  * @see ALmixer_AllocateChannels
  */ 
-ALint ALmixer_CountTotalChannels(void);
+ALuint ALmixer_CountTotalChannels(void);
 #else
 #define ALmixer_CountTotalChannels() ALmixer_AllocateChannels(-1)
 #endif
@@ -1468,11 +1472,11 @@ ALint ALmixer_CountTotalChannels(void);
 
 #ifdef DOXYGEN_ONLY
 /**
- * Returns the number of allocated channels.
+ * Returns the number of reserved channels.
  * This is just a convenience alias to ALmixer_ReserveChannels(-1).
  * @see ALmixer_ReserveChannels
  */ 
-ALint ALmixer_CountReservedChannels(void);
+ALuint ALmixer_CountReservedChannels(void);
 #else
 #define ALmixer_CountReservedChannels() ALmixer_ReserveChannels(-1)
 #endif

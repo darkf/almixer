@@ -14,8 +14,13 @@
 	#include "SDL_sound.h"
 #endif
 
-#include "al.h" /* OpenAL */
-#include "alc.h" /* For creating OpenAL contexts */
+#ifdef ANDROID_NDK
+	#include <AL/al.h>
+	#include <AL/alc.h>
+#else
+	#include "al.h" /* OpenAL */
+	#include "alc.h" /* For creating OpenAL contexts */
+#endif
 
 #ifdef __APPLE__
 	/* For performance things like ALC_CONVERT_DATA_UPON_LOADING */
@@ -309,12 +314,13 @@ ALdouble Internal_alcMacOSXGetMixerOutputRate()
 			LARGE_INTEGER current_time;
 			QueryPerformanceCounter(&current_time);
 			return (ALuint)((current_time.QuadPart - s_ticksBaseTime.QuadPart) * 1000 * s_hiResSecondsPerTick);
+		#elif ANDROID_NDK
 
 		#else /* assuming POSIX */
 			/* clock_gettime is POSIX.1-2001 */
 			struct timespec current_time;
 			clock_gettime(CLOCK_MONOTONIC, &current_time);
-			return (ALuint)((current_time.tv_sec - s_ticksBaseTime.tv_sec)*1000.0 + (current_time.tv_nec - s_ticksBaseTime.tv_nsec) / 1000000);
+			return (ALuint)((current_time.tv_sec - s_ticksBaseTime.tv_sec)*1000.0 + (current_time.tv_nsec - s_ticksBaseTime.tv_nsec) / 1000000);
 		#endif
 	}
 	static void ALmixer_Delay(ALuint milliseconds_delay)
@@ -2016,7 +2022,7 @@ static ALint Internal_ReserveChannels(ALint num)
  * samples and start buffering up the data for the next
  * playback. This may require samples to be halted
  */
-static ALint Internal_RewindData(ALmixer_Data* data)
+static ALboolean Internal_RewindData(ALmixer_Data* data)
 {
 	ALint retval = 0;
 	/*
@@ -2026,7 +2032,7 @@ static ALint Internal_RewindData(ALmixer_Data* data)
 	if(NULL == data)
 	{
 		ALmixer_SetError("Cannot rewind because data is NULL\n");
-		return -1;
+		return AL_FALSE;
 	}
 
 
@@ -2056,14 +2062,14 @@ static ALint Internal_RewindData(ALmixer_Data* data)
 #if 0
 #if defined(DISABLE_PREDECODED_SEEK)
 		/* Since we can't seek predecoded stuff, it should be rewound */
-		return 0;
+		return AL_TRUE;
 #elif !defined(DISABLE_SEEK_MEMORY_OPTIMIZATION)
 		/* This case is if the Sound_Sample has been deleted.
 		 * It assumes the data is already at the beginning.
 		 */
 		if(NULL == data->sample)
 		{
-			return 0;
+			return AL_TRUE;
 		}
 		/* Else, the sample has already been reallocated,
 		 * and we can fall to normal behavior
@@ -2077,7 +2083,7 @@ static ALint Internal_RewindData(ALmixer_Data* data)
 		 */
 		if(NULL == data->sample)
 		{
-			return 0;
+			return AL_TRUE;
 		}
 		/* Else, the sample has already been reallocated,
 		 * and we can fall to normal behavior
@@ -2087,7 +2093,7 @@ static ALint Internal_RewindData(ALmixer_Data* data)
 	/*
 		return data->total_bytes;
 	*/
-		return 0;
+		return AL_TRUE;
 	}
 	
 	/* Remaining stuff for streamed data */
@@ -2097,7 +2103,7 @@ static ALint Internal_RewindData(ALmixer_Data* data)
 	if(0 == retval)
 	{
 		ALmixer_SetError( Sound_GetError() );
-		return -1;
+		return AL_FALSE;
 	}
 #if 0
 	/* Clear error */
@@ -2107,11 +2113,11 @@ static ALint Internal_RewindData(ALmixer_Data* data)
 		bytes_returned = GetMoreData(data, data->buffer[i]);
 		if(-1 == bytes_returned)
 		{
-			return -1;
+			return AL_FALSE;
 		}
 		else if(0 == bytes_returned)
 		{
-			return -1;
+			return AL_FALSE;
 		}
 		retval += bytes_returned;
 		
@@ -2120,7 +2126,7 @@ static ALint Internal_RewindData(ALmixer_Data* data)
 
 	
 	
-	return retval;
+	return AL_TRUE;
 }
 
 
@@ -2131,6 +2137,7 @@ static ALint Internal_RewindChannel(ALint channel)
 	ALint retval = 0;
 	ALenum error;
 	ALint state;
+	ALint running_count = 0;
 
 	if(channel >= Number_of_Channels_global)
 	{
@@ -2292,12 +2299,20 @@ static ALint Internal_RewindChannel(ALint channel)
 					 * much data is queued. Recommend users call Halt
 					 * before rewind if they want immediate results.
 					 */
-					retval = Internal_RewindData(ALmixer_Channel_List[i].almixer_data);
+					running_count += Internal_RewindData(ALmixer_Channel_List[i].almixer_data);
 				}
 			}
 		}
 	}
-	return retval;
+	if(-1 == retval)
+	{
+		return -1;
+	}
+	else
+	{
+		return running_count;
+	}
+
 }
 
 
@@ -3098,14 +3113,14 @@ static ALint Internal_ResumeSource(ALuint source)
 /* Might consider setting eof to 0 as a "feature"
  * This will allow seek to end to stay there because
  * Play automatically rewinds if at the end */
-static ALint Internal_SeekData(ALmixer_Data* data, ALuint msec)
+static ALboolean Internal_SeekData(ALmixer_Data* data, ALuint msec)
 {
 	ALint retval;
 	
 	if(NULL == data)
 	{
 		ALmixer_SetError("Cannot Seek because data is NULL");
-		return -1;
+		return AL_FALSE;
 	}
 	
 	/* Seek for predecoded files involves moving the chunk pointer around */
@@ -3122,12 +3137,12 @@ static ALint Internal_SeekData(ALmixer_Data* data, ALuint msec)
 		if(data->in_use)
 		{
 			ALmixer_SetError("Cannot seek on predecoded data while instances are playing");
-			return -1;
+			return AL_FALSE;
 		}
 #if 0
 #if defined(DISABLE_PREDECODED_SEEK)
 		ALmixer_SetError("Seek support for predecoded samples was not compiled in");
-		return -1;
+		return AL_FALSE;
 
 #elif !defined(DISABLE_SEEK_MEMORY_OPTIMIZATION)
 		/* By default, ALmixer frees the Sound_Sample for predecoded
@@ -3143,7 +3158,7 @@ static ALint Internal_SeekData(ALmixer_Data* data, ALuint msec)
 		{
 			if( -1 == Reconstruct_Sound_Sample(data) )
 			{
-				return -1;
+				return AL_FALSE;
 			}
 		}
 #endif
@@ -3158,11 +3173,20 @@ static ALint Internal_SeekData(ALmixer_Data* data, ALuint msec)
 		if(NULL == data->sample)
 		{
 			ALmixer_SetError("Cannot seek because access_data flag was set false when data was initialized");
-			return -1;
+			return AL_FALSE;
 		}
 		
 		byte_position = Convert_Msec_To_Byte_Pos(&data->sample->desired, msec);
-		return( Set_Predecoded_Seek_Position(data, byte_position) );
+		retval = Set_Predecoded_Seek_Position(data, byte_position);
+		if(-1 == retval)
+		{
+			return AL_FALSE;
+		}
+		else
+		{
+			return AL_TRUE;
+		}
+
 	}
 	else
 	{
@@ -3178,12 +3202,12 @@ static ALint Internal_SeekData(ALmixer_Data* data, ALuint msec)
 /*
 			Internal_RewindData(data);
 */
-			return -1;
+			return AL_FALSE;
 		}
-		return 0;
+		return AL_TRUE;
 	}
 
-	return 0;
+	return AL_TRUE;
 }			
 		
 
@@ -4666,13 +4690,13 @@ static ALint Update_ALmixer(void* data)
 					 */
 					delta_time = current_time - ALmixer_Channel_List[i].fade_start_time;
 					t = (ALfloat) delta_time * ALmixer_Channel_List[i].fade_inv_time;
-
 					current_volume = (1.0f-t) * ALmixer_Channel_List[i].fade_start_volume 
 						+ t * ALmixer_Channel_List[i].fade_end_volume;
+					fprintf(stderr, "start_vol=%f, end_vol:%f, current_volume: %f\n", ALmixer_Channel_List[i].fade_start_volume, ALmixer_Channel_List[i].fade_end_volume, current_volume);
 
 					/* Set the volume */
 					alSourcef(ALmixer_Channel_List[i].alsource,
-						AL_MAX_GAIN, current_volume);
+						AL_GAIN, current_volume);
 					if((error = alGetError()) != AL_NO_ERROR)
 					{
 						fprintf(stderr, "04Testing errpr before unqueue because getting stuff, for OS X this is expected: %s\n",
@@ -8305,9 +8329,9 @@ ALint ALmixer_HaltSource(ALuint source)
  * samples and start buffering up the data for the next
  * playback. This may require samples to be halted
  */
-ALint ALmixer_RewindData(ALmixer_Data* data)
+ALboolean ALmixer_RewindData(ALmixer_Data* data)
 {
-	ALint retval;
+	ALboolean retval;
 #ifdef ENABLE_ALMIXER_THREADS
 	SDL_LockMutex(s_simpleLock);
 #endif
@@ -8399,9 +8423,9 @@ ALint ALmixer_ResumeSource(ALuint source)
 /* Might consider setting eof to 0 as a "feature"
  * This will allow seek to end to stay there because
  * Play automatically rewinds if at the end */
-ALint ALmixer_SeekData(ALmixer_Data* data, ALuint msec)
+ALboolean ALmixer_SeekData(ALmixer_Data* data, ALuint msec)
 {
-	ALint retval;
+	ALboolean retval;
 #ifdef ENABLE_ALMIXER_THREADS
 	SDL_LockMutex(s_simpleLock);
 #endif
