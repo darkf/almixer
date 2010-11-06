@@ -241,7 +241,7 @@ LinkedListNode* LinkedList_Find(LinkedList* linked_list, void* the_data, LinkedL
 	LinkedListNode* current_node;
 	if(NULL == linked_list)
 	{
-		return;
+		return NULL;
 	}
 	if(NULL == start_node)
 	{
