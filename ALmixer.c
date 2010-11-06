@@ -62,6 +62,12 @@
  */
 #include "CircularQueue.h"
 
+/* SDL_sound keeps a private linked list of sounds which get auto-deleted
+ * on Sound_Quit. This might actually create some leaks for me in certain
+ * usage patterns. To be safe, I should do the same.
+ */
+#include "LinkedList.h"
+
 #ifdef ENABLE_ALMIXER_THREADS
 /* Needed for the Mutex locks (and threads if enabled) */
 	#ifdef ALMIXER_COMPILE_WITHOUT_SDL
@@ -226,6 +232,9 @@ static ALuint Is_Playing_global = 0;
 static SDL_mutex* s_simpleLock;
 static SDL_Thread* Stream_Thread_global = NULL;
 #endif
+
+static LinkedList* s_listOfALmixerData = NULL;
+
 
 
 #ifdef __APPLE__
@@ -6398,11 +6407,24 @@ ALboolean ALmixer_Init(ALuint frequency, ALint num_sources, ALuint refresh)
 	Channel_Data_Callback = NULL;
 	Channel_Data_Callback_Userdata = NULL;
 
+	/* Allocate memory for linked list of ALmixerData. */
+	s_listOfALmixerData = LinkedList_Create();
+	if(NULL == s_listOfALmixerData)
+	{
+		ALmixer_SetError("Couldn't create linked list");
+		alcDestroyContext(context);
+		alcCloseDevice(dev);
+		ALmixer_Initialized = 0;
+		Number_of_Channels_global = 0;
+		return AL_FALSE;
+	}
+
 	/* Allocate memory for the list of channels */
 	ALmixer_Channel_List = (struct ALmixer_Channel*) malloc(Number_of_Channels_global * sizeof(struct ALmixer_Channel));
 	if(NULL == ALmixer_Channel_List)
 	{
 		ALmixer_SetError("Out of Memory for Channel List");
+		LinkedList_Free(s_listOfALmixerData);
 		alcDestroyContext(context);
 		alcCloseDevice(dev);
 		ALmixer_Initialized = 0;
@@ -6416,6 +6438,7 @@ ALboolean ALmixer_Init(ALuint frequency, ALint num_sources, ALuint refresh)
 	{
 		ALmixer_SetError("Out of Memory for Source Map List");
 		free(ALmixer_Channel_List);
+		LinkedList_Free(s_listOfALmixerData);		
 		alcDestroyContext(context);
 		alcCloseDevice(dev);
 		ALmixer_Initialized = 0;
@@ -6430,6 +6453,7 @@ ALboolean ALmixer_Init(ALuint frequency, ALint num_sources, ALuint refresh)
 		ALmixer_SetError("Out of Memory for sources");
 		free(Source_Map_List);
 		free(ALmixer_Channel_List);
+		LinkedList_Free(s_listOfALmixerData);		
 		alcDestroyContext(context);
 		alcCloseDevice(dev);
 		ALmixer_Initialized = 0;
@@ -6446,6 +6470,7 @@ ALboolean ALmixer_Init(ALuint frequency, ALint num_sources, ALuint refresh)
 		ALmixer_SetError("Couldn't generate sources: %s\n", alGetString(error));
 		free(ALmixer_Channel_List);
 		free(Source_Map_List);
+		LinkedList_Free(s_listOfALmixerData);		
 		alcDestroyContext(context);
 		alcCloseDevice(dev);
 		ALmixer_Initialized = 0;
@@ -6486,6 +6511,9 @@ ALboolean ALmixer_Init(ALuint frequency, ALint num_sources, ALuint refresh)
 	/*
 	ALmixer_OutputDecoders();
 */
+
+
+
 #ifdef ENABLE_ALMIXER_THREADS
 	s_simpleLock = SDL_CreateMutex();
 	if(NULL == s_simpleLock)
@@ -6494,6 +6522,7 @@ ALboolean ALmixer_Init(ALuint frequency, ALint num_sources, ALuint refresh)
 		free(source);
 		free(ALmixer_Channel_List);
 		free(Source_Map_List);
+		LinkedList_Free(s_listOfALmixerData);		
 		alcDestroyContext(context);
 		alcCloseDevice(dev);
 		ALmixer_Initialized = 0;
@@ -6510,6 +6539,7 @@ ALboolean ALmixer_Init(ALuint frequency, ALint num_sources, ALuint refresh)
 		free(source);
 		free(ALmixer_Channel_List);
 		free(Source_Map_List);
+		LinkedList_Free(s_listOfALmixerData);		
 		alcDestroyContext(context);
 		alcCloseDevice(dev);
 		ALmixer_Initialized = 0;
@@ -6948,11 +6978,23 @@ ALboolean ALmixer_InitMixer(ALint num_sources)
 	Channel_Data_Callback = NULL;
 	Channel_Data_Callback_Userdata = NULL;
 
+	/* Allocate memory for linked list of ALmixerData. */
+	s_listOfALmixerData = LinkedList_Create();
+	if(NULL == s_listOfALmixerData)
+	{
+		ALmixer_SetError("Couldn't create linked list");
+		ALmixer_Initialized = 0;
+		Number_of_Channels_global = 0;
+		return AL_FALSE;
+	}
+
+
 	/* Allocate memory for the list of channels */
 	ALmixer_Channel_List = (struct ALmixer_Channel*) malloc(Number_of_Channels_global * sizeof(struct ALmixer_Channel));
 	if(NULL == ALmixer_Channel_List)
 	{
 		ALmixer_SetError("Out of Memory for Channel List");
+		LinkedList_Free(s_listOfALmixerData);		
 		ALmixer_Initialized = 0;
 		Number_of_Channels_global = 0;
 		return AL_FALSE;
@@ -6964,6 +7006,7 @@ ALboolean ALmixer_InitMixer(ALint num_sources)
 	{
 		ALmixer_SetError("Out of Memory for Source Map List");
 		free(ALmixer_Channel_List);
+		LinkedList_Free(s_listOfALmixerData);		
 		ALmixer_Initialized = 0;
 		Number_of_Channels_global = 0;
 		return AL_FALSE;
@@ -6976,6 +7019,7 @@ ALboolean ALmixer_InitMixer(ALint num_sources)
 		ALmixer_SetError("Out of Memory for sources");
 		free(Source_Map_List);
 		free(ALmixer_Channel_List);
+		LinkedList_Free(s_listOfALmixerData);		
 		ALmixer_Initialized = 0;
 		Number_of_Channels_global = 0;
 		return AL_FALSE;
@@ -6990,6 +7034,7 @@ ALboolean ALmixer_InitMixer(ALint num_sources)
 		ALmixer_SetError("Couldn't generate sources: %s\n", alGetString(error));
 		free(ALmixer_Channel_List);
 		free(Source_Map_List);
+		LinkedList_Free(s_listOfALmixerData);
 		ALmixer_Initialized = 0;
 		Number_of_Channels_global = 0;
 		return AL_FALSE;
@@ -7121,6 +7166,17 @@ void ALmixer_Quit()
 	}
 	alcCloseDevice(dev);
 	
+	/* Delete the list of ALmixerData's before Sound_Quit deletes
+	 * its own underlying information and I potentially have dangling pointers.
+	 */
+	while(LinkedList_Size(s_listOfALmixerData) > 0)
+	{
+		ALmixer_Data* almixer_data = LinkedList_PopBack(s_listOfALmixerData);
+		ALmixer_FreeData(almixer_data);
+	}
+	LinkedList_Free(s_listOfALmixerData);
+	s_listOfALmixerData = NULL;
+
 	Sound_Quit();
 
 #ifdef ALMIXER_COMPILE_WITHOUT_SDL
@@ -7857,6 +7913,10 @@ static ALmixer_Data* DoLoad(Sound_Sample* sample, ALuint buffersize, ALboolean d
 		return NULL;
 	}
 		
+	/* Add the ALmixerData to an internal linked list so we can delete it on 
+	 * quit and avoid messy dangling issues with Sound_Quit
+	 */
+	LinkedList_PushBack(s_listOfALmixerData, ret_data);
 	return ret_data;
 }
 
@@ -8139,6 +8199,11 @@ void ALmixer_FreeData(ALmixer_Data* data)
 	}
 	}
 	free(data->buffer);
+
+	LinkedList_Remove(s_listOfALmixerData,
+		LinkedList_Find(s_listOfALmixerData, data, NULL)
+	);
+
 	free(data);
 }
 

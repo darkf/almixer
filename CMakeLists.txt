@@ -62,6 +62,8 @@ SET(ALMIXER_SOURCE
 	${ALmixer_SOURCE_DIR}/ALmixer.c
 	${ALmixer_SOURCE_DIR}/CircularQueue.c
 	${ALmixer_SOURCE_DIR}/CircularQueue.h
+	${ALmixer_SOURCE_DIR}/LinkedList.c
+	${ALmixer_SOURCE_DIR}/LinkedList.h
 )
 
 SET(PUBLIC_HEADERS
