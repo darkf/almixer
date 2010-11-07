@@ -40,6 +40,7 @@ LinkedList* LinkedList_Create();
 void LinkedList_Free(LinkedList* linked_list);
 
 void* LinkedList_Front(LinkedList* linked_list);
+
 void* LinkedList_Back(LinkedList* linked_list);
 
 unsigned int LinkedList_PushFront(LinkedList* linked_list, void* new_item);
