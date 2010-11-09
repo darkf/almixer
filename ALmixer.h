@@ -1077,6 +1077,27 @@ extern ALMIXER_DECLSPEC ALint ALMIXER_CALL ALmixer_RewindSource(ALuint al_source
 extern ALMIXER_DECLSPEC ALboolean ALMIXER_CALL ALmixer_SeekData(ALmixer_Data* almixer_data, ALuint msec_pos);
 
 /**
+ * Seeks the sound to the beginning that is playing on a specific channel.
+ * If decoded all, seek will instantly seek it. Data is not 
+ * affected, so it will start at the "Seek"'ed positiond.
+ * Streamed data will seek the actual data, but the effect
+ * may not be noticed until the currently buffered data is played.
+ * @param which_channel The channel to seek or -1 to seek all channels.
+ * @return The actual number of channels rewound on success or -1 on error.
+ */
+extern ALMIXER_DECLSPEC ALint ALMIXER_CALL ALmixer_SeekChannel(ALint which_channel, ALuint msec_pos);
+/**
+ * Seeks the sound to the beginning that is playing on a specific source.
+ * If decoded all, seek will instantly seek it. Data is not 
+ * affected, so it will start at the "Seek"'ed positiond.
+ * Streamed data will seek the actual data, but the effect
+ * may not be noticed until the currently buffered data is played.
+ * @param al_source The source to seek or 0 to seek all sources.
+ * @return The actual number of sources rewound on success or -1 on error.
+ */
+extern ALMIXER_DECLSPEC ALint ALMIXER_CALL ALmixer_SeekSource(ALuint al_source, ALuint msec_pos);
+
+/**
  * Pauses playback on a channel.
  * Pauses playback on a channel. Should have no effect on channels that aren't playing.
  * @param which_channel The channel to pause or -1 to pause all channels.
@@ -1440,8 +1461,7 @@ extern ALMIXER_DECLSPEC ALuint ALMIXER_CALL ALmixer_CountAllFreeChannels(void);
 extern ALMIXER_DECLSPEC ALuint ALMIXER_CALL ALmixer_CountUnreservedFreeChannels(void);
 
 /**
- * Returns the number of channels that are currently in use (playing/paused),
- * excluding the channels that have been reserved.
+ * Returns the number of channels that are currently in use (playing/paused).
  * @return The number of channels that are currently in use.
  * @see ALmixer_ReserveChannels
  */

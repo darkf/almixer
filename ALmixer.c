@@ -2330,7 +2330,7 @@ static ALint Internal_RewindSource(ALuint source)
 	ALint channel;
 	if(0 == source)
 	{
-		return Internal_RewindChannel(-1) + 1;
+		return Internal_RewindChannel(-1);
 	}
 	
 	channel = Internal_GetChannel(source);
@@ -2339,7 +2339,7 @@ static ALint Internal_RewindSource(ALuint source)
 		ALmixer_SetError("Cannot rewind source: %s", ALmixer_GetError());
 		return 0;
 	}
-	return Internal_RewindChannel(channel) + 1;
+	return Internal_RewindChannel(channel);
 }
 
 
@@ -3219,6 +3219,219 @@ static ALboolean Internal_SeekData(ALmixer_Data* data, ALuint msec)
 	return AL_TRUE;
 }			
 		
+
+static ALint Internal_SeekChannel(ALint channel, ALuint msec)
+{
+	ALint retval = 0;
+	ALenum error;
+	ALint state;
+	ALint running_count = 0;
+	
+	if(0 == msec)
+	{
+		return Internal_RewindChannel(channel);
+	}
+	
+	if(channel >= Number_of_Channels_global)
+	{
+		ALmixer_SetError("Cannot seek channel %d because it exceeds maximum number of channels (%d)\n", channel, Number_of_Channels_global);
+		return -1;
+	}
+	
+	if((error = alGetError()) != AL_NO_ERROR)
+	{
+		fprintf(stderr, "24Testing error: %s\n",
+				alGetString(error));				
+	}
+	/* Clear error */
+	alGetError();
+	
+	/* If the user specified a specific channel */
+	if(channel >= 0)
+	{
+		/* only need to process channel if in use */
+		if(ALmixer_Channel_List[channel].channel_in_use)
+		{
+			
+			/* What should I do? Do I just rewind the channel
+			 * or also rewind the data? Since the data is
+			 * shared, let's make it the user's responsibility
+			 * to rewind the data.
+			 */
+			if(ALmixer_Channel_List[channel].almixer_data->decoded_all)
+			{
+				/* convert milliseconds to seconds */
+				ALfloat sec_offset = msec / 1000.0f;
+
+				alGetSourcei(
+							 ALmixer_Channel_List[channel].alsource,
+							 AL_SOURCE_STATE, &state
+							 );
+				if((error = alGetError()) != AL_NO_ERROR)
+				{
+					fprintf(stderr, "25Testing error: %s\n",
+							alGetString(error));				
+				}
+				/* OpenAL seek */
+				alSourcef(ALmixer_Channel_List[channel].alsource, AL_SEC_OFFSET, sec_offset);
+				if((error = alGetError()) != AL_NO_ERROR)
+				{
+					ALmixer_SetError("%s",
+									 alGetString(error) );
+					retval = -1;
+				}
+				/* Need to resume playback if it was originally playing */
+				if(AL_PLAYING == state)
+				{
+					alSourcePlay(ALmixer_Channel_List[channel].alsource);
+					if((error = alGetError()) != AL_NO_ERROR)
+					{
+						ALmixer_SetError("%s",
+										 alGetString(error) );
+						retval = -1;
+					}
+				}
+				else if(AL_PAUSED == state)
+				{
+					/* HACK: The problem is that when paused, after
+					 * the Rewind, I can't get it off the INITIAL
+					 * state without restarting
+					 */
+					alSourcePlay(ALmixer_Channel_List[channel].alsource);
+					if((error = alGetError()) != AL_NO_ERROR)
+					{
+						fprintf(stderr, "25Testing error: %s\n",
+								alGetString(error));				
+					}
+					alSourcePause(ALmixer_Channel_List[channel].alsource);
+					if((error = alGetError()) != AL_NO_ERROR)
+					{
+						ALmixer_SetError("%s",
+										 alGetString(error) );
+						retval = -1;
+					}
+				}
+			}
+			else
+			{
+				/* Streamed data is different. Rewinding the channel
+				 * does no good. Rewinding the data will have an
+				 * effect, but it will be lagged based on how
+				 * much data is queued. Recommend users call Halt
+				 * before rewind if they want immediate results.
+				 */
+				retval = Internal_SeekData(ALmixer_Channel_List[channel].almixer_data, msec);
+			}
+		}
+	}
+	/* The user wants to rewind all channels */
+	else
+	{
+		ALint i;
+		ALfloat sec_offset = msec / 1000.0f;
+
+		for(i=0; i<Number_of_Channels_global; i++)
+		{
+			/* only need to process channel if in use */
+			if(ALmixer_Channel_List[i].channel_in_use)
+			{
+				/* What should I do? Do I just rewind the channel
+				 * or also rewind the data? Since the data is
+				 * shared, let's make it the user's responsibility
+				 * to rewind the data.
+				 */
+				if(ALmixer_Channel_List[i].almixer_data->decoded_all)
+				{
+					alGetSourcei(
+								 ALmixer_Channel_List[i].alsource,
+								 AL_SOURCE_STATE, &state
+								 );
+					if((error = alGetError()) != AL_NO_ERROR)
+					{
+						fprintf(stderr, "26Testing error: %s\n",
+								alGetString(error));				
+					}
+
+					alSourcef(ALmixer_Channel_List[channel].alsource, AL_SEC_OFFSET, sec_offset);
+					if((error = alGetError()) != AL_NO_ERROR)
+					{
+						ALmixer_SetError("%s",
+										 alGetString(error) );
+						retval = -1;
+					}
+					/* Need to resume playback if it was originally playing */
+					if(AL_PLAYING == state)
+					{
+						alSourcePlay(ALmixer_Channel_List[i].alsource);
+						if((error = alGetError()) != AL_NO_ERROR)
+						{
+							ALmixer_SetError("%s",
+											 alGetString(error) );
+							retval = -1;
+						}
+					}
+					else if(AL_PAUSED == state)
+					{
+						/* HACK: The problem is that when paused, after
+						 * the Rewind, I can't get it off the INITIAL
+						 * state without restarting
+						 */
+						alSourcePlay(ALmixer_Channel_List[i].alsource);
+						if((error = alGetError()) != AL_NO_ERROR)
+						{
+							fprintf(stderr, "27Testing error: %s\n",
+									alGetString(error));				
+						}
+						alSourcePause(ALmixer_Channel_List[i].alsource);
+						if((error = alGetError()) != AL_NO_ERROR)
+						{
+							ALmixer_SetError("%s",
+											 alGetString(error) );
+							retval = -1;
+						}
+					}
+				}
+				else
+				{
+					/* Streamed data is different. Rewinding the channel
+					 * does no good. Rewinding the data will have an
+					 * effect, but it will be lagged based on how
+					 * much data is queued. Recommend users call Halt
+					 * before rewind if they want immediate results.
+					 */
+					running_count += Internal_SeekData(ALmixer_Channel_List[i].almixer_data, msec);
+				}
+			}
+		}
+	}
+	if(-1 == retval)
+	{
+		return -1;
+	}
+	else
+	{
+		return running_count;
+	}
+	
+}
+
+static ALint Internal_SeekSource(ALuint source, ALuint msec)
+{
+	ALint channel;
+	if(0 == source)
+	{
+		return Internal_SeekChannel(-1, msec);
+	}
+	
+	channel = Internal_GetChannel(source);
+	if(-1 == channel)
+	{
+		ALmixer_SetError("Cannot seek source: %s", ALmixer_GetError());
+		return 0;
+	}
+	return Internal_SeekChannel(channel, msec);
+}
+
 
 
 static ALint Internal_FadeInChannelTimed(ALint channel, ALmixer_Data* data, ALint loops, ALuint fade_ticks, ALint expire_ticks)
@@ -4701,8 +4914,9 @@ static ALint Update_ALmixer(void* data)
 					t = (ALfloat) delta_time * ALmixer_Channel_List[i].fade_inv_time;
 					current_volume = (1.0f-t) * ALmixer_Channel_List[i].fade_start_volume 
 						+ t * ALmixer_Channel_List[i].fade_end_volume;
+					/*
 					fprintf(stderr, "start_vol=%f, end_vol:%f, current_volume: %f\n", ALmixer_Channel_List[i].fade_start_volume, ALmixer_Channel_List[i].fade_end_volume, current_volume);
-
+					*/
 					/* Set the volume */
 					alSourcef(ALmixer_Channel_List[i].alsource,
 						AL_GAIN, current_volume);
@@ -8496,6 +8710,32 @@ ALboolean ALmixer_SeekData(ALmixer_Data* data, ALuint msec)
 	SDL_LockMutex(s_simpleLock);
 #endif
 	retval = Internal_SeekData(data, msec);
+#ifdef ENABLE_ALMIXER_THREADS
+	SDL_UnlockMutex(s_simpleLock);
+#endif
+	return retval;
+}
+
+ALint ALmixer_SeekChannel(ALint channel, ALuint msec)
+{
+	ALint retval;
+#ifdef ENABLE_ALMIXER_THREADS
+	SDL_LockMutex(s_simpleLock);
+#endif
+	retval = Internal_SeekChannel(channel, msec);
+#ifdef ENABLE_ALMIXER_THREADS
+	SDL_UnlockMutex(s_simpleLock);
+#endif
+	return retval;
+}
+
+ALint ALmixer_SeekSource(ALuint source, ALuint msec)
+{
+	ALint retval;
+#ifdef ENABLE_ALMIXER_THREADS
+	SDL_LockMutex(s_simpleLock);
+#endif
+	retval = Internal_SeekSource(source, msec);
 #ifdef ENABLE_ALMIXER_THREADS
 	SDL_UnlockMutex(s_simpleLock);
 #endif
