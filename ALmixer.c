@@ -225,7 +225,7 @@ static ALuint Is_Playing_global = 0;
  */
 static SDL_mutex* s_simpleLock;
 static SDL_Thread* Stream_Thread_global = NULL;
-#endif
+#endif /* ENABLE_ALMIXER_THREADS */
 
 static LinkedList* s_listOfALmixerData = NULL;
 
@@ -351,6 +351,7 @@ ALdouble Internal_alcMacOSXGetMixerOutputRate()
  * performance problems and cannot get audio to show up as a significant percentage
  * of the CPU time in Shark/Instruments.
  */
+#ifdef ENABLE_ALMIXER_THREADS
 #if defined(__APPLE__) && !defined(ALMIXER_COMPILE_WITHOUT_SDL) && ( (TARGET_OS_IPHONE == 1) || (TARGET_IPHONE_SIMULATOR == 1) )
 #include <pthread.h>
 #endif
@@ -373,6 +374,7 @@ static void Internal_LowerThreadPriority(SDL_Thread* simple_thread)
 	/* No-Op */
 #endif
 }
+#endif /* ENABLE_ALMIXER_THREADS */
 
 /* If ENABLE_PARANOID_SIGNEDNESS_CHECK is used,
  * these values will be reset on Init()
