@@ -8,19 +8,14 @@
 #include "ALmixer.h"
 
 #ifdef ALMIXER_COMPILE_WITHOUT_SDL
-	#include "ALmixer_rwops.h"
+	#include "ALmixer_RWops.h"
 	#include "SoundDecoder.h"
 #else
 	#include "SDL_sound.h"
 #endif
 
-#ifdef ANDROID_NDK
-	#include <AL/al.h>
-	#include <AL/alc.h>
-#else
-	#include "al.h" /* OpenAL */
-	#include "alc.h" /* For creating OpenAL contexts */
-#endif
+#include "al.h" /* OpenAL */
+#include "alc.h" /* For creating OpenAL contexts */
 
 #ifdef __APPLE__
 	/* For performance things like ALC_CONVERT_DATA_UPON_LOADING */
@@ -29,15 +24,14 @@
 	 * define was moved to a new header file and renamed to
 	 * ALC_MAC_OSX_CONVERT_DATA_UPON_LOADING.
 	 */
-/*
 	#include <TargetConditionals.h>
+/*
 	#if (TARGET_OS_IPHONE == 1) || (TARGET_IPHONE_SIMULATOR == 1)
-
+		#include <AudioToolbox/AudioToolbox.h>
 	#else
 		#include <OpenAL/MacOSX_OALExtensions.h>
 	#endif
 */
-
 #endif
 
 /* For malloc, bsearch, qsort */
@@ -235,6 +229,8 @@ static SDL_Thread* Stream_Thread_global = NULL;
 
 static LinkedList* s_listOfALmixerData = NULL;
 
+/* Special stuff for iOS interruption handling */
+static ALCcontext* s_interruptionContext = NULL;
 
 
 #ifdef __APPLE__
@@ -323,8 +319,6 @@ ALdouble Internal_alcMacOSXGetMixerOutputRate()
 			LARGE_INTEGER current_time;
 			QueryPerformanceCounter(&current_time);
 			return (ALuint)((current_time.QuadPart - s_ticksBaseTime.QuadPart) * 1000 * s_hiResSecondsPerTick);
-		#elif ANDROID_NDK
-
 		#else /* assuming POSIX */
 			/* clock_gettime is POSIX.1-2001 */
 			struct timespec current_time;
@@ -374,7 +368,7 @@ typedef struct ALmixer_Buffer_Map ALmixer_Buffer_Map;
 struct ALmixer_Data
 {
 	ALboolean decoded_all; /* dictates different behaviors */
-	ALint total_time; /* total playing time of sample (msec) */
+	ALint total_time; /* total playing time of sample (msec), obsolete now that we pushed our changes to SDL_sound */
 	
 	ALuint in_use; /* needed to prevent sharing for streams */
 	ALboolean eof; /* flag for eof, only used for streams  */
@@ -609,43 +603,6 @@ static void Clean_Channel(ALint channel)
 	ALmixer_Channel_List[channel].almixer_data = NULL;
 }
 
-
-#if 0
-/* Not needed anymore because not doing any fileext checks.
- *
- * Unfortunately, strcasecmp isn't portable so here's a
- * reimplementation of it (taken from SDL_sound)
- */
-static int ALmixer_strcasecmp(const char* x, const char* y)
-{
-	int ux, uy;
-	
-	if (x == y)  /* same pointer? Both NULL? */
-		return(0);
-
-	if (x == NULL)
-		return(-1);
-
-	if (y == NULL)
-		return(1);
-	   
-	do
-	{
-		ux = toupper((int) *x);
-		uy = toupper((int) *y);
-		if (ux > uy)
-			return(1);
-		else if (ux < uy)
-			return(-1);
-		x++;
-		y++;
-	} while ((ux) && (uy));
-
-    return(0);
-}
-#endif
-
-					
 /* What shoud this return?
  * 127 for signed, 255 for unsigned
  */
@@ -1141,21 +1098,30 @@ static void Invoke_Streamed_Channel_Data_Callback(ALint channel, ALmixer_Data* d
 /* Converts milliseconds to byte positions.
  * This is needed for seeking on predecoded samples 
  */
-static ALuint Convert_Msec_To_Byte_Pos(Sound_AudioInfo *info, ALuint ms)
+static ALuint Convert_Msec_To_Byte_Pos(Sound_AudioInfo* audio_info, ALuint number_of_milliseconds)
 {
-	float frames_per_ms;
-	ALuint frame_offset;
-	ALuint frame_size;
-	if(info == NULL)
+	ALuint bytes_per_sample;
+	ALuint bytes_per_frame;
+	float bytes_per_millisecond;
+	float byte_position;
+
+	if(audio_info == NULL)
 	{
 		fprintf(stderr, "Error, info is NULL\n");
 	}
 
-	/* "frames" == "sample frames" */
-	frames_per_ms = ((float) info->rate) / 1000.0f;
-	frame_offset = (ALuint) (frames_per_ms * ((float) ms));
-	frame_size = (ALuint) ((info->format & 0xFF) / 8) * info->channels;
-	return frame_offset * frame_size;
+	/* SDL has a mask trick I was not aware of. Mask the upper bits
+	 * of the format, and you get 8 or 16 which is the bits per sample.
+ 	 * Divide by 8bits_per_bytes and you get bytes_per_sample
+	 * I tested this under 32-bit and 64-bit and big and little endian
+	 * to make sure this still works since I have since moved from 
+	 * Uint32 to unspecified size types like ALuint.
+	 */
+	bytes_per_sample = (ALuint) ((audio_info->format & 0xFF) / 8);
+	bytes_per_frame = bytes_per_sample * audio_info->channels;
+	bytes_per_millisecond = (float)bytes_per_frame * (audio_info->rate / 1000.0f);
+	byte_position = ((float)(number_of_milliseconds)) * bytes_per_millisecond;  
+	return (ALuint)(byte_position + 0.5);
 }
 
 static ALint Set_Predecoded_Seek_Position(ALmixer_Data* data, ALuint byte_position)
@@ -2330,7 +2296,7 @@ static ALint Internal_RewindSource(ALuint source)
 	ALint channel;
 	if(0 == source)
 	{
-		return Internal_RewindChannel(-1) + 1;
+		return Internal_RewindChannel(-1);
 	}
 	
 	channel = Internal_GetChannel(source);
@@ -2339,7 +2305,7 @@ static ALint Internal_RewindSource(ALuint source)
 		ALmixer_SetError("Cannot rewind source: %s", ALmixer_GetError());
 		return 0;
 	}
-	return Internal_RewindChannel(channel) + 1;
+	return Internal_RewindChannel(channel);
 }
 
 
@@ -3219,6 +3185,219 @@ static ALboolean Internal_SeekData(ALmixer_Data* data, ALuint msec)
 	return AL_TRUE;
 }			
 		
+
+static ALint Internal_SeekChannel(ALint channel, ALuint msec)
+{
+	ALint retval = 0;
+	ALenum error;
+	ALint state;
+	ALint running_count = 0;
+	
+	if(0 == msec)
+	{
+		return Internal_RewindChannel(channel);
+	}
+	
+	if(channel >= Number_of_Channels_global)
+	{
+		ALmixer_SetError("Cannot seek channel %d because it exceeds maximum number of channels (%d)\n", channel, Number_of_Channels_global);
+		return -1;
+	}
+	
+	if((error = alGetError()) != AL_NO_ERROR)
+	{
+		fprintf(stderr, "24Testing error: %s\n",
+				alGetString(error));				
+	}
+	/* Clear error */
+	alGetError();
+	
+	/* If the user specified a specific channel */
+	if(channel >= 0)
+	{
+		/* only need to process channel if in use */
+		if(ALmixer_Channel_List[channel].channel_in_use)
+		{
+			
+			/* What should I do? Do I just rewind the channel
+			 * or also rewind the data? Since the data is
+			 * shared, let's make it the user's responsibility
+			 * to rewind the data.
+			 */
+			if(ALmixer_Channel_List[channel].almixer_data->decoded_all)
+			{
+				/* convert milliseconds to seconds */
+				ALfloat sec_offset = msec / 1000.0f;
+
+				alGetSourcei(
+							 ALmixer_Channel_List[channel].alsource,
+							 AL_SOURCE_STATE, &state
+							 );
+				if((error = alGetError()) != AL_NO_ERROR)
+				{
+					fprintf(stderr, "25Testing error: %s\n",
+							alGetString(error));				
+				}
+				/* OpenAL seek */
+				alSourcef(ALmixer_Channel_List[channel].alsource, AL_SEC_OFFSET, sec_offset);
+				if((error = alGetError()) != AL_NO_ERROR)
+				{
+					ALmixer_SetError("%s",
+									 alGetString(error) );
+					retval = -1;
+				}
+				/* Need to resume playback if it was originally playing */
+				if(AL_PLAYING == state)
+				{
+					alSourcePlay(ALmixer_Channel_List[channel].alsource);
+					if((error = alGetError()) != AL_NO_ERROR)
+					{
+						ALmixer_SetError("%s",
+										 alGetString(error) );
+						retval = -1;
+					}
+				}
+				else if(AL_PAUSED == state)
+				{
+					/* HACK: The problem is that when paused, after
+					 * the Rewind, I can't get it off the INITIAL
+					 * state without restarting
+					 */
+					alSourcePlay(ALmixer_Channel_List[channel].alsource);
+					if((error = alGetError()) != AL_NO_ERROR)
+					{
+						fprintf(stderr, "25Testing error: %s\n",
+								alGetString(error));				
+					}
+					alSourcePause(ALmixer_Channel_List[channel].alsource);
+					if((error = alGetError()) != AL_NO_ERROR)
+					{
+						ALmixer_SetError("%s",
+										 alGetString(error) );
+						retval = -1;
+					}
+				}
+			}
+			else
+			{
+				/* Streamed data is different. Rewinding the channel
+				 * does no good. Rewinding the data will have an
+				 * effect, but it will be lagged based on how
+				 * much data is queued. Recommend users call Halt
+				 * before rewind if they want immediate results.
+				 */
+				retval = Internal_SeekData(ALmixer_Channel_List[channel].almixer_data, msec);
+			}
+		}
+	}
+	/* The user wants to rewind all channels */
+	else
+	{
+		ALint i;
+		ALfloat sec_offset = msec / 1000.0f;
+
+		for(i=0; i<Number_of_Channels_global; i++)
+		{
+			/* only need to process channel if in use */
+			if(ALmixer_Channel_List[i].channel_in_use)
+			{
+				/* What should I do? Do I just rewind the channel
+				 * or also rewind the data? Since the data is
+				 * shared, let's make it the user's responsibility
+				 * to rewind the data.
+				 */
+				if(ALmixer_Channel_List[i].almixer_data->decoded_all)
+				{
+					alGetSourcei(
+								 ALmixer_Channel_List[i].alsource,
+								 AL_SOURCE_STATE, &state
+								 );
+					if((error = alGetError()) != AL_NO_ERROR)
+					{
+						fprintf(stderr, "26Testing error: %s\n",
+								alGetString(error));				
+					}
+
+					alSourcef(ALmixer_Channel_List[channel].alsource, AL_SEC_OFFSET, sec_offset);
+					if((error = alGetError()) != AL_NO_ERROR)
+					{
+						ALmixer_SetError("%s",
+										 alGetString(error) );
+						retval = -1;
+					}
+					/* Need to resume playback if it was originally playing */
+					if(AL_PLAYING == state)
+					{
+						alSourcePlay(ALmixer_Channel_List[i].alsource);
+						if((error = alGetError()) != AL_NO_ERROR)
+						{
+							ALmixer_SetError("%s",
+											 alGetString(error) );
+							retval = -1;
+						}
+					}
+					else if(AL_PAUSED == state)
+					{
+						/* HACK: The problem is that when paused, after
+						 * the Rewind, I can't get it off the INITIAL
+						 * state without restarting
+						 */
+						alSourcePlay(ALmixer_Channel_List[i].alsource);
+						if((error = alGetError()) != AL_NO_ERROR)
+						{
+							fprintf(stderr, "27Testing error: %s\n",
+									alGetString(error));				
+						}
+						alSourcePause(ALmixer_Channel_List[i].alsource);
+						if((error = alGetError()) != AL_NO_ERROR)
+						{
+							ALmixer_SetError("%s",
+											 alGetString(error) );
+							retval = -1;
+						}
+					}
+				}
+				else
+				{
+					/* Streamed data is different. Rewinding the channel
+					 * does no good. Rewinding the data will have an
+					 * effect, but it will be lagged based on how
+					 * much data is queued. Recommend users call Halt
+					 * before rewind if they want immediate results.
+					 */
+					running_count += Internal_SeekData(ALmixer_Channel_List[i].almixer_data, msec);
+				}
+			}
+		}
+	}
+	if(-1 == retval)
+	{
+		return -1;
+	}
+	else
+	{
+		return running_count;
+	}
+	
+}
+
+static ALint Internal_SeekSource(ALuint source, ALuint msec)
+{
+	ALint channel;
+	if(0 == source)
+	{
+		return Internal_SeekChannel(-1, msec);
+	}
+	
+	channel = Internal_GetChannel(source);
+	if(-1 == channel)
+	{
+		ALmixer_SetError("Cannot seek source: %s", ALmixer_GetError());
+		return 0;
+	}
+	return Internal_SeekChannel(channel, msec);
+}
+
 
 
 static ALint Internal_FadeInChannelTimed(ALint channel, ALmixer_Data* data, ALint loops, ALuint fade_ticks, ALint expire_ticks)
@@ -4592,6 +4771,15 @@ static ALint Update_ALmixer(void* data)
 #endif
 		return 0;
 	}
+
+	/* Bypass if in interruption event */
+	if(NULL == alcGetCurrentContext())
+	{
+#ifdef ENABLE_ALMIXER_THREADS
+		SDL_UnlockMutex(s_simpleLock);
+#endif
+		return 0;
+	}
 	
 	/* Check the quick flag to see if anything needs updating */
 	/* If anything is playing, then we have to do work */
@@ -4701,8 +4889,9 @@ static ALint Update_ALmixer(void* data)
 					t = (ALfloat) delta_time * ALmixer_Channel_List[i].fade_inv_time;
 					current_volume = (1.0f-t) * ALmixer_Channel_List[i].fade_start_volume 
 						+ t * ALmixer_Channel_List[i].fade_end_volume;
+					/*
 					fprintf(stderr, "start_vol=%f, end_vol:%f, current_volume: %f\n", ALmixer_Channel_List[i].fade_start_volume, ALmixer_Channel_List[i].fade_end_volume, current_volume);
-
+					*/
 					/* Set the volume */
 					alSourcef(ALmixer_Channel_List[i].alsource,
 						AL_GAIN, current_volume);
@@ -5994,7 +6183,7 @@ fprintf(stderr, "Thread is closing\n");
  * the user will need to restart it if they need it after
  * OpenAL shuts down.
  */
-ALboolean ALmixer_Init(ALuint frequency, ALint num_sources, ALuint refresh)
+ALboolean ALmixer_Init(ALuint frequency, ALuint num_sources, ALuint refresh)
 {
 	ALCdevice* dev;
 	ALCcontext* context;
@@ -6362,42 +6551,48 @@ ALboolean ALmixer_Init(ALuint frequency, ALint num_sources, ALuint refresh)
 	 *	This feature is toggled on/off by using the alDisable() & alEnable() APIs. This 
 	 *	setting will be applied to all subsequent 
 	 *	calls to alBufferData().
+	 * 
+	 * Update: Some people keep reporting that they see the enable fail on Mac, but I can't reproduce it myself.
+	 * Rather than deal with it right now, I think I am going to make it an opt-in thing.
 	 */	
-#ifdef __APPLE__
+#if defined(__APPLE__) && defined(ALMIXER_USE_OSX_CONVERT_DATA_UPON_LOADING)
 /*
+ iPhone is getting this enum, but is failing on the enable, so I guess I'll define it out.
+ */
 	#if (TARGET_OS_IPHONE == 1) || (TARGET_IPHONE_SIMULATOR == 1)
-
+	 
 	#else
+		/* iOS reports this enum exists, but loading it always fails, so make it Mac only. */
+		ALenum convert_data_enum = alcGetEnumValue(dev, "ALC_MAC_OSX_CONVERT_DATA_UPON_LOADING");
+		 /*
+		 fprintf(stderr, "ALC_MAC_OSX_CONVERT_DATA_UPON_LOADING=0x%x", convert_data_enum);
+		 */
+		if(0 != convert_data_enum)
+		{
+			alEnable(convert_data_enum);		
+		}
+		if( (AL_NO_ERROR != alGetError()) )
+		{
+			fprintf(stderr, "ALC_MAC_OSX_CONVERT_DATA_UPON_LOADING attempted but failed");
+			ALmixer_SetError("ALC_MAC_OSX_CONVERT_DATA_UPON_LOADING attempted but failed");
+		}
 	#endif
-*/
-	ALenum convert_data_enum = alcGetEnumValue(dev, "ALC_MAC_OSX_CONVERT_DATA_UPON_LOADING");
-	/*
-	fprintf(stderr, "ALC_MAC_OSX_CONVERT_DATA_UPON_LOADING=0x%x", convert_data_enum);
-	*/
-	if(0 != convert_data_enum)
-	{
-		alEnable(convert_data_enum);		
-	}
-	if( (AL_NO_ERROR != alGetError()) )
-	{
-	fprintf(stderr, "ALC_MAC_OSX_CONVERT_DATA_UPON_LOADING attempted but failed");
-		ALmixer_SetError("ALC_MAC_OSX_CONVERT_DATA_UPON_LOADING attempted but failed");
-	}
 	
-#endif
+#endif /* __APPLE__ */
 	
 
 	
 	
 	ALmixer_Initialized = 1;
 
-	if(num_sources <= 0)
+	if(num_sources == 0)
 	{
 		Number_of_Channels_global = ALMIXER_DEFAULT_NUM_CHANNELS;
 	}
 	else
 	{
-		Number_of_Channels_global = num_sources;
+		/* probably should make Number_of_Channels_global an ALuint, but need to cast which_channel all the time */
+		Number_of_Channels_global = (ALint)num_sources;
 	}
 	Number_of_Reserve_Channels_global = 0;
 	Is_Playing_global = 0;
@@ -6901,34 +7096,38 @@ ALboolean ALmixer_InitContext(ALuint frequency, ALuint refresh)
 	 *	This feature is toggled on/off by using the alDisable() & alEnable() APIs. This 
 	 *	setting will be applied to all subsequent 
 	 *	calls to alBufferData().
+	 * Update: Some people keep reporting that they see the enable fail on Mac, but I can't reproduce it myself.
+	 * Rather than deal with it right now, I think I am going to make it an opt-in thing.
 	 */	
-#ifdef __APPLE__
+#if defined(__APPLE__) && defined(ALMIXER_USE_OSX_CONVERT_DATA_UPON_LOADING)
 	/*
-	 #if (TARGET_OS_IPHONE == 1) || (TARGET_IPHONE_SIMULATOR == 1)
-	 
-	 #else
-	 #endif
+	 iPhone is getting this enum, but is failing on the enable, so I guess I'll define it out.
 	 */
-	ALenum convert_data_enum = alcGetEnumValue(dev, "ALC_MAC_OSX_CONVERT_DATA_UPON_LOADING");
-	/*
-	fprintf(stderr, "ALC_MAC_OSX_CONVERT_DATA_UPON_LOADING=0x%x", convert_data_enum);
-	*/
-	if(0 != convert_data_enum)
-	{
-		alEnable(convert_data_enum);		
-	}
-	if( (AL_NO_ERROR != alGetError()) )
-	{
-		fprintf(stderr, "ALC_MAC_OSX_CONVERT_DATA_UPON_LOADING attempted but failed");
-		ALmixer_SetError("ALC_MAC_OSX_CONVERT_DATA_UPON_LOADING attempted but failed");
-	}
+	#if (TARGET_OS_IPHONE == 1) || (TARGET_IPHONE_SIMULATOR == 1)
+	 
+	#else
+		/* iOS reports this enum exists, but loading it always fails, so make it Mac only. */
+		ALenum convert_data_enum = alcGetEnumValue(dev, "ALC_MAC_OSX_CONVERT_DATA_UPON_LOADING");
+		 /*
+		 fprintf(stderr, "ALC_MAC_OSX_CONVERT_DATA_UPON_LOADING=0x%x", convert_data_enum);
+		 */
+		if(0 != convert_data_enum)
+		{
+			alEnable(convert_data_enum);		
+		}
+		if( (AL_NO_ERROR != alGetError()) )
+		{
+			fprintf(stderr, "ALC_MAC_OSX_CONVERT_DATA_UPON_LOADING attempted but failed");
+			ALmixer_SetError("ALC_MAC_OSX_CONVERT_DATA_UPON_LOADING attempted but failed");
+		}
+	#endif
 #endif
 	
 	return AL_TRUE;
 }
 
 	
-ALboolean ALmixer_InitMixer(ALint num_sources)
+ALboolean ALmixer_InitMixer(ALuint num_sources)
 {	
 	ALint i;
 	ALenum error;
@@ -6962,13 +7161,13 @@ ALboolean ALmixer_InitMixer(ALint num_sources)
 	 */
 #endif
 
-	if(num_sources <= 0)
+	if(num_sources == 0)
 	{
 		Number_of_Channels_global = ALMIXER_DEFAULT_NUM_CHANNELS;
 	}
 	else
 	{
-		Number_of_Channels_global = num_sources;
+		Number_of_Channels_global = (ALint)num_sources;
 	}
 	Number_of_Reserve_Channels_global = 0;
 	Is_Playing_global = 0;
@@ -7105,7 +7304,54 @@ ALboolean ALmixer_InitMixer(ALint num_sources)
 	return AL_TRUE;
 }
 
+void ALmixer_BeginInterruption()
+{
+#ifdef ENABLE_ALMIXER_THREADS
+	SDL_LockMutex(s_simpleLock);
+#endif
+	s_interruptionContext = alcGetCurrentContext();
+	if(NULL != s_interruptionContext)
+	{
+		/* iOS alcSuspendContext is a no-op */
+		alcSuspendContext(s_interruptionContext);
+		alcMakeContextCurrent(NULL);
+	}
+#ifdef ENABLE_ALMIXER_THREADS
+	SDL_UnlockMutex(s_simpleLock);
+#endif		
+}
 
+void ALmixer_EndInterruption()
+{
+#ifdef ENABLE_ALMIXER_THREADS
+	SDL_LockMutex(s_simpleLock);
+#endif
+
+	/* Note: iOS, you need to set the AudioSession active.
+	 * But if the AudioSession is not initialized, this SetActive 
+	 * call fails.
+	 * So this is probably better if calling app sets this.
+	 */
+/*
+#if (TARGET_OS_IPHONE == 1) || (TARGET_IPHONE_SIMULATOR == 1)
+	OSStatus the_error = AudioSessionSetActive(true);
+	if(noErr != the_error)
+	{
+		fprintf(stderr, "Error setting audio session active! %d\n", the_error);
+	}
+#endif
+ */
+	
+	if(NULL != s_interruptionContext)
+	{
+		alcMakeContextCurrent(s_interruptionContext);
+		alcProcessContext(s_interruptionContext);
+		s_interruptionContext = NULL;
+	}
+#ifdef ENABLE_ALMIXER_THREADS
+	SDL_UnlockMutex(s_simpleLock);
+#endif
+}
 
 /* Keep the return value void to allow easy use with
  * atexit()
@@ -7123,6 +7369,34 @@ void ALmixer_Quit()
 #ifdef ENABLE_ALMIXER_THREADS
 	SDL_LockMutex(s_simpleLock);
 #endif
+	
+	/* Several things we need to do:
+	 First, we need to check if we are in an interruption.
+	 If so, we need to reactivate the alcContext so we can call OpenAL functions.
+	 Next, we should delete the OpenAL sources.
+	 Next, we need to free all the sound data via ALmixer_FreeData().
+	 Finally, we can delete the OpenAL context.
+	 */
+	
+	context = alcGetCurrentContext();
+	if(NULL == context)
+	{
+		/* We might have an interruption event where the current context is NULL */
+		if(NULL == s_interruptionContext)
+		{
+			/* Nothing left to try. I think we're done. */
+			fprintf(stderr, "ALmixer_Quit: Assertion Error. Expecting to find an OpenAL context, but could not find one.\n");
+			return;
+		}
+		else 
+		{
+			context = s_interruptionContext;
+			/* reactivate the context so we can call OpenAL functions */
+			alcMakeContextCurrent(context);
+			s_interruptionContext = NULL;
+		}
+	}	
+	
 	/* Shutdown everything before closing context */
 	Internal_HaltChannel(-1, AL_FALSE);
 	
@@ -7134,7 +7408,7 @@ void ALmixer_Quit()
 
 	SDL_DestroyMutex(s_simpleLock);
 #endif
-
+	
 	/* Delete all the OpenAL sources */
 	for(i=0; i<Number_of_Channels_global; i++)
 	{
@@ -7143,7 +7417,7 @@ void ALmixer_Quit()
 	/* Delete all the channels */
 	free(ALmixer_Channel_List);
 	free(Source_Map_List);
-	
+
 	/* Reset the Number_of_Channels just in case somebody
 	 * tries using a ALmixer function.
 	 * I probably should put "Initialized" checks everywhere,
@@ -7151,21 +7425,7 @@ void ALmixer_Quit()
 	 */
 	Number_of_Channels_global = 0;
 	
-	context = alcGetCurrentContext();
-	if(NULL == context)
-	{
-		return;
-	}
-	/* Need to get the device before I close the context */
-	dev = alcGetContextsDevice(context);
-	alcDestroyContext(context);
-	
-	if(NULL == dev)
-	{
-		return;	
-	}
-	alcCloseDevice(dev);
-	
+
 	/* Delete the list of ALmixerData's before Sound_Quit deletes
 	 * its own underlying information and I potentially have dangling pointers.
 	 */
@@ -7177,7 +7437,20 @@ void ALmixer_Quit()
 	}
 	LinkedList_Free(s_listOfALmixerData);
 	s_listOfALmixerData = NULL;
-
+	
+	
+	/* Need to get the device before I close the context */
+	dev = alcGetContextsDevice(context);
+	
+	alcMakeContextCurrent(NULL);
+	alcDestroyContext(context);
+	
+	if(NULL == dev)
+	{
+		return;	
+	}
+	alcCloseDevice(dev);
+	
 	Sound_Quit();
 
 #ifdef ALMIXER_COMPILE_WITHOUT_SDL
@@ -7626,6 +7899,8 @@ static ALmixer_Data* DoLoad(Sound_Sample* sample, ALuint buffersize, ALboolean d
 			 * Set to 0, since we don't know.
 			 */
 			ret_data->total_bytes = 0;
+
+			ret_data->total_time = Sound_GetDuration(sample);
 
 			/* Create buffers for data
 			 */
@@ -8155,6 +8430,13 @@ void ALmixer_FreeData(ALmixer_Data* data)
 	{
 		return;
 	}
+
+	/* Bypass if in interruption event */
+	if(NULL == alcGetCurrentContext())
+	{
+		fprintf(stderr, "ALmixer_FreeData: Programmer Error. You cannot delete data when the OpenAL content is currently NULL. You may have already called ALmixer_Quit() or are in an interruption event\n");
+		return;
+	}
 	
 	if(data->decoded_all)
 	{
@@ -8166,12 +8448,10 @@ void ALmixer_FreeData(ALmixer_Data* data)
 			Sound_FreeSample(data->sample);
 		}
 		alDeleteBuffers(1, data->buffer);
-	if((error = alGetError()) != AL_NO_ERROR)
-	{
-		fprintf(stderr, "70Testing error: %s\n",
-			alGetString(error));				
-	}
-
+		if((error = alGetError()) != AL_NO_ERROR)
+		{
+			fprintf(stderr, "ALmixer_FreeData: alDeleteBuffers failed. %s\n", alGetString(error));				
+		}
 	}
 	else
 	{
@@ -8193,11 +8473,10 @@ void ALmixer_FreeData(ALmixer_Data* data)
 			
 		Sound_FreeSample(data->sample);
 		alDeleteBuffers(data->max_queue_buffers, data->buffer);		
-	if((error = alGetError()) != AL_NO_ERROR)
-	{
-		fprintf(stderr, "71Testing error: %s\n",
-			alGetString(error));				
-	}
+		if((error = alGetError()) != AL_NO_ERROR)
+		{
+			fprintf(stderr, "ALmixer_FreeData: alDeleteBuffers failed. %s\n", alGetString(error));				
+		}
 	}
 	free(data->buffer);
 
@@ -8214,6 +8493,7 @@ ALint ALmixer_GetTotalTime(ALmixer_Data* data)
 	{
 		return -1;
 	}
+
 	return data->total_time;
 }
 
@@ -8496,6 +8776,32 @@ ALboolean ALmixer_SeekData(ALmixer_Data* data, ALuint msec)
 	SDL_LockMutex(s_simpleLock);
 #endif
 	retval = Internal_SeekData(data, msec);
+#ifdef ENABLE_ALMIXER_THREADS
+	SDL_UnlockMutex(s_simpleLock);
+#endif
+	return retval;
+}
+
+ALint ALmixer_SeekChannel(ALint channel, ALuint msec)
+{
+	ALint retval;
+#ifdef ENABLE_ALMIXER_THREADS
+	SDL_LockMutex(s_simpleLock);
+#endif
+	retval = Internal_SeekChannel(channel, msec);
+#ifdef ENABLE_ALMIXER_THREADS
+	SDL_UnlockMutex(s_simpleLock);
+#endif
+	return retval;
+}
+
+ALint ALmixer_SeekSource(ALuint source, ALuint msec)
+{
+	ALint retval;
+#ifdef ENABLE_ALMIXER_THREADS
+	SDL_LockMutex(s_simpleLock);
+#endif
+	retval = Internal_SeekSource(source, msec);
 #ifdef ENABLE_ALMIXER_THREADS
 	SDL_UnlockMutex(s_simpleLock);
 #endif

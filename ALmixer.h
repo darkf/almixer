@@ -168,11 +168,7 @@
 
 
 /* Needed for OpenAL types since altypes.h was removed in 1.1 */
-#ifdef ANDROID_NDK
-	#include <AL/al.h>
-#else
-	#include "al.h"
-#endif
+#include "al.h"
 
 /* Set up for C function definitions, even when using C++ */
 #ifdef __cplusplus
@@ -300,7 +296,7 @@ extern ALMIXER_DECLSPEC const ALmixer_version* ALMIXER_CALL ALmixer_GetLinkedVer
 
 
 #ifdef ALMIXER_COMPILE_WITHOUT_SDL
-	#include "ALmixer_rwops.h"
+	#include "ALmixer_RWops.h"
 #else
 	#include "SDL_rwops.h"
 	/**
@@ -344,7 +340,7 @@ extern ALMIXER_DECLSPEC const ALmixer_version* ALMIXER_CALL ALmixer_GetLinkedVer
  * Pass in 0 or ALMIXER_DEFAULT_REFRESH to use OpenAL default behaviors.
  * @return Returns AL_FALSE on a failure or AL_TRUE if successfully initialized.
  */
-extern ALMIXER_DECLSPEC ALboolean ALMIXER_CALL ALmixer_Init(ALuint playback_frequency, ALint num_sources, ALuint refresh_rate);
+extern ALMIXER_DECLSPEC ALboolean ALMIXER_CALL ALmixer_Init(ALuint playback_frequency, ALuint num_sources, ALuint refresh_rate);
 
 /** 
  * InitContext will only initialize the OpenAL context (and not the mixer part).
@@ -371,8 +367,23 @@ extern ALMIXER_DECLSPEC ALboolean ALMIXER_CALL ALmixer_InitContext(ALuint playba
  * the mixer system separately. I strongly recommend avoiding these two functions
  * and use the normal Init() function.
  */
-extern ALMIXER_DECLSPEC ALboolean ALMIXER_CALL ALmixer_InitMixer(ALint num_sources);
+extern ALMIXER_DECLSPEC ALboolean ALMIXER_CALL ALmixer_InitMixer(ALuint num_sources);
 
+/**
+ * (EXPERIMENTAL) Call to notify ALmixer that your device needs to handle an interruption.
+ * (EXPERIMENTAL) For devices like iOS that need special handling for interruption events like phone calls and alarms,
+ * this function will do the correct platform correct thing to handle the interruption w.r.t. OpenAL.
+ */
+extern ALMIXER_DECLSPEC void ALMIXER_CALL ALmixer_BeginInterruption(void);
+
+/**
+ * (EXPERIMENTAL) Call to notify ALmixer that your device needs to resume from an interruption.
+ * (EXPERIMENTAL) For devices like iOS that need special handling for interruption events like phone calls and alarms,
+ * this function will do the correct platform correct thing to resume from the interruption w.r.t. OpenAL.
+ */
+extern ALMIXER_DECLSPEC void ALMIXER_CALL ALmixer_EndInterruption(void);
+	
+	
 /**
  * This shuts down ALmixer. Please remember to free your ALmixer_Data* instances
  * before calling this method.
@@ -1077,6 +1088,27 @@ extern ALMIXER_DECLSPEC ALint ALMIXER_CALL ALmixer_RewindSource(ALuint al_source
 extern ALMIXER_DECLSPEC ALboolean ALMIXER_CALL ALmixer_SeekData(ALmixer_Data* almixer_data, ALuint msec_pos);
 
 /**
+ * Seeks the sound to the beginning that is playing on a specific channel.
+ * If decoded all, seek will instantly seek it. Data is not 
+ * affected, so it will start at the "Seek"'ed positiond.
+ * Streamed data will seek the actual data, but the effect
+ * may not be noticed until the currently buffered data is played.
+ * @param which_channel The channel to seek or -1 to seek all channels.
+ * @return The actual number of channels rewound on success or -1 on error.
+ */
+extern ALMIXER_DECLSPEC ALint ALMIXER_CALL ALmixer_SeekChannel(ALint which_channel, ALuint msec_pos);
+/**
+ * Seeks the sound to the beginning that is playing on a specific source.
+ * If decoded all, seek will instantly seek it. Data is not 
+ * affected, so it will start at the "Seek"'ed positiond.
+ * Streamed data will seek the actual data, but the effect
+ * may not be noticed until the currently buffered data is played.
+ * @param al_source The source to seek or 0 to seek all sources.
+ * @return The actual number of sources rewound on success or -1 on error.
+ */
+extern ALMIXER_DECLSPEC ALint ALMIXER_CALL ALmixer_SeekSource(ALuint al_source, ALuint msec_pos);
+
+/**
  * Pauses playback on a channel.
  * Pauses playback on a channel. Should have no effect on channels that aren't playing.
  * @param which_channel The channel to pause or -1 to pause all channels.
@@ -1440,8 +1472,7 @@ extern ALMIXER_DECLSPEC ALuint ALMIXER_CALL ALmixer_CountAllFreeChannels(void);
 extern ALMIXER_DECLSPEC ALuint ALMIXER_CALL ALmixer_CountUnreservedFreeChannels(void);
 
 /**
- * Returns the number of channels that are currently in use (playing/paused),
- * excluding the channels that have been reserved.
+ * Returns the number of channels that are currently in use (playing/paused).
  * @return The number of channels that are currently in use.
  * @see ALmixer_ReserveChannels
  */
