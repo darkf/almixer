@@ -340,7 +340,39 @@ ALdouble Internal_alcMacOSXGetMixerOutputRate()
 	#define ALmixer_Delay SDL_Delay
 #endif
 
-
+/* On iOS, usleep() of small numbers (say less than 100, very pronounced from 0-50)
+ * seems to be sucking up quite a bit of CPU time and causing performance problems.
+ * Instead of increasing the sleep time, I started changing the thread priority.
+ * This seemed to help the problem.
+ * Experimentally, the default priority seems to be 31. According to the docs,
+ * valid ranges are from 0 to 31. 6 was still giving me some hiccups so setting to
+ * 0 (PTHREAD_MIN_PRIORITY) seems to be the best value so far.
+ * Mac also reports 31 as the default. However, I have not noticed the same
+ * performance problems and cannot get audio to show up as a significant percentage
+ * of the CPU time in Shark/Instruments.
+ */
+#if defined(__APPLE__) && !defined(ALMIXER_COMPILE_WITHOUT_SDL) && ( (TARGET_OS_IPHONE == 1) || (TARGET_IPHONE_SIMULATOR == 1) )
+#include <pthread.h>
+#endif
+static void Internal_LowerThreadPriority(SDL_Thread* simple_thread)
+{
+	/* Might open to other platforms as needed */
+#if defined(__APPLE__) && ( (TARGET_OS_IPHONE == 1) || (TARGET_IPHONE_SIMULATOR == 1) )
+	#ifdef ALMIXER_COMPILE_WITHOUT_SDL
+		SimpleThread_SetThreadPriority(Stream_Thread_global, 0);
+	#else
+		struct sched_param schedule_param;
+		int sched_policy;
+		int ret_val;
+		schedule_param.sched_priority = 0; /* PTHREAD_MIN_PRIORITY, max=31 */
+		/* EVIL! This will break if the SDL_Thread structure layout changes. */
+		pthread_t* native_thread_ptr_hack = (pthread_t*)(((char*)(Stream_Thread_global))+sizeof(unsigned long));
+		ret_val = pthread_setschedparam(*native_thread_ptr_hack, SCHED_OTHER, &schedule_param);
+	#endif
+#else
+	/* No-Op */
+#endif
+}
 
 /* If ENABLE_PARANOID_SIGNEDNESS_CHECK is used,
  * these values will be reset on Init()
@@ -755,6 +787,7 @@ static ALuint Compute_Total_Time(Sound_AudioInfo *info, size_t total_bytes)
 } /* End Compute_Total_Time */
 	
 
+#ifdef ALMIXER_DISABLE_PREDECODED_PRECOMPUTE_BUFFER_SIZE_OPTIMIZATION
 static size_t Compute_Total_Bytes_Decomposed(ALuint bytes_per_sample, ALuint frequency, ALubyte channels, ALuint total_msec)
 {
 	double total_sec;
@@ -802,6 +835,7 @@ static size_t Compute_Total_Bytes(Sound_AudioInfo *info, ALuint total_msec)
 	return Compute_Total_Bytes_Decomposed(bytes_per_sample, info->rate, info->channels, total_msec);
 }
 
+
 /* The back-end decoders seem to need to decode in quantized frame sizes.
  * So if I can pad the bytes to the next quanta, things might go more smoothly.
  */
@@ -841,9 +875,8 @@ static size_t Compute_Total_Bytes_With_Frame_Padding(Sound_AudioInfo *info, ALui
 	 fprintf(stderr, "remainder_frames=%d, padded_total_bytes=%d\n", remainder_frames, return_bytes);
 	 */
 	 return return_bytes;
-
 }
-
+#endif /* ALMIXER_DISABLE_PREDECODED_PRECOMPUTE_BUFFER_SIZE_OPTIMIZATION */
 
 
 
@@ -3405,7 +3438,7 @@ static ALint Internal_FadeInChannelTimed(ALint channel, ALmixer_Data* data, ALin
 	ALfloat value;
 	ALenum error;
 	ALfloat original_value;
-	ALuint current_time = ALmixer_GetTicks();
+/*	ALuint current_time = ALmixer_GetTicks(); */
 	ALint retval;
 
 	
@@ -6741,6 +6774,9 @@ ALboolean ALmixer_Init(ALuint frequency, ALuint num_sources, ALuint refresh)
 		Number_of_Channels_global = 0;
 		return AL_FALSE;
 	}
+	
+	/* Note: Only a few platforms change the priority. See implementation for notes. */
+	Internal_LowerThreadPriority(Stream_Thread_global);
 		
 /*
 	fprintf(stderr, "Using threads\n");
@@ -7291,7 +7327,10 @@ ALboolean ALmixer_InitMixer(ALuint num_sources)
 		Number_of_Channels_global = 0;
 		return AL_FALSE;
 	}
-		
+
+	/* Note: Only a few platforms change the priority. See implementation for notes. */
+	Internal_LowerThreadPriority(Stream_Thread_global);
+
 	/*
 	fprintf(stderr, "Using threads\n");
 	*/
