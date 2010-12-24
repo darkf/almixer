@@ -251,13 +251,14 @@ size_t LinkedList_Size(LinkedList* linked_list)
 
 void LinkedList_Clear(LinkedList* linked_list)
 {
+	LinkedListNode* current_node;
+	LinkedListNode* next_node;
 	if(NULL == linked_list)
 	{
 		return;
 	}
 
-	LinkedListNode* current_node = linked_list->headPtr;
-	LinkedListNode* next_node;
+	current_node = linked_list->headPtr;
 	while(NULL != current_node)
 	{
 		next_node = current_node->nextNode;
