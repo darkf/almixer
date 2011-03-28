@@ -417,6 +417,7 @@ struct ALmixer_Data
 	ALuint max_queue_buffers; /* Max number of queue buffers */
 	ALuint num_startup_buffers; /* Number of ramp-up buffers */
 	ALuint num_buffers_in_use; /* number of buffers in use */
+	ALuint num_target_buffers_per_pass; /* number of buffers to try to queue in an update pass */
 	
 	/* This stuff is for streamed buffers that require data access */
 	ALmixer_Buffer_Map* buffer_map_list; /* translate ALbuffer to index 
@@ -5160,6 +5161,9 @@ static ALint Update_ALmixer(void* data)
 				ALint current_buffer_id;
 
 				ALuint unqueued_buffer_id;
+				ALuint number_of_buffers_to_queue_this_pass = ALmixer_Channel_List[i].almixer_data->num_target_buffers_per_pass;
+				ALuint current_count_of_buffer_queue_passes = 0;
+				
 #if 0
 		/********* Remove this **********/
 		fprintf(stderr, "For Streamed\n");
@@ -5398,6 +5402,12 @@ static ALint Update_ALmixer(void* data)
 				 * but we don't do this if at EOF,
 				 * except when there is looping
 				 */
+
+				/* NEW FEATURE: Try to queue up more buffers per pass, allowing the size of the buffer to be decoupled. */
+				/* TODO: Optimization: If number of available buffers (max_buffers-buffers_in_use), adjust the number of buffers to queue for this pass. */
+				for(current_count_of_buffer_queue_passes=0; current_count_of_buffer_queue_passes<number_of_buffers_to_queue_this_pass; current_count_of_buffer_queue_passes++)
+				{
+	
 				/* For this to work, we must rely on EVERYTHING
 				 * else to unset the EOF if there is looping.
 				 * Remember, even Play() must do this
@@ -6130,6 +6140,9 @@ static ALint Update_ALmixer(void* data)
 			#endif
 					} /* End trap section */
 				} /* End POST-EOF use-up buffer section */
+
+			} /* END NEW number of queue buffers per pass */
+
 			} /* END Streamed section */
 		} /* END channel in use */
 	} /* END for-loop for each channel */
