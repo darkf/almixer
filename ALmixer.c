@@ -223,6 +223,7 @@ static ALuint Is_Playing_global = 0;
 /* This is for a simple lock system. It is not meant to be good,
  * but just sufficient to minimize/avoid threading issues
  */
+static ALuint g_StreamThreadEnabled = 0;
 static SDL_mutex* s_simpleLock;
 static SDL_Thread* Stream_Thread_global = NULL;
 #endif /* ENABLE_ALMIXER_THREADS */
@@ -230,6 +231,7 @@ static SDL_Thread* Stream_Thread_global = NULL;
 static LinkedList* s_listOfALmixerData = NULL;
 
 /* Special stuff for iOS interruption handling */
+ALuint g_inInterruption = 0;
 static ALCcontext* s_interruptionContext = NULL;
 
 
@@ -6192,7 +6194,7 @@ static int Stream_Data_Thread_Callback(void* data)
 {
 	ALint retval;
 	
-	while(ALmixer_Initialized)
+	while(g_StreamThreadEnabled)
 	{
 		retval = Update_ALmixer(data);
 		/* 0 means that nothing needed updating and 
@@ -6773,7 +6775,7 @@ ALboolean ALmixer_Init(ALuint frequency, ALuint num_sources, ALuint refresh)
 		return AL_FALSE;
 	}
 		
-
+	g_StreamThreadEnabled = 1;
 	Stream_Thread_global = SDL_CreateThread(Stream_Data_Thread_Callback, NULL);
 	if(NULL == Stream_Thread_global)
 	{
@@ -6787,6 +6789,7 @@ ALboolean ALmixer_Init(ALuint frequency, ALuint num_sources, ALuint refresh)
 		alcCloseDevice(dev);
 		ALmixer_Initialized = 0;
 		Number_of_Channels_global = 0;
+		g_StreamThreadEnabled = 0;		
 		return AL_FALSE;
 	}
 	
@@ -7330,6 +7333,7 @@ ALboolean ALmixer_InitMixer(ALuint num_sources)
 	}
 		
 
+	g_StreamThreadEnabled = 1;
 	Stream_Thread_global = SDL_CreateThread(Stream_Data_Thread_Callback, NULL);
 	if(NULL == Stream_Thread_global)
 	{
@@ -7340,6 +7344,7 @@ ALboolean ALmixer_InitMixer(ALuint num_sources)
 		free(Source_Map_List);
 		ALmixer_Initialized = 0;
 		Number_of_Channels_global = 0;
+		g_StreamThreadEnabled = 0;
 		return AL_FALSE;
 	}
 
@@ -7360,8 +7365,21 @@ ALboolean ALmixer_InitMixer(ALuint num_sources)
 
 void ALmixer_BeginInterruption()
 {
+	if(1 == g_inInterruption)
+	{
+		return;
+	}
 #ifdef ENABLE_ALMIXER_THREADS
-	SDL_LockMutex(s_simpleLock);
+	/* Kill bookkeeping thread to help minimize wasted CPU resources */
+
+	/* Is locking really necessary here? */
+/*	SDL_LockMutex(s_simpleLock); */
+	g_StreamThreadEnabled = 0;
+/*	SDL_UnlockMutex(s_simpleLock); */
+
+	SDL_WaitThread(Stream_Thread_global, NULL);
+	Stream_Thread_global = NULL;
+
 #endif
 	s_interruptionContext = alcGetCurrentContext();
 	if(NULL != s_interruptionContext)
@@ -7370,16 +7388,16 @@ void ALmixer_BeginInterruption()
 		alcSuspendContext(s_interruptionContext);
 		alcMakeContextCurrent(NULL);
 	}
-#ifdef ENABLE_ALMIXER_THREADS
-	SDL_UnlockMutex(s_simpleLock);
-#endif		
+
+	g_inInterruption = 1;
 }
 
 void ALmixer_EndInterruption()
 {
-#ifdef ENABLE_ALMIXER_THREADS
-	SDL_LockMutex(s_simpleLock);
-#endif
+	if(0 == g_inInterruption)
+	{
+		return;
+	}
 
 	/* Note: iOS, you need to set the AudioSession active.
 	 * But if the AudioSession is not initialized, this SetActive 
@@ -7403,8 +7421,15 @@ void ALmixer_EndInterruption()
 		s_interruptionContext = NULL;
 	}
 #ifdef ENABLE_ALMIXER_THREADS
-	SDL_UnlockMutex(s_simpleLock);
+	g_StreamThreadEnabled = 1;
+
+	Stream_Thread_global = SDL_CreateThread(Stream_Data_Thread_Callback, NULL);
+	if(NULL == Stream_Thread_global)
+	{
+		fprintf(stderr, "Critical Error: Could not create bookkeeping thread in EndInterruption\n");
+	}
 #endif
+	g_inInterruption = 0;
 }
 
 /* Keep the return value void to allow easy use with
@@ -7420,6 +7445,7 @@ void ALmixer_Quit()
 	{
 		return;
 	}
+
 #ifdef ENABLE_ALMIXER_THREADS
 	SDL_LockMutex(s_simpleLock);
 #endif
@@ -7457,8 +7483,12 @@ void ALmixer_Quit()
 	/* This flag will cause the thread to terminate */
 	ALmixer_Initialized = 0;
 #ifdef ENABLE_ALMIXER_THREADS
+	g_StreamThreadEnabled = 0;
 	SDL_UnlockMutex(s_simpleLock);
+	/* This is safe to call with NULL thread, so we don't need to do anything special for interruptions. */
 	SDL_WaitThread(Stream_Thread_global, NULL);
+	Stream_Thread_global = NULL;
+	g_inInterruption = 0;
 
 	SDL_DestroyMutex(s_simpleLock);
 #endif
