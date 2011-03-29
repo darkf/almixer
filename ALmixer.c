@@ -7374,7 +7374,7 @@ void ALmixer_BeginInterruption()
 
 	/* Is locking really necessary here? */
 /*	SDL_LockMutex(s_simpleLock); */
-	g_StreamThreadEnabled = AL_TRUE;
+	g_StreamThreadEnabled = AL_FALSE;
 /*	SDL_UnlockMutex(s_simpleLock); */
 
 	SDL_WaitThread(Stream_Thread_global, NULL);
