@@ -7488,10 +7488,10 @@ void ALmixer_Quit()
 	/* This is safe to call with NULL thread, so we don't need to do anything special for interruptions. */
 	SDL_WaitThread(Stream_Thread_global, NULL);
 	Stream_Thread_global = NULL;
-	g_inInterruption = 0;
 
 	SDL_DestroyMutex(s_simpleLock);
 #endif
+	g_inInterruption = 0;
 	
 	/* Delete all the OpenAL sources */
 	for(i=0; i<Number_of_Channels_global; i++)
