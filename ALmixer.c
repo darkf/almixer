@@ -210,7 +210,7 @@
 	static TErrorPool* s_ALmixerErrorPool = NULL;
 #endif
 
-static ALboolean ALmixer_Initialized = 0;
+static ALboolean ALmixer_Initialized = AL_FALSE;
 /* This should be set correctly by Init */
 static ALuint ALmixer_Frequency_global = ALMIXER_DEFAULT_FREQUENCY;
 
@@ -223,7 +223,7 @@ static ALuint Is_Playing_global = 0;
 /* This is for a simple lock system. It is not meant to be good,
  * but just sufficient to minimize/avoid threading issues
  */
-static ALuint g_StreamThreadEnabled = 0;
+static ALboolean g_StreamThreadEnabled = AL_FALSE;
 static SDL_mutex* s_simpleLock;
 static SDL_Thread* Stream_Thread_global = NULL;
 #endif /* ENABLE_ALMIXER_THREADS */
@@ -231,7 +231,7 @@ static SDL_Thread* Stream_Thread_global = NULL;
 static LinkedList* s_listOfALmixerData = NULL;
 
 /* Special stuff for iOS interruption handling */
-ALuint g_inInterruption = 0;
+ALboolean g_inInterruption = AL_FALSE;
 static ALCcontext* s_interruptionContext = NULL;
 
 
@@ -4802,7 +4802,7 @@ static ALint Update_ALmixer(void* data)
 #ifdef ENABLE_ALMIXER_THREADS
 	SDL_LockMutex(s_simpleLock);
 #endif
-	if(0 == ALmixer_Initialized)
+	if(AL_FALSE == ALmixer_Initialized)
 	{
 #ifdef ENABLE_ALMIXER_THREADS
 		SDL_UnlockMutex(s_simpleLock);
@@ -6194,7 +6194,7 @@ static int Stream_Data_Thread_Callback(void* data)
 {
 	ALint retval;
 	
-	while(g_StreamThreadEnabled)
+	while(AL_TRUE == g_StreamThreadEnabled)
 	{
 		retval = Update_ALmixer(data);
 		/* 0 means that nothing needed updating and 
@@ -6633,7 +6633,7 @@ ALboolean ALmixer_Init(ALuint frequency, ALuint num_sources, ALuint refresh)
 
 	
 	
-	ALmixer_Initialized = 1;
+	ALmixer_Initialized = AL_TRUE;
 
 	if(num_sources == 0)
 	{
@@ -6659,7 +6659,7 @@ ALboolean ALmixer_Init(ALuint frequency, ALuint num_sources, ALuint refresh)
 		ALmixer_SetError("Couldn't create linked list");
 		alcDestroyContext(context);
 		alcCloseDevice(dev);
-		ALmixer_Initialized = 0;
+		ALmixer_Initialized = AL_FALSE;
 		Number_of_Channels_global = 0;
 		return AL_FALSE;
 	}
@@ -6672,7 +6672,7 @@ ALboolean ALmixer_Init(ALuint frequency, ALuint num_sources, ALuint refresh)
 		LinkedList_Free(s_listOfALmixerData);
 		alcDestroyContext(context);
 		alcCloseDevice(dev);
-		ALmixer_Initialized = 0;
+		ALmixer_Initialized = AL_FALSE;
 		Number_of_Channels_global = 0;
 		return AL_FALSE;
 	}
@@ -6686,7 +6686,7 @@ ALboolean ALmixer_Init(ALuint frequency, ALuint num_sources, ALuint refresh)
 		LinkedList_Free(s_listOfALmixerData);		
 		alcDestroyContext(context);
 		alcCloseDevice(dev);
-		ALmixer_Initialized = 0;
+		ALmixer_Initialized = AL_FALSE;
 		Number_of_Channels_global = 0;
 		return AL_FALSE;
 	}
@@ -6701,7 +6701,7 @@ ALboolean ALmixer_Init(ALuint frequency, ALuint num_sources, ALuint refresh)
 		LinkedList_Free(s_listOfALmixerData);		
 		alcDestroyContext(context);
 		alcCloseDevice(dev);
-		ALmixer_Initialized = 0;
+		ALmixer_Initialized = AL_FALSE;
 		Number_of_Channels_global = 0;
 		return AL_FALSE;
 	}	
@@ -6718,7 +6718,7 @@ ALboolean ALmixer_Init(ALuint frequency, ALuint num_sources, ALuint refresh)
 		LinkedList_Free(s_listOfALmixerData);		
 		alcDestroyContext(context);
 		alcCloseDevice(dev);
-		ALmixer_Initialized = 0;
+		ALmixer_Initialized = AL_FALSE;
 		Number_of_Channels_global = 0;
 		return AL_FALSE;
 	}
@@ -6770,12 +6770,12 @@ ALboolean ALmixer_Init(ALuint frequency, ALuint num_sources, ALuint refresh)
 		LinkedList_Free(s_listOfALmixerData);		
 		alcDestroyContext(context);
 		alcCloseDevice(dev);
-		ALmixer_Initialized = 0;
+		ALmixer_Initialized = AL_FALSE;
 		Number_of_Channels_global = 0;
 		return AL_FALSE;
 	}
 		
-	g_StreamThreadEnabled = 1;
+	g_StreamThreadEnabled = AL_TRUE;
 	Stream_Thread_global = SDL_CreateThread(Stream_Data_Thread_Callback, NULL);
 	if(NULL == Stream_Thread_global)
 	{
@@ -6787,9 +6787,9 @@ ALboolean ALmixer_Init(ALuint frequency, ALuint num_sources, ALuint refresh)
 		LinkedList_Free(s_listOfALmixerData);		
 		alcDestroyContext(context);
 		alcCloseDevice(dev);
-		ALmixer_Initialized = 0;
+		ALmixer_Initialized = AL_FALSE;
 		Number_of_Channels_global = 0;
-		g_StreamThreadEnabled = 0;		
+		g_StreamThreadEnabled = AL_FALSE;		
 		return AL_FALSE;
 	}
 	
@@ -7188,7 +7188,7 @@ ALboolean ALmixer_InitMixer(ALuint num_sources)
 	ALuint* source;
 
 
-	ALmixer_Initialized = 1;
+	ALmixer_Initialized = AL_TRUE;
 
 
 #ifdef ALMIXER_COMPILE_WITHOUT_SDL
@@ -7236,7 +7236,7 @@ ALboolean ALmixer_InitMixer(ALuint num_sources)
 	if(NULL == s_listOfALmixerData)
 	{
 		ALmixer_SetError("Couldn't create linked list");
-		ALmixer_Initialized = 0;
+		ALmixer_Initialized = AL_FALSE;
 		Number_of_Channels_global = 0;
 		return AL_FALSE;
 	}
@@ -7248,7 +7248,7 @@ ALboolean ALmixer_InitMixer(ALuint num_sources)
 	{
 		ALmixer_SetError("Out of Memory for Channel List");
 		LinkedList_Free(s_listOfALmixerData);		
-		ALmixer_Initialized = 0;
+		ALmixer_Initialized = AL_FALSE;
 		Number_of_Channels_global = 0;
 		return AL_FALSE;
 	}
@@ -7260,7 +7260,7 @@ ALboolean ALmixer_InitMixer(ALuint num_sources)
 		ALmixer_SetError("Out of Memory for Source Map List");
 		free(ALmixer_Channel_List);
 		LinkedList_Free(s_listOfALmixerData);		
-		ALmixer_Initialized = 0;
+		ALmixer_Initialized = AL_FALSE;
 		Number_of_Channels_global = 0;
 		return AL_FALSE;
 	}
@@ -7273,7 +7273,7 @@ ALboolean ALmixer_InitMixer(ALuint num_sources)
 		free(Source_Map_List);
 		free(ALmixer_Channel_List);
 		LinkedList_Free(s_listOfALmixerData);		
-		ALmixer_Initialized = 0;
+		ALmixer_Initialized = AL_FALSE;
 		Number_of_Channels_global = 0;
 		return AL_FALSE;
 	}	
@@ -7288,7 +7288,7 @@ ALboolean ALmixer_InitMixer(ALuint num_sources)
 		free(ALmixer_Channel_List);
 		free(Source_Map_List);
 		LinkedList_Free(s_listOfALmixerData);
-		ALmixer_Initialized = 0;
+		ALmixer_Initialized = AL_FALSE;
 		Number_of_Channels_global = 0;
 		return AL_FALSE;
 	}
@@ -7327,13 +7327,13 @@ ALboolean ALmixer_InitMixer(ALuint num_sources)
 		free(source);
 		free(ALmixer_Channel_List);
 		free(Source_Map_List);
-		ALmixer_Initialized = 0;
+		ALmixer_Initialized = AL_FALSE;
 		Number_of_Channels_global = 0;
 		return AL_FALSE;
 	}
 		
 
-	g_StreamThreadEnabled = 1;
+	g_StreamThreadEnabled = AL_TRUE;
 	Stream_Thread_global = SDL_CreateThread(Stream_Data_Thread_Callback, NULL);
 	if(NULL == Stream_Thread_global)
 	{
@@ -7342,9 +7342,9 @@ ALboolean ALmixer_InitMixer(ALuint num_sources)
 		free(source);
 		free(ALmixer_Channel_List);
 		free(Source_Map_List);
-		ALmixer_Initialized = 0;
+		ALmixer_Initialized = AL_FALSE;
 		Number_of_Channels_global = 0;
-		g_StreamThreadEnabled = 0;
+		g_StreamThreadEnabled = AL_FALSE;
 		return AL_FALSE;
 	}
 
@@ -7365,7 +7365,7 @@ ALboolean ALmixer_InitMixer(ALuint num_sources)
 
 void ALmixer_BeginInterruption()
 {
-	if(1 == g_inInterruption)
+	if((AL_TRUE == g_inInterruption) || (AL_FALSE == ALmixer_Initialized))
 	{
 		return;
 	}
@@ -7374,7 +7374,7 @@ void ALmixer_BeginInterruption()
 
 	/* Is locking really necessary here? */
 /*	SDL_LockMutex(s_simpleLock); */
-	g_StreamThreadEnabled = 0;
+	g_StreamThreadEnabled = AL_TRUE;
 /*	SDL_UnlockMutex(s_simpleLock); */
 
 	SDL_WaitThread(Stream_Thread_global, NULL);
@@ -7394,7 +7394,7 @@ void ALmixer_BeginInterruption()
 
 void ALmixer_EndInterruption()
 {
-	if(0 == g_inInterruption)
+	if((AL_FALSE == g_inInterruption) || (AL_FALSE == ALmixer_Initialized))
 	{
 		return;
 	}
@@ -7421,7 +7421,7 @@ void ALmixer_EndInterruption()
 		s_interruptionContext = NULL;
 	}
 #ifdef ENABLE_ALMIXER_THREADS
-	g_StreamThreadEnabled = 1;
+	g_StreamThreadEnabled = AL_TRUE;
 
 	Stream_Thread_global = SDL_CreateThread(Stream_Data_Thread_Callback, NULL);
 	if(NULL == Stream_Thread_global)
@@ -7429,7 +7429,7 @@ void ALmixer_EndInterruption()
 		fprintf(stderr, "Critical Error: Could not create bookkeeping thread in EndInterruption\n");
 	}
 #endif
-	g_inInterruption = 0;
+	g_inInterruption = AL_FALSE;
 }
 
 /* Keep the return value void to allow easy use with
@@ -7481,9 +7481,9 @@ void ALmixer_Quit()
 	Internal_HaltChannel(-1, AL_FALSE);
 	
 	/* This flag will cause the thread to terminate */
-	ALmixer_Initialized = 0;
+	ALmixer_Initialized = AL_FALSE;
 #ifdef ENABLE_ALMIXER_THREADS
-	g_StreamThreadEnabled = 0;
+	g_StreamThreadEnabled = AL_FALSE;
 	SDL_UnlockMutex(s_simpleLock);
 	/* This is safe to call with NULL thread, so we don't need to do anything special for interruptions. */
 	SDL_WaitThread(Stream_Thread_global, NULL);
@@ -7491,7 +7491,7 @@ void ALmixer_Quit()
 
 	SDL_DestroyMutex(s_simpleLock);
 #endif
-	g_inInterruption = 0;
+	g_inInterruption = AL_FALSE;
 	
 	/* Delete all the OpenAL sources */
 	for(i=0; i<Number_of_Channels_global; i++)
@@ -7721,7 +7721,7 @@ void ALmixer_OutputOpenALInfo()
 
 ALint ALmixer_AllocateChannels(ALint numchans)
 {
-	if(0 == ALmixer_Initialized)
+	if(AL_FALSE == ALmixer_Initialized)
 	{
 		return -1;
 	}
@@ -7740,7 +7740,7 @@ ALint ALmixer_AllocateChannels(ALint numchans)
 	
 ALint ALmixer_ReserveChannels(ALint num)
 {
-	if(0 == ALmixer_Initialized)
+	if(AL_FALSE == ALmixer_Initialized)
 	{
 		return -1;
 	}
@@ -8304,7 +8304,7 @@ ALmixer_Data* ALmixer_LoadSample_RW(ALmixer_RWops* rwops, const char* fileext, A
 	Sound_Sample* sample = NULL;
 	Sound_AudioInfo target;
 	
-	if(0 == ALmixer_Initialized)
+	if(AL_FALSE == ALmixer_Initialized)
 	{
 		return NULL;
 	}
@@ -8355,7 +8355,7 @@ ALmixer_Data* ALmixer_LoadSample(const char* filename, ALuint buffersize, ALbool
 	Sound_Sample* sample = NULL;
 	Sound_AudioInfo target;
 	
-	if(0 == ALmixer_Initialized)
+	if(AL_FALSE == ALmixer_Initialized)
 	{
 		return NULL;
 	}
@@ -8462,7 +8462,7 @@ ALmixer_Data* ALmixer_LoadSample_RAW_RW(ALmixer_RWops* rwops, const char* fileex
 	Sound_Sample* sample = NULL;
 	Sound_AudioInfo sound_desired;
 
-	if(0 == ALmixer_Initialized)
+	if(AL_FALSE == ALmixer_Initialized)
 	{
 		return NULL;
 	}
@@ -8504,7 +8504,7 @@ ALmixer_Data* ALmixer_LoadSample_RAW(const char* filename, ALmixer_AudioInfo* de
 	Sound_Sample* sample = NULL;
 	Sound_AudioInfo sound_desired;
 
-	if(0 == ALmixer_Initialized)
+	if(AL_FALSE == ALmixer_Initialized)
 	{
 		return;
 	}
@@ -8547,7 +8547,7 @@ void ALmixer_FreeData(ALmixer_Data* data)
 		return;
 	}
 
-	if(0 == ALmixer_Initialized)
+	if(AL_FALSE == ALmixer_Initialized)
 	{
 		return;
 	}
@@ -8623,7 +8623,7 @@ ALint ALmixer_GetTotalTime(ALmixer_Data* data)
 ALuint ALmixer_GetSource(ALint channel)
 {
 	ALuint retval;
-	if(0 == ALmixer_Initialized)
+	if(AL_FALSE == ALmixer_Initialized)
 	{
 		return 0;
 	}
@@ -8641,7 +8641,7 @@ ALuint ALmixer_GetSource(ALint channel)
 ALint ALmixer_GetChannel(ALuint source)
 {
 	ALint retval;
-	if(0 == ALmixer_Initialized)
+	if(AL_FALSE == ALmixer_Initialized)
 	{
 		return -1;
 	}
@@ -8658,7 +8658,7 @@ ALint ALmixer_GetChannel(ALuint source)
 ALint ALmixer_FindFreeChannel(ALint start_channel)
 {
 	ALint retval;
-	if(0 == ALmixer_Initialized)
+	if(AL_FALSE == ALmixer_Initialized)
 	{
 		return -1;
 	}
@@ -8734,7 +8734,7 @@ void ALmixer_SetPlaybackDataCallback(void (*playback_data_callback)(ALint which_
 ALint ALmixer_PlayChannelTimed(ALint channel, ALmixer_Data* data, ALint loops, ALint ticks)
 {
 	ALint retval;
-	if(0 == ALmixer_Initialized)
+	if(AL_FALSE == ALmixer_Initialized)
 	{
 		return -1;
 	}		
@@ -8764,7 +8764,7 @@ ALint ALmixer_PlayChannelTimed(ALint channel, ALmixer_Data* data, ALint loops, A
 ALuint ALmixer_PlaySourceTimed(ALuint source, ALmixer_Data* data, ALint loops, ALint ticks)
 {
 	ALuint retval;
-	if(0 == ALmixer_Initialized)
+	if(AL_FALSE == ALmixer_Initialized)
 	{
 		return 0;
 	}
@@ -8785,7 +8785,7 @@ ALuint ALmixer_PlaySourceTimed(ALuint source, ALmixer_Data* data, ALint loops, A
 ALint ALmixer_HaltChannel(ALint channel)
 {
 	ALint retval;
-	if(0 == ALmixer_Initialized)
+	if(AL_FALSE == ALmixer_Initialized)
 	{
 		return -1;
 	}
@@ -8805,7 +8805,7 @@ ALint ALmixer_HaltChannel(ALint channel)
 ALint ALmixer_HaltSource(ALuint source)
 {
 	ALint retval;
-	if(0 == ALmixer_Initialized)
+	if(AL_FALSE == ALmixer_Initialized)
 	{
 		return -1;
 	}
@@ -8827,7 +8827,7 @@ ALint ALmixer_HaltSource(ALuint source)
 ALboolean ALmixer_RewindData(ALmixer_Data* data)
 {
 	ALboolean retval;
-	if(0 == ALmixer_Initialized)
+	if(AL_FALSE == ALmixer_Initialized)
 	{
 		return AL_FALSE;
 	}	
@@ -8844,7 +8844,7 @@ ALboolean ALmixer_RewindData(ALmixer_Data* data)
 ALint ALmixer_RewindChannel(ALint channel)
 {
 	ALint retval;
-	if(0 == ALmixer_Initialized)
+	if(AL_FALSE == ALmixer_Initialized)
 	{
 		return -1;
 	}
@@ -8861,7 +8861,7 @@ ALint ALmixer_RewindChannel(ALint channel)
 ALint ALmixer_RewindSource(ALuint source)
 {
 	ALint retval;
-	if(0 == ALmixer_Initialized)
+	if(AL_FALSE == ALmixer_Initialized)
 	{
 		return -1;
 	}	
@@ -8878,7 +8878,7 @@ ALint ALmixer_RewindSource(ALuint source)
 ALint ALmixer_PauseChannel(ALint channel)
 {
 	ALint retval;
-	if(0 == ALmixer_Initialized)
+	if(AL_FALSE == ALmixer_Initialized)
 	{
 		return -1;
 	}
@@ -8895,7 +8895,7 @@ ALint ALmixer_PauseChannel(ALint channel)
 ALint ALmixer_PauseSource(ALuint source)
 {
 	ALint retval;
-	if(0 == ALmixer_Initialized)
+	if(AL_FALSE == ALmixer_Initialized)
 	{
 		return -1;
 	}
@@ -8912,7 +8912,7 @@ ALint ALmixer_PauseSource(ALuint source)
 ALint ALmixer_ResumeChannel(ALint channel)
 {
 	ALint retval;
-	if(0 == ALmixer_Initialized)
+	if(AL_FALSE == ALmixer_Initialized)
 	{
 		return -1;
 	}
@@ -8929,7 +8929,7 @@ ALint ALmixer_ResumeChannel(ALint channel)
 ALint ALmixer_ResumeSource(ALuint source)
 {
 	ALint retval;
-	if(0 == ALmixer_Initialized)
+	if(AL_FALSE == ALmixer_Initialized)
 	{
 		return -1;
 	}
@@ -8949,7 +8949,7 @@ ALint ALmixer_ResumeSource(ALuint source)
 ALboolean ALmixer_SeekData(ALmixer_Data* data, ALuint msec)
 {
 	ALboolean retval;
-	if(0 == ALmixer_Initialized)
+	if(AL_FALSE == ALmixer_Initialized)
 	{
 		return -1;
 	}
@@ -8966,7 +8966,7 @@ ALboolean ALmixer_SeekData(ALmixer_Data* data, ALuint msec)
 ALint ALmixer_SeekChannel(ALint channel, ALuint msec)
 {
 	ALint retval;
-	if(0 == ALmixer_Initialized)
+	if(AL_FALSE == ALmixer_Initialized)
 	{
 		return -1;
 	}
@@ -8983,7 +8983,7 @@ ALint ALmixer_SeekChannel(ALint channel, ALuint msec)
 ALint ALmixer_SeekSource(ALuint source, ALuint msec)
 {
 	ALint retval;
-	if(0 == ALmixer_Initialized)
+	if(AL_FALSE == ALmixer_Initialized)
 	{
 		return -1;
 	}
@@ -9000,7 +9000,7 @@ ALint ALmixer_SeekSource(ALuint source, ALuint msec)
 ALint ALmixer_FadeInChannelTimed(ALint channel, ALmixer_Data* data, ALint loops, ALuint fade_ticks, ALint expire_ticks)
 {
 	ALint retval;
-	if(0 == ALmixer_Initialized)
+	if(AL_FALSE == ALmixer_Initialized)
 	{
 		return -1;
 	}
@@ -9017,7 +9017,7 @@ ALint ALmixer_FadeInChannelTimed(ALint channel, ALmixer_Data* data, ALint loops,
 ALuint ALmixer_FadeInSourceTimed(ALuint source, ALmixer_Data* data, ALint loops, ALuint fade_ticks, ALint expire_ticks)
 {
 	ALuint retval;
-	if(0 == ALmixer_Initialized)
+	if(AL_FALSE == ALmixer_Initialized)
 	{
 		return 0;
 	}
@@ -9034,7 +9034,7 @@ ALuint ALmixer_FadeInSourceTimed(ALuint source, ALmixer_Data* data, ALint loops,
 ALint ALmixer_FadeOutChannel(ALint channel, ALuint ticks)
 {
 	ALint retval;
-	if(0 == ALmixer_Initialized)
+	if(AL_FALSE == ALmixer_Initialized)
 	{
 		return -1;
 	}
@@ -9051,7 +9051,7 @@ ALint ALmixer_FadeOutChannel(ALint channel, ALuint ticks)
 ALint ALmixer_FadeOutSource(ALuint source, ALuint ticks)
 {
 	ALint retval;
-	if(0 == ALmixer_Initialized)
+	if(AL_FALSE == ALmixer_Initialized)
 	{
 		return 0;
 	}
@@ -9068,7 +9068,7 @@ ALint ALmixer_FadeOutSource(ALuint source, ALuint ticks)
 ALint ALmixer_FadeChannel(ALint channel, ALuint ticks, ALfloat volume)
 {
 	ALint retval;
-	if(0 == ALmixer_Initialized)
+	if(AL_FALSE == ALmixer_Initialized)
 	{
 		return 0;
 	}
@@ -9085,7 +9085,7 @@ ALint ALmixer_FadeChannel(ALint channel, ALuint ticks, ALfloat volume)
 ALint ALmixer_FadeSource(ALuint source, ALuint ticks, ALfloat volume)
 {
 	ALint retval;
-	if(0 == ALmixer_Initialized)
+	if(AL_FALSE == ALmixer_Initialized)
 	{
 		return -1;
 	}
@@ -9103,7 +9103,7 @@ ALint ALmixer_FadeSource(ALuint source, ALuint ticks, ALfloat volume)
 ALboolean ALmixer_SetVolumeChannel(ALint channel, ALfloat volume)
 {
 	ALboolean retval;
-	if(0 == ALmixer_Initialized)
+	if(AL_FALSE == ALmixer_Initialized)
 	{
 		return AL_FALSE;
 	}
@@ -9120,7 +9120,7 @@ ALboolean ALmixer_SetVolumeChannel(ALint channel, ALfloat volume)
 ALboolean ALmixer_SetVolumeSource(ALuint source, ALfloat volume)
 {
 	ALboolean retval;
-	if(0 == ALmixer_Initialized)
+	if(AL_FALSE == ALmixer_Initialized)
 	{
 		return AL_FALSE;
 	}
@@ -9137,7 +9137,7 @@ ALboolean ALmixer_SetVolumeSource(ALuint source, ALfloat volume)
 ALfloat ALmixer_GetVolumeChannel(ALint channel)
 {
 	ALfloat retval;
-	if(0 == ALmixer_Initialized)
+	if(AL_FALSE == ALmixer_Initialized)
 	{
 		return -1.0f;
 	}
@@ -9154,7 +9154,7 @@ ALfloat ALmixer_GetVolumeChannel(ALint channel)
 ALfloat ALmixer_GetVolumeSource(ALuint source)
 {
 	ALfloat retval;
-	if(0 == ALmixer_Initialized)
+	if(AL_FALSE == ALmixer_Initialized)
 	{
 		return -1.0f;
 	}
@@ -9171,7 +9171,7 @@ ALfloat ALmixer_GetVolumeSource(ALuint source)
 ALboolean ALmixer_SetMaxVolumeChannel(ALint channel, ALfloat volume)
 {
 	ALboolean retval;
-	if(0 == ALmixer_Initialized)
+	if(AL_FALSE == ALmixer_Initialized)
 	{
 		return AL_FALSE;
 	}
@@ -9188,7 +9188,7 @@ ALboolean ALmixer_SetMaxVolumeChannel(ALint channel, ALfloat volume)
 ALboolean ALmixer_SetMaxVolumeSource(ALuint source, ALfloat volume)
 {
 	ALboolean retval;
-	if(0 == ALmixer_Initialized)
+	if(AL_FALSE == ALmixer_Initialized)
 	{
 		return AL_FALSE;
 	}
@@ -9205,7 +9205,7 @@ ALboolean ALmixer_SetMaxVolumeSource(ALuint source, ALfloat volume)
 ALfloat ALmixer_GetMaxVolumeChannel(ALint channel)
 {
 	ALfloat retval;
-	if(0 == ALmixer_Initialized)
+	if(AL_FALSE == ALmixer_Initialized)
 	{
 		return -1.0f;
 	}
@@ -9222,7 +9222,7 @@ ALfloat ALmixer_GetMaxVolumeChannel(ALint channel)
 ALfloat ALmixer_GetMaxVolumeSource(ALuint source)
 {
 	ALfloat retval;
-	if(0 == ALmixer_Initialized)
+	if(AL_FALSE == ALmixer_Initialized)
 	{
 		return -1.0f;
 	}
@@ -9240,7 +9240,7 @@ ALfloat ALmixer_GetMaxVolumeSource(ALuint source)
 ALboolean ALmixer_SetMinVolumeChannel(ALint channel, ALfloat volume)
 {
 	ALboolean retval;
-	if(0 == ALmixer_Initialized)
+	if(AL_FALSE == ALmixer_Initialized)
 	{
 		return AL_FALSE;
 	}
@@ -9257,7 +9257,7 @@ ALboolean ALmixer_SetMinVolumeChannel(ALint channel, ALfloat volume)
 ALboolean ALmixer_SetMinVolumeSource(ALuint source, ALfloat volume)
 {
 	ALboolean retval;
-	if(0 == ALmixer_Initialized)
+	if(AL_FALSE == ALmixer_Initialized)
 	{
 		return AL_FALSE;
 	}
@@ -9274,7 +9274,7 @@ ALboolean ALmixer_SetMinVolumeSource(ALuint source, ALfloat volume)
 ALfloat ALmixer_GetMinVolumeChannel(ALint channel)
 {
 	ALfloat retval;
-	if(0 == ALmixer_Initialized)
+	if(AL_FALSE == ALmixer_Initialized)
 	{
 		return -1.0f;
 	}
@@ -9291,7 +9291,7 @@ ALfloat ALmixer_GetMinVolumeChannel(ALint channel)
 ALfloat ALmixer_GetMinVolumeSource(ALuint source)
 {
 	ALfloat retval;
-	if(0 == ALmixer_Initialized)
+	if(AL_FALSE == ALmixer_Initialized)
 	{
 		return -1.0f;
 	}
@@ -9310,7 +9310,7 @@ ALfloat ALmixer_GetMinVolumeSource(ALuint source)
 ALboolean ALmixer_SetMasterVolume(ALfloat volume)
 {
 	ALboolean retval;
-	if(0 == ALmixer_Initialized)
+	if(AL_FALSE == ALmixer_Initialized)
 	{
 		return AL_FALSE;
 	}
@@ -9327,7 +9327,7 @@ ALboolean ALmixer_SetMasterVolume(ALfloat volume)
 ALfloat ALmixer_GetMasterVolume()
 {
 	ALfloat retval;
-	if(0 == ALmixer_Initialized)
+	if(AL_FALSE == ALmixer_Initialized)
 	{
 		return -1.0f;
 	}		
@@ -9344,7 +9344,7 @@ ALfloat ALmixer_GetMasterVolume()
 ALint ALmixer_ExpireChannel(ALint channel, ALint ticks)
 {
 	ALint retval;
-	if(0 == ALmixer_Initialized)
+	if(AL_FALSE == ALmixer_Initialized)
 	{
 		return -1;
 	}
@@ -9361,7 +9361,7 @@ ALint ALmixer_ExpireChannel(ALint channel, ALint ticks)
 ALint ALmixer_ExpireSource(ALuint source, ALint ticks)
 {
 	ALint retval;
-	if(0 == ALmixer_Initialized)
+	if(AL_FALSE == ALmixer_Initialized)
 	{
 		return -1;
 	}
@@ -9378,7 +9378,7 @@ ALint ALmixer_ExpireSource(ALuint source, ALint ticks)
 ALint ALmixer_IsActiveChannel(ALint channel)
 {
 	ALint retval;
-	if(0 == ALmixer_Initialized)
+	if(AL_FALSE == ALmixer_Initialized)
 	{
 		return -1;
 	}
@@ -9395,7 +9395,7 @@ ALint ALmixer_IsActiveChannel(ALint channel)
 ALint ALmixer_IsActiveSource(ALuint source)
 {
 	ALint retval;
-	if(0 == ALmixer_Initialized)
+	if(AL_FALSE == ALmixer_Initialized)
 	{
 		return -1;
 	}
@@ -9413,7 +9413,7 @@ ALint ALmixer_IsActiveSource(ALuint source)
 ALint ALmixer_IsPlayingChannel(ALint channel)
 {
 	ALint retval;
-	if(0 == ALmixer_Initialized)
+	if(AL_FALSE == ALmixer_Initialized)
 	{
 		return -1;
 	}
@@ -9430,7 +9430,7 @@ ALint ALmixer_IsPlayingChannel(ALint channel)
 ALint ALmixer_IsPlayingSource(ALuint source)
 {
 	ALint retval;
-	if(0 == ALmixer_Initialized)
+	if(AL_FALSE == ALmixer_Initialized)
 	{
 		return -1;
 	}
@@ -9448,7 +9448,7 @@ ALint ALmixer_IsPlayingSource(ALuint source)
 ALint ALmixer_IsPausedChannel(ALint channel)
 {
 	ALint retval;
-	if(0 == ALmixer_Initialized)
+	if(AL_FALSE == ALmixer_Initialized)
 	{
 		return -1;
 	}
@@ -9465,7 +9465,7 @@ ALint ALmixer_IsPausedChannel(ALint channel)
 ALint ALmixer_IsPausedSource(ALuint source)
 {
 	ALint retval;
-	if(0 == ALmixer_Initialized)
+	if(AL_FALSE == ALmixer_Initialized)
 	{
 		return -1;
 	}
@@ -9483,7 +9483,7 @@ ALint ALmixer_IsPausedSource(ALuint source)
 ALuint ALmixer_CountAllFreeChannels()
 {
 	ALuint retval;
-	if(0 == ALmixer_Initialized)
+	if(AL_FALSE == ALmixer_Initialized)
 	{
 		return 0;
 	}
@@ -9500,7 +9500,7 @@ ALuint ALmixer_CountAllFreeChannels()
 ALuint ALmixer_CountUnreservedFreeChannels()
 {
 	ALuint retval;
-	if(0 == ALmixer_Initialized)
+	if(AL_FALSE == ALmixer_Initialized)
 	{
 		return 0;
 	}
@@ -9517,7 +9517,7 @@ ALuint ALmixer_CountUnreservedFreeChannels()
 ALuint ALmixer_CountAllUsedChannels()
 {
 	ALuint retval;
-	if(0 == ALmixer_Initialized)
+	if(AL_FALSE == ALmixer_Initialized)
 	{
 		return 0;
 	}
@@ -9534,7 +9534,7 @@ ALuint ALmixer_CountAllUsedChannels()
 ALuint ALmixer_CountUnreservedUsedChannels()
 {
 	ALuint retval;
-	if(0 == ALmixer_Initialized)
+	if(AL_FALSE == ALmixer_Initialized)
 	{
 		return 0;
 	}
