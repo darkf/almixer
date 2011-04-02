@@ -7516,7 +7516,7 @@ void ALmixer_Quit()
 	while(LinkedList_Size(s_listOfALmixerData) > 0)
 	{
 		/* Note that ALmixer_FreeData will remove the data from the linked list for us so don't pop the list here. */
-		ALmixer_Data* almixer_data = LinkedList_Back(s_listOfALmixerData);
+		ALmixer_Data* almixer_data = LinkedList_PopBack(s_listOfALmixerData);
 		ALmixer_FreeData(almixer_data);
 	}
 	LinkedList_Free(s_listOfALmixerData);
