@@ -8506,7 +8506,7 @@ ALmixer_Data* ALmixer_LoadSample_RAW(const char* filename, ALmixer_AudioInfo* de
 
 	if(AL_FALSE == ALmixer_Initialized)
 	{
-		return;
+		return NULL;
 	}
 	
 	/* Rather than copying the data from struct to struct, I could just
