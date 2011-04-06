@@ -7811,7 +7811,10 @@ static ALmixer_Data* DoLoad(Sound_Sample* sample, ALuint buffersize, ALboolean d
 		num_startup_buffers = max_queue_buffers;
 	}
 	ret_data->num_startup_buffers = num_startup_buffers;
-	
+
+	/* TODO: Expose value through public API */
+	ret_data->num_target_buffers_per_pass = 1;
+
 	ret_data->buffer_map_list = NULL;
 	ret_data->current_buffer = 0;
 	
