@@ -7721,12 +7721,12 @@ void ALmixer_OutputOpenALInfo()
 
 ALint ALmixer_AllocateChannels(ALint numchans)
 {
+	ALint retval;
 	if(AL_FALSE == ALmixer_Initialized)
 	{
 		return -1;
 	}
 
-	ALint retval;
 #ifdef ENABLE_ALMIXER_THREADS
 	SDL_LockMutex(s_simpleLock);
 #endif
@@ -7740,12 +7740,12 @@ ALint ALmixer_AllocateChannels(ALint numchans)
 	
 ALint ALmixer_ReserveChannels(ALint num)
 {
+	ALint retval;
 	if(AL_FALSE == ALmixer_Initialized)
 	{
 		return -1;
 	}
 	
-	ALint retval;
 #ifdef ENABLE_ALMIXER_THREADS
 	SDL_LockMutex(s_simpleLock);
 #endif
