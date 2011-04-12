@@ -4773,6 +4773,65 @@ static ALint Internal_PausedSource(ALuint source)
 
 
 
+static void Internal_FreeData(ALmixer_Data* data)
+{
+	ALenum error;
+	if(NULL == data)
+	{
+		return;
+	}
+	
+	if(data->decoded_all)
+	{
+		/* If access_data was enabled, then the Sound_Sample*
+		 * still exists. We need to free it
+		 */
+		if(data->sample != NULL)
+		{
+			Sound_FreeSample(data->sample);
+		}
+		alDeleteBuffers(1, data->buffer);
+		if((error = alGetError()) != AL_NO_ERROR)
+		{
+			fprintf(stderr, "ALmixer_FreeData: alDeleteBuffers failed. %s\n", alGetString(error));				
+		}
+	}
+	else
+	{
+		ALuint i;
+		
+		/* Delete buffer copies if access_data was enabled */
+		if(data->buffer_map_list != NULL)
+		{
+			for(i=0; i<data->max_queue_buffers; i++)
+			{
+				free(data->buffer_map_list[i].data);
+			}
+			free(data->buffer_map_list);
+		}
+		if(data->circular_buffer_queue != NULL)
+		{
+			CircularQueueUnsignedInt_FreeQueue(data->circular_buffer_queue);
+		}
+			
+		Sound_FreeSample(data->sample);
+		alDeleteBuffers(data->max_queue_buffers, data->buffer);		
+		if((error = alGetError()) != AL_NO_ERROR)
+		{
+			fprintf(stderr, "ALmixer_FreeData: alDeleteBuffers failed. %s\n", alGetString(error));				
+		}
+	}
+	free(data->buffer);
+
+	LinkedList_Remove(s_listOfALmixerData,
+		LinkedList_Find(s_listOfALmixerData, data, NULL)
+	);
+
+	free(data);
+}
+
+
+
 
 
 				
@@ -7517,7 +7576,8 @@ void ALmixer_Quit()
 	{
 		/* Note that ALmixer_FreeData will remove the data from the linked list for us so don't pop the list here. */
 		ALmixer_Data* almixer_data = LinkedList_PopBack(s_listOfALmixerData);
-		ALmixer_FreeData(almixer_data);
+		/* Watch out: ALmixer_FreeData used to escape because ALmixer_Initialized is now false. */
+		Internal_FreeData(almixer_data);
 	}
 	LinkedList_Free(s_listOfALmixerData);
 	s_listOfALmixerData = NULL;
@@ -8540,75 +8600,22 @@ ALmixer_Data* ALmixer_LoadSample_RAW(const char* filename, ALmixer_AudioInfo* de
 }
 
 
-
-
 void ALmixer_FreeData(ALmixer_Data* data)
 {
-	ALenum error;
-	if(NULL == data)
-	{
-		return;
-	}
-
 	if(AL_FALSE == ALmixer_Initialized)
 	{
 		return;
 	}
 
 	/* Bypass if in interruption event */
+	/* FIXME: Buffers are connected to devices, sources are connected to contexts. I should still be able to delete the buffers even if there is no context. */
 	if(NULL == alcGetCurrentContext())
 	{
 		fprintf(stderr, "ALmixer_FreeData: Programmer Error. You cannot delete data when the OpenAL content is currently NULL. You may have already called ALmixer_Quit() or are in an interruption event\n");
 		return;
 	}
 	
-	if(data->decoded_all)
-	{
-		/* If access_data was enabled, then the Sound_Sample*
-		 * still exists. We need to free it
-		 */
-		if(data->sample != NULL)
-		{
-			Sound_FreeSample(data->sample);
-		}
-		alDeleteBuffers(1, data->buffer);
-		if((error = alGetError()) != AL_NO_ERROR)
-		{
-			fprintf(stderr, "ALmixer_FreeData: alDeleteBuffers failed. %s\n", alGetString(error));				
-		}
-	}
-	else
-	{
-		ALuint i;
-		
-		/* Delete buffer copies if access_data was enabled */
-		if(data->buffer_map_list != NULL)
-		{
-			for(i=0; i<data->max_queue_buffers; i++)
-			{
-				free(data->buffer_map_list[i].data);
-			}
-			free(data->buffer_map_list);
-		}
-		if(data->circular_buffer_queue != NULL)
-		{
-			CircularQueueUnsignedInt_FreeQueue(data->circular_buffer_queue);
-		}
-			
-		Sound_FreeSample(data->sample);
-		alDeleteBuffers(data->max_queue_buffers, data->buffer);		
-		if((error = alGetError()) != AL_NO_ERROR)
-		{
-			fprintf(stderr, "ALmixer_FreeData: alDeleteBuffers failed. %s\n", alGetString(error));				
-		}
-	}
-	free(data->buffer);
-
-	LinkedList_Remove(s_listOfALmixerData,
-		LinkedList_Find(s_listOfALmixerData, data, NULL)
-	);
-
-	free(data);
+	Internal_FreeData(data);
 }
 
 ALint ALmixer_GetTotalTime(ALmixer_Data* data)
