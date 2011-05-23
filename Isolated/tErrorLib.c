@@ -925,6 +925,17 @@ void TError_SetErrorv(TErrorPool* err_pool, int err_num, const char* err_str, va
 		 * will always keep the strings at NULL, and don't mess 
 		 * with the asprintf/sprintf code.
 		 */
+		if(NULL != error_message->errorString)
+		{
+			/* Need to free errorString from previous pass otherwise we leak. 
+			 * Maybe there is a smarter way to avoid the free/malloc,
+			 * but this would probably require determining the length of the 
+			 * final string beforehand which probably implies two 
+			 * *printf calls which may or may not be better.
+			 */
+			free(error_message->errorString);
+			error_message->errorString = NULL;
+		}
 
 		ret_num_chars = vasprintf(&error_message->errorString, err_str, argp);
 		/* vasprintf returns -1 as an error */
