@@ -382,7 +382,14 @@ extern ALMIXER_DECLSPEC void ALMIXER_CALL ALmixer_BeginInterruption(void);
  * this function will do the correct platform correct thing to resume from the interruption w.r.t. OpenAL.
  */
 extern ALMIXER_DECLSPEC void ALMIXER_CALL ALmixer_EndInterruption(void);
-	
+
+/**
+ * (EXPERIMENTAL) Call to determine if in an interruption.
+ * (EXPERIMENTAL) For devices like iOS that need special handling for interruption events like phone calls and alarms,
+ * this function will do the correct platform correct thing to determine if in an interruption.
+ */	
+extern ALMIXER_DECLSPEC ALboolean ALmixer_IsInInterruption(void);
+
 	
 /**
  * This shuts down ALmixer. Please remember to free your ALmixer_Data* instances
@@ -492,7 +499,7 @@ extern ALMIXER_DECLSPEC ALint ALMIXER_CALL ALmixer_Update(void);
  * Specifies the maximum number of queue buffers to use for a sound stream.
  * Default Queue Buffers must be at least 2.
  */
-#define ALMIXER_DEFAULT_QUEUE_BUFFERS 5
+#define ALMIXER_DEFAULT_QUEUE_BUFFERS 12
 /**
  * Specifies the number of queue buffers initially filled when first loading a stream.
  * Default startup buffers should be at least 1. */
