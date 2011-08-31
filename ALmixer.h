@@ -479,9 +479,9 @@ extern ALMIXER_DECLSPEC ALint ALMIXER_CALL ALmixer_Update(void);
 
 /*
 #define ALMIXER_DEFAULT_BUFFERSIZE 32768
-#define ALMIXER_DEFAULT_BUFFERSIZE 4096
-*/
 #define ALMIXER_DEFAULT_BUFFERSIZE 16384 
+*/
+#define ALMIXER_DEFAULT_BUFFERSIZE 4096
 
 /* You probably never need to use these macros directly. */
 #ifndef ALMIXER_DISABLE_PREDECODED_PRECOMPUTE_BUFFER_SIZE_OPTIMIZATION
@@ -499,11 +499,18 @@ extern ALMIXER_DECLSPEC ALint ALMIXER_CALL ALmixer_Update(void);
  * Specifies the maximum number of queue buffers to use for a sound stream.
  * Default Queue Buffers must be at least 2.
  */
-#define ALMIXER_DEFAULT_QUEUE_BUFFERS 12
+/*
+#define ALMIXER_DEFAULT_QUEUE_BUFFERS 5
+*/
+#define ALMIXER_DEFAULT_QUEUE_BUFFERS 25
 /**
  * Specifies the number of queue buffers initially filled when first loading a stream.
  * Default startup buffers should be at least 1. */
+#define ALMIXER_DEFAULT_STARTUP_BUFFERS 8
+/*
 #define ALMIXER_DEFAULT_STARTUP_BUFFERS 2 
+*/
+#define ALMIXER_DEFAULT_BUFFERS_TO_QUEUE_PER_UPDATE_PASS 4
 
 /*
 #define ALMIXER_DECODE_STREAM 	0
@@ -555,6 +562,9 @@ struct ALmixer_AudioInfo
  * @param decode_mode_is_predecoded Specifies whether you want to completely preload the data or stream the data in chunks.
  * @param max_queue_buffers For streamed data, specifies the maximum number of buffers that can be queued at any given time.
  * @param num_startup_buffers For streamed data, specifies the number of buffers to fill before playback starts.
+ * Buffer underrun conditions will also attempt to restart using this value.
+ * @param suggested_number_of_buffers_to_queue_per_update_pass For each ALmixer_Update() pass, this is the targeted number 
+ * of buffers that will be queued.
  * @param access_data A boolean that specifies if you want the data contained in the currently playing buffer to be handed
  * to you in a callback function. Note that for predecoded data, you get back the entire buffer in one callback when the 
  * audio first starts playing. With streamed data, you get the data in buffer_size chunks. Callbacks are not guarnanteed
@@ -562,7 +572,7 @@ struct ALmixer_AudioInfo
  * using this feature, so if you don't need data callbacks, you should pass false to this function.
  * @return Returns an ALmixer_Data* of the loaded sample or NULL if failed.
  */
-extern ALMIXER_DECLSPEC ALmixer_Data* ALMIXER_CALL ALmixer_LoadSample_RW(ALmixer_RWops* rw_ops, const char* file_ext, ALuint buffer_size, ALboolean decode_mode_is_predecoded, ALuint max_queue_buffers, ALuint num_startup_buffers, ALboolean access_data);
+extern ALMIXER_DECLSPEC ALmixer_Data* ALMIXER_CALL ALmixer_LoadSample_RW(ALmixer_RWops* rw_ops, const char* file_ext, ALuint buffer_size, ALboolean decode_mode_is_predecoded, ALuint max_queue_buffers, ALuint num_startup_buffers, ALuint suggested_number_of_buffers_to_queue_per_update_pass, ALuint access_data);
 
 #ifdef DOXYGEN_ONLY
 /**
@@ -574,6 +584,9 @@ extern ALMIXER_DECLSPEC ALmixer_Data* ALMIXER_CALL ALmixer_LoadSample_RW(ALmixer
  * the valid frame sizes of your audio data. If the data is streamed, the data will be read in buffer_size chunks.
  * @param max_queue_buffers For streamed data, specifies the maximum number of buffers that can be queued at any given time.
  * @param num_startup_buffers For streamed data, specifies the number of buffers to fill before playback starts.
+ * Buffer underrun conditions will also attempt to restart using this value. 
+ * @param suggested_number_of_buffers_to_queue_per_update_pass For each ALmixer_Update() pass, this is the targeted number
+ * of buffers that will be queued. 
  * @param access_data A boolean that specifies if you want the data contained in the currently playing buffer to be handed
  * to you in a callback function. Note that for predecoded data, you get back the entire buffer in one callback when the 
  * audio first starts playing. With streamed data, you get the data in buffer_size chunks. Callbacks are not guarnanteed
@@ -581,9 +594,9 @@ extern ALMIXER_DECLSPEC ALmixer_Data* ALMIXER_CALL ALmixer_LoadSample_RW(ALmixer
  * using this feature, so if you don't need data callbacks, you should pass false to this function.
  * @return Returns an ALmixer_Data* of the loaded sample or NULL if failed.
  */
-ALmixer_Data* ALmixer_LoadStream_RW(ALmixer_RWops* rw_ops, const char* file_ext, ALuint buffer_size, ALuint max_queue_buffers, ALuint num_startup_buffers, ALboolean access_data);
+ALmixer_Data* ALmixer_LoadStream_RW(ALmixer_RWops* rw_ops, const char* file_ext, ALuint buffer_size, ALuint max_queue_buffers, ALuint num_startup_buffers, ALuint suggested_number_of_buffers_to_queue_per_update_pass, ALuint access_data);
 #else
-#define ALmixer_LoadStream_RW(rw_ops, file_ext, buffer_size, max_queue_buffers, num_startup_buffers, access_data) ALmixer_LoadSample_RW(rw_ops,file_ext, buffer_size, AL_FALSE, max_queue_buffers, num_startup_buffers, access_data)
+#define ALmixer_LoadStream_RW(rw_ops, file_ext, buffer_size, max_queue_buffers, num_startup_buffers, suggested_number_of_buffers_to_queue_per_update_pass, access_data) ALmixer_LoadSample_RW(rw_ops,file_ext, buffer_size, AL_FALSE, max_queue_buffers, num_startup_buffers, suggested_number_of_buffers_to_queue_per_update_pass, access_data)
 #endif
 
 #ifdef DOXYGEN_ONLY
@@ -599,9 +612,9 @@ ALmixer_Data* ALmixer_LoadStream_RW(ALmixer_RWops* rw_ops, const char* file_ext,
  * using this feature, so if you don't need data callbacks, you should pass false to this function.
  * @return Returns an ALmixer_Data* of the loaded sample or NULL if failed.
  */
-ALmixer_Data* ALmixer_LoadAll_RW(ALmixer_RWops* rw_ops, const char* file_ext, ALboolean access_data);
+ALmixer_Data* ALmixer_LoadAll_RW(ALmixer_RWops* rw_ops, const char* file_ext, ALuint access_data);
 #else
-#define ALmixer_LoadAll_RW(rw_ops, file_ext, access_data) ALmixer_LoadSample_RW(rw_ops, fileext, ALMIXER_DEFAULT_PREDECODED_BUFFERSIZE, AL_TRUE, 0, 0, access_data)
+#define ALmixer_LoadAll_RW(rw_ops, file_ext, access_data) ALmixer_LoadSample_RW(rw_ops, fileext, ALMIXER_DEFAULT_PREDECODED_BUFFERSIZE, AL_TRUE, 0, 0, 0, access_data)
 #endif
 
 /**
@@ -614,6 +627,9 @@ ALmixer_Data* ALmixer_LoadAll_RW(ALmixer_RWops* rw_ops, const char* file_ext, AL
  * @param decode_mode_is_predecoded Specifies whether you want to completely preload the data or stream the data in chunks.
  * @param max_queue_buffers For streamed data, specifies the maximum number of buffers that can be queued at any given time.
  * @param num_startup_buffers For streamed data, specifies the number of buffers to fill before playback starts.
+ * Buffer underrun conditions will also attempt to restart using this value. 
+ * @param suggested_number_of_buffers_to_queue_per_update_pass For each ALmixer_Update() pass, this is the targeted number
+ * of buffers that will be queued. 
  * @param access_data A boolean that specifies if you want the data contained in the currently playing buffer to be handed
  * to you in a callback function. Note that for predecoded data, you get back the entire buffer in one callback when the 
  * audio first starts playing. With streamed data, you get the data in buffer_size chunks. Callbacks are not guarnanteed
@@ -621,7 +637,7 @@ ALmixer_Data* ALmixer_LoadAll_RW(ALmixer_RWops* rw_ops, const char* file_ext, AL
  * using this feature, so if you don't need data callbacks, you should pass false to this function.
  * @return Returns an ALmixer_Data* of the loaded sample or NULL if failed.
  */
-extern ALMIXER_DECLSPEC ALmixer_Data * ALMIXER_CALL ALmixer_LoadSample(const char* file_name, ALuint buffer_size, ALboolean decode_mode_is_predecoded, ALuint max_queue_buffers, ALuint num_startup_buffers, ALboolean access_data);
+extern ALMIXER_DECLSPEC ALmixer_Data * ALMIXER_CALL ALmixer_LoadSample(const char* file_name, ALuint buffer_size, ALboolean decode_mode_is_predecoded, ALuint max_queue_buffers, ALuint num_startup_buffers, ALuint suggested_number_of_buffers_to_queue_per_update_pass, ALuint access_data);
 
 #ifdef DOXYGEN_ONLY
 /**
@@ -631,6 +647,12 @@ extern ALMIXER_DECLSPEC ALmixer_Data * ALMIXER_CALL ALmixer_LoadSample(const cha
  * the valid frame sizes of your audio data. If the data is streamed, the data will be read in buffer_size chunks.
  * @param max_queue_buffers For streamed data, specifies the maximum number of buffers that can be queued at any given time.
  * @param num_startup_buffers For streamed data, specifies the number of buffers to fill before playback starts.
+ * Buffer underrun conditions will also attempt to restart using this value. 
+ * @param suggested_number_of_buffers_to_queue_per_update_pass For each ALmixer_Update() pass, this is the targeted number
+ * of buffers that will be queued.  * @param num_startup_buffers For streamed data, specifies the number of buffers to fill before playback starts.
+ * Buffer underrun conditions will also attempt to restart using this value. 
+ * @param suggested_number_of_buffers_to_queue_per_update_pass For each ALmixer_Update() pass, this is the targeted number
+ * of buffers that will be queued. 
  * @param access_data A boolean that specifies if you want the data contained in the currently playing buffer to be handed
  * to you in a callback function. Note that for predecoded data, you get back the entire buffer in one callback when the 
  * audio first starts playing. With streamed data, you get the data in buffer_size chunks. Callbacks are not guarnanteed
@@ -638,9 +660,9 @@ extern ALMIXER_DECLSPEC ALmixer_Data * ALMIXER_CALL ALmixer_LoadSample(const cha
  * using this feature, so if you don't need data callbacks, you should pass false to this function.
  * @return Returns an ALmixer_Data* of the loaded sample or NULL if failed.
  */
-ALmixer_Data* ALmixer_LoadStream(const char* file_name, ALuint buffer_size, ALuint max_queue_buffers, ALuint num_startup_buffers, ALboolean access_data);
+ALmixer_Data* ALmixer_LoadStream(const char* file_name, ALuint buffer_size, ALuint max_queue_buffers, ALuint num_startup_buffers, ALuint suggested_number_of_buffers_to_queue_per_update_pass, ALuint access_data);
 #else
-#define ALmixer_LoadStream(file_name, buffer_size, max_queue_buffers, num_startup_buffers,access_data) ALmixer_LoadSample(file_name, buffer_size, AL_FALSE, max_queue_buffers, num_startup_buffers, access_data)
+#define ALmixer_LoadStream(file_name, buffer_size, max_queue_buffers, num_startup_buffers, suggested_number_of_buffers_to_queue_per_update_pass, access_data) ALmixer_LoadSample(file_name, buffer_size, AL_FALSE, max_queue_buffers, num_startup_buffers, suggested_number_of_buffers_to_queue_per_update_pass, access_data)
 #endif
 
 #ifdef DOXYGEN_ONLY
@@ -654,9 +676,9 @@ ALmixer_Data* ALmixer_LoadStream(const char* file_name, ALuint buffer_size, ALui
  * using this feature, so if you don't need data callbacks, you should pass false to this function.
  * @return Returns an ALmixer_Data* of the loaded sample or NULL if failed.
  */
-ALmixer_Data* ALmixer_LoadAll(const char* file_name, ALboolean access_data);
+ALmixer_Data* ALmixer_LoadAll(const char* file_name, ALuint access_data);
 #else
-#define ALmixer_LoadAll(file_name, access_data) ALmixer_LoadSample(file_name, ALMIXER_DEFAULT_PREDECODED_BUFFERSIZE, AL_TRUE, 0, 0, access_data)
+#define ALmixer_LoadAll(file_name, access_data) ALmixer_LoadSample(file_name, ALMIXER_DEFAULT_PREDECODED_BUFFERSIZE, AL_TRUE, 0, 0, 0, access_data)
 #endif
 
 /**
@@ -673,6 +695,9 @@ ALmixer_Data* ALmixer_LoadAll(const char* file_name, ALboolean access_data);
  * @param decode_mode_is_predecoded Specifies whether you want to completely preload the data or stream the data in chunks.
  * @param max_queue_buffers For streamed data, specifies the maximum number of buffers that can be queued at any given time.
  * @param num_startup_buffers For streamed data, specifies the number of buffers to fill before playback starts.
+ * Buffer underrun conditions will also attempt to restart using this value. 
+ * @param suggested_number_of_buffers_to_queue_per_update_pass For each ALmixer_Update() pass, this is the targeted number
+ * of buffers that will be queued. 
  * @param access_data A boolean that specifies if you want the data contained in the currently playing buffer to be handed
  * to you in a callback function. Note that for predecoded data, you get back the entire buffer in one callback when the 
  * audio first starts playing. With streamed data, you get the data in buffer_size chunks. Callbacks are not guarnanteed
@@ -680,7 +705,7 @@ ALmixer_Data* ALmixer_LoadAll(const char* file_name, ALboolean access_data);
  * using this feature, so if you don't need data callbacks, you should pass false to this function.
  * @return Returns an ALmixer_Data* of the loaded sample or NULL if failed.
  */
-extern ALMIXER_DECLSPEC ALmixer_Data * ALMIXER_CALL ALmixer_LoadSample_RAW_RW(ALmixer_RWops* rw_ops, const char* file_ext, ALmixer_AudioInfo* desired_format, ALuint buffer_size, ALboolean decode_mode_is_predecoded, ALuint max_queue_buffers, ALuint num_startup_buffers, ALboolean access_data);
+extern ALMIXER_DECLSPEC ALmixer_Data * ALMIXER_CALL ALmixer_LoadSample_RAW_RW(ALmixer_RWops* rw_ops, const char* file_ext, ALmixer_AudioInfo* desired_format, ALuint buffer_size, ALboolean decode_mode_is_predecoded, ALuint max_queue_buffers, ALuint num_startup_buffers, ALuint suggested_number_of_buffers_to_queue_per_update_pass, ALuint access_data);
 
 #ifdef DOXYGEN_ONLY
 /**
@@ -695,6 +720,9 @@ extern ALMIXER_DECLSPEC ALmixer_Data * ALMIXER_CALL ALmixer_LoadSample_RAW_RW(AL
  * If the file is to be predecoded, optimizations may occur and this value might be ignored.
  * @param max_queue_buffers For streamed data, specifies the maximum number of buffers that can be queued at any given time.
  * @param num_startup_buffers For streamed data, specifies the number of buffers to fill before playback starts.
+ * Buffer underrun conditions will also attempt to restart using this value. 
+ * @param suggested_number_of_buffers_to_queue_per_update_pass For each ALmixer_Update() pass, this is the targeted number
+ * of buffers that will be queued. 
  * @param access_data A boolean that specifies if you want the data contained in the currently playing buffer to be handed
  * to you in a callback function. Note that for predecoded data, you get back the entire buffer in one callback when the 
  * audio first starts playing. With streamed data, you get the data in buffer_size chunks. Callbacks are not guarnanteed
@@ -702,9 +730,9 @@ extern ALMIXER_DECLSPEC ALmixer_Data * ALMIXER_CALL ALmixer_LoadSample_RAW_RW(AL
  * using this feature, so if you don't need data callbacks, you should pass false to this function.
  * @return Returns an ALmixer_Data* of the loaded sample or NULL if failed.
  */
-ALmixer_Data* ALmixer_LoadStream_RAW_RW(ALmixer_RWops* rw_ops, const char* file_ext, ALmixer_AudioInfo* desired_format, ALuint buffer_size, ALuint max_queue_buffers, ALuint num_startup_buffers, ALboolean access_data);
+ALmixer_Data* ALmixer_LoadStream_RAW_RW(ALmixer_RWops* rw_ops, const char* file_ext, ALmixer_AudioInfo* desired_format, ALuint buffer_size, ALuint max_queue_buffers, ALuint num_startup_buffers, ALuint suggested_number_of_buffers_to_queue_per_update_pass, ALuint access_data);
 #else
-#define ALmixer_LoadStream_RAW_RW(rw_ops, file_ext, desired_format, buffer_size, max_queue_buffers, num_startup_buffers, access_data) ALmixer_LoadSample_RAW_RW(rw_ops, file_ext, desired_format, buffer_size, AL_FALSE, max_queue_buffers, num_startup_buffers, access_data)
+#define ALmixer_LoadStream_RAW_RW(rw_ops, file_ext, desired_format, buffer_size, max_queue_buffers, num_startup_buffers, suggested_number_of_buffers_to_queue_per_update_pass, access_data) ALmixer_LoadSample_RAW_RW(rw_ops, file_ext, desired_format, buffer_size, AL_FALSE, max_queue_buffers, num_startup_buffers, suggested_number_of_buffers_to_queue_per_update_pass, access_data)
 #endif
 
 #ifdef DOXYGEN_ONLY
@@ -722,9 +750,9 @@ ALmixer_Data* ALmixer_LoadStream_RAW_RW(ALmixer_RWops* rw_ops, const char* file_
  * using this feature, so if you don't need data callbacks, you should pass false to this function.
  * @return Returns an ALmixer_Data* of the loaded sample or NULL if failed.
  */
-ALmixer_Data* ALmixer_LoadAll_RAW_RW(ALmixer_RWops* rw_ops, const char* file_ext, ALmixer_AudioInfo* desired_format, ALboolean access_data);
+ALmixer_Data* ALmixer_LoadAll_RAW_RW(ALmixer_RWops* rw_ops, const char* file_ext, ALmixer_AudioInfo* desired_format, ALuint access_data);
 #else
-#define ALmixer_LoadAll_RAW_RW(rw_ops, file_ext, desired_format, access_data) ALmixer_LoadSample_RAW_RW(rw_ops, file_ext, desired_format, ALMIXER_DEFAULT_PREDECODED_BUFFERSIZE, AL_TRUE, 0, 0, access_data)
+#define ALmixer_LoadAll_RAW_RW(rw_ops, file_ext, desired_format, access_data) ALmixer_LoadSample_RAW_RW(rw_ops, file_ext, desired_format, ALMIXER_DEFAULT_PREDECODED_BUFFERSIZE, AL_TRUE, 0, 0, 0, access_data)
 #endif
 
 /**
@@ -739,6 +767,9 @@ ALmixer_Data* ALmixer_LoadAll_RAW_RW(ALmixer_RWops* rw_ops, const char* file_ext
  * @param decode_mode_is_predecoded Specifies whether you want to completely preload the data or stream the data in chunks.
  * @param max_queue_buffers For streamed data, specifies the maximum number of buffers that can be queued at any given time.
  * @param num_startup_buffers For streamed data, specifies the number of buffers to fill before playback starts.
+ * Buffer underrun conditions will also attempt to restart using this value. 
+ * @param suggested_number_of_buffers_to_queue_per_update_pass For each ALmixer_Update() pass, this is the targeted number
+ * of buffers that will be queued. 
  * @param access_data A boolean that specifies if you want the data contained in the currently playing buffer to be handed
  * to you in a callback function. Note that for predecoded data, you get back the entire buffer in one callback when the 
  * audio first starts playing. With streamed data, you get the data in buffer_size chunks. Callbacks are not guarnanteed
@@ -746,7 +777,7 @@ ALmixer_Data* ALmixer_LoadAll_RAW_RW(ALmixer_RWops* rw_ops, const char* file_ext
  * using this feature, so if you don't need data callbacks, you should pass false to this function.
  * @return Returns an ALmixer_Data* of the loaded sample or NULL if failed.
  */
-extern ALMIXER_DECLSPEC ALmixer_Data * ALMIXER_CALL ALmixer_LoadSample_RAW(const char* file_name, ALmixer_AudioInfo* desired_format, ALuint buffer_size, ALboolean decode_mode_is_predecoded, ALuint max_queue_buffers, ALuint num_startup_buffers, ALboolean access_data);
+extern ALMIXER_DECLSPEC ALmixer_Data * ALMIXER_CALL ALmixer_LoadSample_RAW(const char* file_name, ALmixer_AudioInfo* desired_format, ALuint buffer_size, ALboolean decode_mode_is_predecoded, ALuint max_queue_buffers, ALuint num_startup_buffers, ALuint suggested_number_of_buffers_to_queue_per_update_pass, ALuint access_data);
 
 #ifdef DOXYGEN_ONLY
 /**
@@ -759,6 +790,9 @@ extern ALMIXER_DECLSPEC ALmixer_Data * ALMIXER_CALL ALmixer_LoadSample_RAW(const
  * If the file is to be predecoded, optimizations may occur and this value might be ignored.
  * @param max_queue_buffers For streamed data, specifies the maximum number of buffers that can be queued at any given time.
  * @param num_startup_buffers For streamed data, specifies the number of buffers to fill before playback starts.
+ * Buffer underrun conditions will also attempt to restart using this value. 
+ * @param suggested_number_of_buffers_to_queue_per_update_pass For each ALmixer_Update() pass, this is the targeted number
+ * of buffers that will be queued. 
  * @param access_data A boolean that specifies if you want the data contained in the currently playing buffer to be handed
  * to you in a callback function. Note that for predecoded data, you get back the entire buffer in one callback when the 
  * audio first starts playing. With streamed data, you get the data in buffer_size chunks. Callbacks are not guarnanteed
@@ -766,9 +800,9 @@ extern ALMIXER_DECLSPEC ALmixer_Data * ALMIXER_CALL ALmixer_LoadSample_RAW(const
  * using this feature, so if you don't need data callbacks, you should pass false to this function.
  * @return Returns an ALmixer_Data* of the loaded sample or NULL if failed.
  */
-ALmixer_Data* ALmixer_LoadStream_RAW(const char* file_name, ALmixer_AudioInfo* desired_format, ALuint buffer_size, ALuint max_queue_buffers, ALuint num_startup_buffers, ALboolean access_data);
+ALmixer_Data* ALmixer_LoadStream_RAW(const char* file_name, ALmixer_AudioInfo* desired_format, ALuint buffer_size, ALuint max_queue_buffers, ALuint num_startup_buffers, ALuint suggested_number_of_buffers_to_queue_per_update_pass, ALuint access_data);
 #else
-#define ALmixer_LoadStream_RAW(file_name, desired_format, buffer_size, max_queue_buffers, num_startup_buffers, access_data) ALmixer_LoadSample_RAW(file_name, desired_format, buffer_size, AL_FALSE, max_queue_buffers, num_startup_buffers, access_data)
+#define ALmixer_LoadStream_RAW(file_name, desired_format, buffer_size, max_queue_buffers, num_startup_buffers, suggested_number_of_buffers_to_queue_per_update_pass, access_data) ALmixer_LoadSample_RAW(file_name, desired_format, buffer_size, AL_FALSE, max_queue_buffers, num_startup_buffers, suggested_number_of_buffers_to_queue_per_update_pass, access_data)
 #endif
 
 #ifdef DOXYGEN_ONLY
@@ -784,9 +818,9 @@ ALmixer_Data* ALmixer_LoadStream_RAW(const char* file_name, ALmixer_AudioInfo* d
  * using this feature, so if you don't need data callbacks, you should pass false to this function.
  * @return Returns an ALmixer_Data* of the loaded sample or NULL if failed.
  */
-ALmixer_Data* ALmixer_LoadAll_RAW(const char* file_name, ALmixer_AudioInfo* desired_format, ALboolean access_data);
+ALmixer_Data* ALmixer_LoadAll_RAW(const char* file_name, ALmixer_AudioInfo* desired_format, ALuint access_data);
 #else
-#define ALmixer_LoadAll_RAW(file_name, desired_format, access_data) ALmixer_LoadSample_RAW(file_name, desired_format, ALMIXER_DEFAULT_PREDECODED_BUFFERSIZE, AL_TRUE, 0, 0, access_data)
+#define ALmixer_LoadAll_RAW(file_name, desired_format, access_data) ALmixer_LoadSample_RAW(file_name, desired_format, ALMIXER_DEFAULT_PREDECODED_BUFFERSIZE, AL_TRUE, 0, 0, 0, access_data)
 #endif
 
 /**
