@@ -62,6 +62,13 @@
  */
 #include "LinkedList.h"
 
+#ifdef ANDROID_NDK
+	#undef fprintf
+	#include <android/log.h>
+	#define fprintf(stderr, ...) __android_log_print(ANDROID_LOG_INFO, "ALmixer", __VA_ARGS__)
+#endif
+
+
 #ifdef ENABLE_ALMIXER_THREADS
 /* Needed for the Mutex locks (and threads if enabled) */
 	#ifdef ALMIXER_COMPILE_WITHOUT_SDL
@@ -5466,100 +5473,538 @@ static ALint Update_ALmixer(void* data)
 
 				/* NEW FEATURE: Try to queue up more buffers per pass, allowing the size of the buffer to be decoupled. */
 				/* TODO: Optimization: If number of available buffers (max_buffers-buffers_in_use), adjust the number of buffers to queue for this pass. */
+				/* I would benefit from a clearer flag that tells me whether we're in an underrun. 
+				 * I think current_buffer only works if data callbacks are enabled.
+				 * So I'll look at for AL_STOPPED which might give me false positives, depending on the code above.
+				 * But I think/hope the code below will deal with it correctly.
+				 * If in an underrun, queue up at least startup_buffers.
+				 */
+				if(AL_STOPPED == state)
+				{
+					number_of_buffers_to_queue_this_pass = ALmixer_Channel_List[i].almixer_data->num_startup_buffers;
+//					fprintf(stderr, "assuming underrun condition, using num_startup_buffers=%d\n", number_of_buffers_to_queue_this_pass);
+				}	
+
+				/* Don't bother to check to make sure the number_of_buffers_to_queue_this_pass does not exceed the maximum number of buffers because of the logic hack bug. */
+				/* Logic Hack/Bug: In adding the number_of_buffers_to_queue_this_pass, I discovered the for-loop needs to be more decoupled.
+				 * The loop still needs to be entered because unqueuing and completion callbacks and possibly other state processing are also done. 
+				 * So we always need to claim to queue one buffer. (The code already checks for max_queue_buffers.)
+				 */
+				if(0 == number_of_buffers_to_queue_this_pass)
+				{
+					number_of_buffers_to_queue_this_pass = 1;
+				}
 				for(current_count_of_buffer_queue_passes=0; current_count_of_buffer_queue_passes<number_of_buffers_to_queue_this_pass; current_count_of_buffer_queue_passes++)
 				{
-	
-				/* For this to work, we must rely on EVERYTHING
-				 * else to unset the EOF if there is looping.
-				 * Remember, even Play() must do this
-				 */
-				
-				/* If not EOF, then we are still playing.
-				 * Inside, we might find num_of_buffers < NUM...QUEUE_BUF..
-				 * or buffers_process > 0 
-				 * in which case we queue up.
-				 * We also might find no buffers we need to fill,
-				 * in which case we just keep going
-				 */
-				if( ! ALmixer_Channel_List[i].almixer_data->eof)
-				{
-					ALuint bytes_returned;
-					/* We have a priority. We first must assign
-					 * unused buffers in reserve. If there is nothing
-					 * left, then we may unqueue buffers. We can't
-					 * do it the other way around because we will
-					 * lose the pointer to the unqueued buffer 
+//					fprintf(stderr, "current_count_of_buffer_queue_passes:%d\n",  current_count_of_buffer_queue_passes);
+
+					/* For this to work, we must rely on EVERYTHING
+					 * else to unset the EOF if there is looping.
+					 * Remember, even Play() must do this
 					 */
-					if(ALmixer_Channel_List[i].almixer_data->num_buffers_in_use 
-						< ALmixer_Channel_List[i].almixer_data->max_queue_buffers) 
-					{		
-#if 0
-						fprintf(stderr, "Getting more data in NOT_EOF and num_buffers_in_use (%d) < max_queue (%d)\n", 
-								ALmixer_Channel_List[i].almixer_data->num_buffers_in_use,
-								ALmixer_Channel_List[i].almixer_data->max_queue_buffers);
-#endif
-						/* Going to add an unused packet.
-						 * Grab next packet */
-						bytes_returned = GetMoreData(
-							ALmixer_Channel_List[i].almixer_data,
-							ALmixer_Channel_List[i].almixer_data->buffer[
-								ALmixer_Channel_List[i].almixer_data->num_buffers_in_use]
-							);
-					}
-					/* For processed > 0 */
-					else if(buffers_processed > 0)
+					
+					/* If not EOF, then we are still playing.
+					 * Inside, we might find num_of_buffers < NUM...QUEUE_BUF..
+					 * or buffers_process > 0 
+					 * in which case we queue up.
+					 * We also might find no buffers we need to fill,
+					 * in which case we just keep going
+					 */
+					if( ! ALmixer_Channel_List[i].almixer_data->eof)
 					{
-						/* Unqueue only 1 buffer for now.
-						 * If there are more than one,
-						 * let the next Update pass deal with it
-						 * so we don't stall the program for too long.
+						ALuint bytes_returned;
+						/* We have a priority. We first must assign
+						 * unused buffers in reserve. If there is nothing
+						 * left, then we may unqueue buffers. We can't
+						 * do it the other way around because we will
+						 * lose the pointer to the unqueued buffer 
 						 */
-#if 0
-				fprintf(stderr, "About to Unqueue, Buffers processed = %d\n", buffers_processed);
-				fprintf(stderr, "Buffers queued= %d\n", buffers_still_queued);
-				fprintf(stderr, "Unqueuing a buffer\n");
-#endif
-						alSourceUnqueueBuffers(
-							ALmixer_Channel_List[i].alsource,
-							1, &unqueued_buffer_id
-						);
-						if((error = alGetError()) != AL_NO_ERROR)
-						{
-				fprintf(stderr, "Error with unqueue: %s",
-							alGetString(error));
-							ALmixer_SetError("Unqueue buffer failed: %s",
-								alGetString(error) );
-							error_flag--;
+						if(ALmixer_Channel_List[i].almixer_data->num_buffers_in_use 
+							< ALmixer_Channel_List[i].almixer_data->max_queue_buffers) 
+						{		
+	#if 0
+							fprintf(stderr, "Getting more data in NOT_EOF and num_buffers_in_use (%d) < max_queue (%d)\n", 
+									ALmixer_Channel_List[i].almixer_data->num_buffers_in_use,
+									ALmixer_Channel_List[i].almixer_data->max_queue_buffers);
+	#endif
+							/* Going to add an unused packet.
+							 * Grab next packet */
+							bytes_returned = GetMoreData(
+								ALmixer_Channel_List[i].almixer_data,
+								ALmixer_Channel_List[i].almixer_data->buffer[
+									ALmixer_Channel_List[i].almixer_data->num_buffers_in_use]
+								);
 						}
-/*
-						fprintf(stderr, "Right after unqueue...");
-						PrintQueueStatus(ALmixer_Channel_List[i].alsource);
-						fprintf(stderr, "Getting more data for NOT_EOF, max_buffers filled\n");
-*/
-						/* Grab unqueued packet */
-						bytes_returned = GetMoreData(
-							ALmixer_Channel_List[i].almixer_data,
-							unqueued_buffer_id);
-					}
-					/* We are still streaming, but currently
-					 * don't need to fill any buffers */
-					else
-					{
+						/* For processed > 0 */
+						else if(buffers_processed > 0)
+						{
+							/* Unqueue only 1 buffer for now.
+							 * If there are more than one,
+							 * let the next Update pass deal with it
+							 * so we don't stall the program for too long.
+							 */
+	#if 0
+					fprintf(stderr, "About to Unqueue, Buffers processed = %d\n", buffers_processed);
+					fprintf(stderr, "Buffers queued= %d\n", buffers_still_queued);
+					fprintf(stderr, "Unqueuing a buffer\n");
+	#endif
+							alSourceUnqueueBuffers(
+								ALmixer_Channel_List[i].alsource,
+								1, &unqueued_buffer_id
+							);
+							if((error = alGetError()) != AL_NO_ERROR)
+							{
+					fprintf(stderr, "Error with unqueue: %s, buffer id is %d",
+								alGetString(error), unqueued_buffer_id);
+								ALmixer_SetError("Unqueue buffer failed: %s",
+									alGetString(error) );
+								error_flag--;
+							}
+	/*
+							fprintf(stderr, "Right after unqueue...");
+							PrintQueueStatus(ALmixer_Channel_List[i].alsource);
+							fprintf(stderr, "Getting more data for NOT_EOF, max_buffers filled\n");
+	*/
+							/* Grab unqueued packet */
+							bytes_returned = GetMoreData(
+								ALmixer_Channel_List[i].almixer_data,
+								unqueued_buffer_id);
+						}
+						/* We are still streaming, but currently
+						 * don't need to fill any buffers */
+						else
+						{
+							/* Might want to check state */
+							/* In case the playback stopped,
+							 * we need to resume 
+							 * a.k.a. buffer underrun
+							 */
+							#if 1 
+							/* Try not refetching the state here because I'm getting a duplicate
+							 buffer playback (hiccup) */
+							alGetSourcei(
+								ALmixer_Channel_List[i].alsource,
+								AL_SOURCE_STATE, &state
+							);
+							if((error = alGetError()) != AL_NO_ERROR)
+							{
+								fprintf(stderr, "54bTesting error: %s\n",
+									alGetString(error));				
+							}
+							/* Get the number of buffers processed
+							 */
+							alGetSourcei(
+								ALmixer_Channel_List[i].alsource,
+								AL_BUFFERS_PROCESSED, 
+								&buffers_processed
+							);
+							if((error = alGetError()) != AL_NO_ERROR)
+							{
+								fprintf(stderr, "54cError, Can't get buffers_processed: %s\n",
+									alGetString(error));				
+							}
+	#endif
+							if(AL_STOPPED == state)
+							{
+								/* Resuming in not eof, but nothing to buffer */
+
+								/* Okay, here's another lately discovered problem:
+								 * I can't find it in the spec, but for at least some of the 
+								 * implementations, if I call play on a stopped source that 
+								 * has processed buffers, all those buffers get marked as unprocessed
+								 * on alSourcePlay. So if I had a queue of 25 with 24 of the buffers
+								 * processed, on resume, the earlier 24 buffers will get replayed,
+								 * causing a "hiccup" like sound in the playback.
+								 * To avoid this, I must unqueue all processed buffers before
+								 * calling play. But to complicate things, I need to worry about resyncing
+								 * the circular queue with this since I designed this thing
+								 * with some correlation between the two. However, I might
+								 * have already handled this, so I will try writing this code without
+								 * syncing for now.
+								 * There is currently an assumption that a buffer 
+								 * was queued above so I actually have something
+								 * to play.
+								 */
+								ALint temp_count;
+	#if 0
+								fprintf(stderr, "STOPPED1, need to clear processed=%d, status is:\n", buffers_processed);
+								PrintQueueStatus(ALmixer_Channel_List[i].alsource);
+	#endif
+								for(temp_count=0; temp_count<buffers_processed; temp_count++)
+								{
+									alSourceUnqueueBuffers(
+										ALmixer_Channel_List[i].alsource,
+										1, &unqueued_buffer_id
+									);
+									if((error = alGetError()) != AL_NO_ERROR)
+									{
+										fprintf(stderr, "55aTesting error: %s\n",
+											alGetString(error));				
+										error_flag--;
+									}
+								}
+	#if 0
+								fprintf(stderr, "After unqueue clear...:\n");
+								PrintQueueStatus(ALmixer_Channel_List[i].alsource);
+	#endif						
+								/* My assertion: We are STOPPED but not EOF.
+								 * This means we have a buffer underrun.
+								 * We just cleared out the unqueued buffers.
+								 * So we need to reset the mixer_data to reflect we have
+								 * no buffers in queue.
+								 * We need to GetMoreData and then queue up the data.
+								 * Then we need to resume playing.
+								 */
+	#if 0
+								int buffers_queued;
+								alGetSourcei(
+											 ALmixer_Channel_List[i].alsource,
+											 AL_BUFFERS_QUEUED, 
+											 &buffers_queued
+											 );
+								
+								if((error = alGetError()) != AL_NO_ERROR)
+								{
+									fprintf(stderr, "Error in PrintQueueStatus, Can't get buffers_queued: %s\n",
+											alGetString(error));				
+								} 
+								assert(buffers_queued == 0);
+								fprintf(stderr, "buffer underrun: buffers_queued:%d\n", buffers_queued);
+	#endif
+
+								/* Reset the number of buffers in use to 0 */
+								ALmixer_Channel_List[i].almixer_data->num_buffers_in_use = 0;
+
+								/* Get more data and put it in the first buffer */
+								bytes_returned = GetMoreData(
+									ALmixer_Channel_List[i].almixer_data,
+									ALmixer_Channel_List[i].almixer_data->buffer[0]
+								);
+								/* NOTE: We might want to look for EOF and handle it here.
+								 * Currently, I just let the next loop handle it which seems to be working.
+								 */
+								if(bytes_returned > 0)
+								{
+									/* Queue up the new data */
+									alSourceQueueBuffers(
+														 ALmixer_Channel_List[i].alsource,
+														 1, 
+														 &ALmixer_Channel_List[i].almixer_data->buffer[0]
+									);
+									if((error = alGetError()) != AL_NO_ERROR)
+									{
+										fprintf(stderr, "56e alSourceQueueBuffers error: %s\n",
+												alGetString(error));				
+									}
+									/* Increment the number of buffers in use */
+									ALmixer_Channel_List[i].almixer_data->num_buffers_in_use++;
+									
+
+									/* We need to empty and update the circular buffer queue if it is in use */
+									if(ALmixer_Channel_List[i].almixer_data->circular_buffer_queue != NULL)
+									{
+										ALuint queue_ret_flag;
+										CircularQueueUnsignedInt_Clear(ALmixer_Channel_List[i].almixer_data->circular_buffer_queue);
+										queue_ret_flag = CircularQueueUnsignedInt_PushBack(
+																						   ALmixer_Channel_List[i].almixer_data->circular_buffer_queue, 
+																						   ALmixer_Channel_List[i].almixer_data->buffer[0]
+																						   );	
+										if(0 == queue_ret_flag)
+										{
+											fprintf(stderr, "56fSerious internal error: CircularQueue could not push into queue.\n");
+											ALmixer_SetError("Serious internal error: CircularQueue failed to push into queue");
+										}
+									}
+									
+									
+
+
+									/* Resume playback from underrun */
+									alSourcePlay(ALmixer_Channel_List[i].alsource);
+									if((error = alGetError()) != AL_NO_ERROR)
+									{
+										fprintf(stderr, "55Tbesting error: %s\n",
+											alGetString(error));				
+									}
+								}
+
+							}
+							/* Let's escape to the next loop.
+							 * All code below this point is for queuing up 
+							 */
+							/*
+							   fprintf(stderr, "Entry: Nothing to do...continue\n\n");
+							 */				
+							continue;
+						}
+						/* We now know we have to fill an available
+						 * buffer.
+						 */
+						
+						/* In the previous branch, we just grabbed more data.
+						 * Let's check it to make sure it's okay,
+						 * and then queue it up
+						 */
+						/* This check doesn't work anymore because it is now ALuint */
+					#if 0
+						if(-1 == bytes_returned)
+						{
+							/* Problem occurred...not sure what to do */
+							/* Go to next loop? */
+							error_flag--;
+							/* Set the eof flag to force a quit so 
+							 * we don't get stuck in an infinite loop
+							 */
+							ALmixer_Channel_List[i].almixer_data->eof = 1;
+							continue;
+						}
+					#endif
+						/* This is a special case where we've run
+						 * out of data. We should check for loops
+						 * and get more data. If there is no loop,
+						 * then do nothing and wait for future
+						 * update passes to handle the EOF.
+						 * The advantage of handling the loop here 
+						 * instead of waiting for play to stop is
+						 * that we should be able to keep the buffer
+						 * filled.
+						 */
+					#if 0
+						else if(0 == bytes_returned)
+					#endif
+						if(0 == bytes_returned)
+						{
+							/*
+					fprintf(stderr, "We got 0 bytes from reading. Checking for loops\n");
+					*/
+							/* Check for loops */
+							if( ALmixer_Channel_List[i].loops != 0 )
+							{
+								/* We have to loop, so rewind
+								 * and fetch more data 
+								 */
+								/*
+					fprintf(stderr, "Rewinding data\n");
+					*/
+								if(0 == Sound_Rewind(
+									ALmixer_Channel_List[i].almixer_data->sample))
+								{
+					fprintf(stderr, "Rewinding failed\n");
+									ALmixer_SetError( Sound_GetError() );
+									ALmixer_Channel_List[i].loops = 0;
+									error_flag--;
+									/* We'll continue on because we do have some valid data */
+									continue;
+								}
+								/* Remember to reset the data->eof flag */
+								ALmixer_Channel_List[i].almixer_data->eof = 0;
+								if(ALmixer_Channel_List[i].loops > 0)
+								{
+									ALmixer_Channel_List[i].loops--;
+								}
+								/* Try grabbing another packet now.
+								 * Since we may have already unqueued a
+								 * buffer, we don't want to lose it.
+								 */
+								if(ALmixer_Channel_List[i].almixer_data->num_buffers_in_use 
+									< ALmixer_Channel_List[i].almixer_data->max_queue_buffers) 
+								{
+									/*
+					fprintf(stderr, "We got %d bytes from reading loop. Filling unused packet\n", bytes_returned);
+					*/
+									/* Grab next packet */
+									bytes_returned = GetMoreData(
+										ALmixer_Channel_List[i].almixer_data,
+											ALmixer_Channel_List[i].almixer_data->buffer[
+											ALmixer_Channel_List[i].almixer_data->num_buffers_in_use]
+									);
+									/*
+					fprintf(stderr, "We reread %d bytes into unused packet\n", bytes_returned);
+					*/
+								}
+								/* Refilling unqueued packet */
+								else
+								{
+									/*
+					fprintf(stderr, "We got %d bytes from reading loop. Filling unqueued packet\n", bytes_returned);
+					*/
+									/* Grab next packet */
+									bytes_returned = GetMoreData(
+										ALmixer_Channel_List[i].almixer_data,
+										unqueued_buffer_id);
+									/*
+					fprintf(stderr, "We reread %d bytes into unqueued packet\n", bytes_returned);
+					*/
+								}	
+								/* Another error check */
+								/*
+								if(bytes_returned <= 0)
+								*/
+								if(0 == bytes_returned)
+								{
+			fprintf(stderr, "??????????ERROR\n");
+									ALmixer_SetError("Could not loop because after rewind, no data could be retrieved");
+									/* Problem occurred...not sure what to do */
+									/* Go to next loop? */
+									error_flag--;
+									/* Set the eof flag to force a quit so 
+									 * we don't get stuck in an infinite loop
+									 */
+									ALmixer_Channel_List[i].almixer_data->eof = 1;
+									continue;
+								}	
+								/* We made it to the end. We still need 
+								 * to BufferData, so let this branch
+								 * fall into the next piece of 
+								 * code below which will handle that 
+								 */
+
+								
+							} /* END loop check */
+							else
+							{
+								/* No more loops to do. 
+								 * EOF flag should be set.
+								 * Just go to next loop and
+								 * let things be handled correctly
+								 * in future update calls
+								 */
+	/*
+							fprintf(stderr, "SHOULD BE EOF\n");
+								
+								PrintQueueStatus(ALmixer_Channel_List[i].alsource);
+	*/							
+								continue;
+							}
+						} /* END if bytes_returned == 0 */
+	/********* Possible trouble point. I might be queueing empty buffers on the mac. 
+	 * This check doesn't say if the buffer is valid. Only the EOF assumption is a clue at this point 
+	 */
+						/* Fall here */
+						/* Everything is normal. We aren't
+						 * at an EOF, but need to simply
+						 * queue more data. The data is already checked for good, 
+						 * so queue it up */
+						if(ALmixer_Channel_List[i].almixer_data->num_buffers_in_use 
+							< ALmixer_Channel_List[i].almixer_data->max_queue_buffers) 
+						{
+							/* Keep count of how many buffers we have 
+							 * to queue so we can return the value 
+							 */
+							retval++;
+							/*
+							fprintf(stderr, "NOT_EOF???, about to Queue more data for num_buffers (%d) < max_queue (%d)\n",
+									ALmixer_Channel_List[i].almixer_data->num_buffers_in_use,
+									ALmixer_Channel_List[i].almixer_data->max_queue_buffers);
+							*/		
+							alSourceQueueBuffers(
+								ALmixer_Channel_List[i].alsource,
+								1, 
+								&ALmixer_Channel_List[i].almixer_data->buffer[ 
+									ALmixer_Channel_List[i].almixer_data->num_buffers_in_use]
+							);
+							if((error = alGetError()) != AL_NO_ERROR)
+							{
+								fprintf(stderr, "56Testing error: %s\n",
+									alGetString(error));				
+							}
+							/* This is part of the hideous Nvidia workaround. In order to figure out
+							 * which buffer to show during callbacks (for things like
+							 * o-scopes), I must keep a copy of the buffers that are queued in my own
+							 * data structure. This code will be called only if
+							 * "access_data" was set, indicated by whether the queue is NULL.
+							 */
+							if(ALmixer_Channel_List[i].almixer_data->circular_buffer_queue != NULL)
+							{
+								ALuint queue_ret_flag;
+	//				fprintf(stderr, "56d: CircularQueue_PushBack.\n");
+								queue_ret_flag = CircularQueueUnsignedInt_PushBack(
+									ALmixer_Channel_List[i].almixer_data->circular_buffer_queue, 
+									ALmixer_Channel_List[i].almixer_data->buffer[ALmixer_Channel_List[i].almixer_data->num_buffers_in_use]
+								);	
+								if(0 == queue_ret_flag)
+								{
+									fprintf(stderr, "56aSerious internal error: CircularQueue could not push into queue.\n");
+									ALmixer_SetError("Serious internal error: CircularQueue failed to push into queue");
+								}
+								/*
+								else
+								{
+									CircularQueueUnsignedInt_Print(ALmixer_Channel_List[i].almixer_data->circular_buffer_queue);
+								}
+								 */
+							}
+						}
+						/* for processed > 0 */
+						else
+						{
+							/* Keep count of how many buffers we have 
+							 * to queue so we can return the value 
+							 */
+							retval++;
+	/*
+							fprintf(stderr, "NOT_EOF, about to Queue more data for filled max_queue (%d)\n",
+									ALmixer_Channel_List[i].almixer_data->max_queue_buffers);
+	*/
+							alSourceQueueBuffers(
+								ALmixer_Channel_List[i].alsource,
+								1, &unqueued_buffer_id);
+							if((error = alGetError()) != AL_NO_ERROR)
+							{
+								ALmixer_SetError("Could not QueueBuffer: %s",
+									alGetString(error) );
+								error_flag--;
+								continue;
+							}
+							/* This is part of the hideous Nvidia workaround. In order to figure out
+							 * which buffer to show during callbacks (for things like
+							 * o-scopes), I must keep a copy of the buffers that are queued in my own
+							 * data structure. This code will be called only if
+							 * "access_data" was set, indicated by whether the queue is NULL.
+							 */
+							if(ALmixer_Channel_List[i].almixer_data->circular_buffer_queue != NULL)
+							{
+								ALuint queue_ret_flag;
+	//				fprintf(stderr, "56e: CircularQueue_PushBack.\n");
+								queue_ret_flag = CircularQueueUnsignedInt_PushBack(
+									ALmixer_Channel_List[i].almixer_data->circular_buffer_queue, 
+									unqueued_buffer_id
+								);
+								if(0 == queue_ret_flag)
+								{
+									fprintf(stderr, "56bSerious internal error: CircularQueue could not push into queue.\n");
+									ALmixer_SetError("Serious internal error: CircularQueue failed to push into queue");
+								}
+	#if 0
+								else
+								{
+									CircularQueueUnsignedInt_Print(ALmixer_Channel_List[i].almixer_data->circular_buffer_queue);
+								}
+	#endif
+							}
+						}
+						/* If we used an available buffer queue,
+						 * then we need to update the number of them in use
+						 */
+						if(ALmixer_Channel_List[i].almixer_data->num_buffers_in_use 
+							< ALmixer_Channel_List[i].almixer_data->max_queue_buffers) 
+						{
+							/* Increment the number of buffers in use */
+							ALmixer_Channel_List[i].almixer_data->num_buffers_in_use++;
+						}
 						/* Might want to check state */
 						/* In case the playback stopped,
-						 * we need to resume 
-						 * a.k.a. buffer underrun
-						 */
+						 * we need to resume */
 						#if 1 
 						/* Try not refetching the state here because I'm getting a duplicate
-						 buffer playback (hiccup) */
+							 buffer playback (hiccup) */
 						alGetSourcei(
 							ALmixer_Channel_List[i].alsource,
 							AL_SOURCE_STATE, &state
 						);
 						if((error = alGetError()) != AL_NO_ERROR)
 						{
-							fprintf(stderr, "54bTesting error: %s\n",
+							fprintf(stderr, "57bTesting error: %s\n",
 								alGetString(error));				
 						}
 						/* Get the number of buffers processed
@@ -5571,638 +6016,227 @@ static ALint Update_ALmixer(void* data)
 						);
 						if((error = alGetError()) != AL_NO_ERROR)
 						{
-							fprintf(stderr, "54cError, Can't get buffers_processed: %s\n",
+							fprintf(stderr, "57cError, Can't get buffers_processed: %s\n",
 								alGetString(error));				
 						}
-#endif
+						#endif
 						if(AL_STOPPED == state)
 						{
-							/* Resuming in not eof, but nothing to buffer */
+						/*
+							fprintf(stderr, "Resuming in not eof\n");
+						*/
+								/* Okay, here's another lately discovered problem:
+								 * I can't find it in the spec, but for at least some of the 
+								 * implementations, if I call play on a stopped source that 
+								 * has processed buffers, all those buffers get marked as unprocessed
+								 * on alSourcePlay. So if I had a queue of 25 with 24 of the buffers
+								 * processed, on resume, the earlier 24 buffers will get replayed,
+								 * causing a "hiccup" like sound in the playback.
+								 * To avoid this, I must unqueue all processed buffers before
+								 * calling play. But to complicate things, I need to worry about resyncing
+								 * the circular queue with this since I designed this thing
+								 * with some correlation between the two. However, I might
+								 * have already handled this, so I will try writing this code without
+								 * syncing for now.
+								 * There is currently an assumption that a buffer 
+								 * was queued above so I actually have something
+								 * to play.
+								 */
+								ALint temp_count;
+	/*
+								fprintf(stderr, "STOPPED2, need to clear processed, status is:\n");
+								PrintQueueStatus(ALmixer_Channel_List[i].alsource);
+	*/
 
-							/* Okay, here's another lately discovered problem:
-							 * I can't find it in the spec, but for at least some of the 
-							 * implementations, if I call play on a stopped source that 
-							 * has processed buffers, all those buffers get marked as unprocessed
-							 * on alSourcePlay. So if I had a queue of 25 with 24 of the buffers
-							 * processed, on resume, the earlier 24 buffers will get replayed,
-							 * causing a "hiccup" like sound in the playback.
-							 * To avoid this, I must unqueue all processed buffers before
-							 * calling play. But to complicate things, I need to worry about resyncing
-							 * the circular queue with this since I designed this thing
-							 * with some correlation between the two. However, I might
-							 * have already handled this, so I will try writing this code without
-							 * syncing for now.
-							 * There is currently an assumption that a buffer 
-							 * was queued above so I actually have something
-							 * to play.
-							 */
-							ALint temp_count;
-#if 0
-							fprintf(stderr, "STOPPED1, need to clear processed=%d, status is:\n", buffers_processed);
-							PrintQueueStatus(ALmixer_Channel_List[i].alsource);
-#endif
-							for(temp_count=0; temp_count<buffers_processed; temp_count++)
-							{
-								alSourceUnqueueBuffers(
-									ALmixer_Channel_List[i].alsource,
-									1, &unqueued_buffer_id
-								);
-								if((error = alGetError()) != AL_NO_ERROR)
+								for(temp_count=0; temp_count<buffers_processed; temp_count++)
 								{
-									fprintf(stderr, "55aTesting error: %s\n",
-										alGetString(error));				
-									error_flag--;
-								}
-							}
-#if 0
-							fprintf(stderr, "After unqueue clear...:\n");
-							PrintQueueStatus(ALmixer_Channel_List[i].alsource);
-#endif						
-							/* My assertion: We are STOPPED but not EOF.
-							 * This means we have a buffer underrun.
-							 * We just cleared out the unqueued buffers.
-							 * So we need to reset the mixer_data to reflect we have
-							 * no buffers in queue.
-							 * We need to GetMoreData and then queue up the data.
-							 * Then we need to resume playing.
-							 */
-#if 0
-							int buffers_queued;
-							alGetSourcei(
-										 ALmixer_Channel_List[i].alsource,
-										 AL_BUFFERS_QUEUED, 
-										 &buffers_queued
-										 );
-							
-							if((error = alGetError()) != AL_NO_ERROR)
-							{
-								fprintf(stderr, "Error in PrintQueueStatus, Can't get buffers_queued: %s\n",
-										alGetString(error));				
-							} 
-							assert(buffers_queued == 0);
-							fprintf(stderr, "buffer underrun: buffers_queued:%d\n", buffers_queued);
-#endif
-
-							/* Reset the number of buffers in use to 0 */
-							ALmixer_Channel_List[i].almixer_data->num_buffers_in_use = 0;
-
-							/* Get more data and put it in the first buffer */
-							bytes_returned = GetMoreData(
-								ALmixer_Channel_List[i].almixer_data,
-								ALmixer_Channel_List[i].almixer_data->buffer[0]
-							);
-							/* NOTE: We might want to look for EOF and handle it here.
-							 * Currently, I just let the next loop handle it which seems to be working.
-							 */
-							if(bytes_returned > 0)
-							{
-								/* Queue up the new data */
-								alSourceQueueBuffers(
-													 ALmixer_Channel_List[i].alsource,
-													 1, 
-													 &ALmixer_Channel_List[i].almixer_data->buffer[0]
-								);
-								if((error = alGetError()) != AL_NO_ERROR)
-								{
-									fprintf(stderr, "56e alSourceQueueBuffers error: %s\n",
-											alGetString(error));				
-								}
-								/* Increment the number of buffers in use */
-								ALmixer_Channel_List[i].almixer_data->num_buffers_in_use++;
-								
-
-								/* We need to empty and update the circular buffer queue if it is in use */
-								if(ALmixer_Channel_List[i].almixer_data->circular_buffer_queue != NULL)
-								{
-									ALuint queue_ret_flag;
-									CircularQueueUnsignedInt_Clear(ALmixer_Channel_List[i].almixer_data->circular_buffer_queue);
-									queue_ret_flag = CircularQueueUnsignedInt_PushBack(
-																					   ALmixer_Channel_List[i].almixer_data->circular_buffer_queue, 
-																					   ALmixer_Channel_List[i].almixer_data->buffer[0]
-																					   );	
-									if(0 == queue_ret_flag)
+									alSourceUnqueueBuffers(
+										ALmixer_Channel_List[i].alsource,
+										1, &unqueued_buffer_id
+									);
+									if((error = alGetError()) != AL_NO_ERROR)
 									{
-										fprintf(stderr, "56fSerious internal error: CircularQueue could not push into queue.\n");
-										ALmixer_SetError("Serious internal error: CircularQueue failed to push into queue");
+										fprintf(stderr, "58aTesting error: %s\n",
+											alGetString(error));				
+										error_flag--;
 									}
 								}
-								
-								
+	/*
+								fprintf(stderr, "After unqueue clear...:\n");
+								PrintQueueStatus(ALmixer_Channel_List[i].alsource);
+	*/
 
-
-								/* Resume playback from underrun */
 								alSourcePlay(ALmixer_Channel_List[i].alsource);
 								if((error = alGetError()) != AL_NO_ERROR)
 								{
-									fprintf(stderr, "55Tbesting error: %s\n",
+									fprintf(stderr, "55Tbesting 8rror: %s\n",
 										alGetString(error));				
 								}
-							}
-
 						}
-						/* Let's escape to the next loop.
-						 * All code below this point is for queuing up 
-						 */
-						/*
-						   fprintf(stderr, "Entry: Nothing to do...continue\n\n");
-						 */				
 						continue;
-					}
-					/* We now know we have to fill an available
-					 * buffer.
+					} /* END if( ! eof) */
+					/* We have hit EOF in the SDL_Sound sample and there
+					 * are no more loops. However, there may still be
+					 * buffers in the OpenAL queue which still need to
+					 * be played out. The following body of code will
+					 * determine if play is still happening or 
+					 * initiate the stop/cleanup sequenece.
 					 */
-					
-					/* In the previous branch, we just grabbed more data.
-					 * Let's check it to make sure it's okay,
-					 * and then queue it up
-					 */
-					/* This check doesn't work anymore because it is now ALuint */
-				#if 0
-					if(-1 == bytes_returned)
-					{
-						/* Problem occurred...not sure what to do */
-						/* Go to next loop? */
-						error_flag--;
-						/* Set the eof flag to force a quit so 
-						 * we don't get stuck in an infinite loop
-						 */
-						ALmixer_Channel_List[i].almixer_data->eof = 1;
-						continue;
-					}
-				#endif
-					/* This is a special case where we've run
-					 * out of data. We should check for loops
-					 * and get more data. If there is no loop,
-					 * then do nothing and wait for future
-					 * update passes to handle the EOF.
-					 * The advantage of handling the loop here 
-					 * instead of waiting for play to stop is
-					 * that we should be able to keep the buffer
-					 * filled.
-					 */
-				#if 0
-					else if(0 == bytes_returned)
-				#endif
-					if(0 == bytes_returned)
-					{
-						/*
-				fprintf(stderr, "We got 0 bytes from reading. Checking for loops\n");
-				*/
-						/* Check for loops */
-						if( ALmixer_Channel_List[i].loops != 0 )
-						{
-							/* We have to loop, so rewind
-							 * and fetch more data 
-							 */
-							/*
-				fprintf(stderr, "Rewinding data\n");
-				*/
-							if(0 == Sound_Rewind(
-								ALmixer_Channel_List[i].almixer_data->sample))
-							{
-				fprintf(stderr, "Rewinding failed\n");
-								ALmixer_SetError( Sound_GetError() );
-								ALmixer_Channel_List[i].loops = 0;
-								error_flag--;
-								/* We'll continue on because we do have some valid data */
-								continue;
-							}
-							/* Remember to reset the data->eof flag */
-							ALmixer_Channel_List[i].almixer_data->eof = 0;
-							if(ALmixer_Channel_List[i].loops > 0)
-							{
-								ALmixer_Channel_List[i].loops--;
-							}
-							/* Try grabbing another packet now.
-							 * Since we may have already unqueued a
-							 * buffer, we don't want to lose it.
-							 */
-							if(ALmixer_Channel_List[i].almixer_data->num_buffers_in_use 
-								< ALmixer_Channel_List[i].almixer_data->max_queue_buffers) 
-							{
-								/*
-				fprintf(stderr, "We got %d bytes from reading loop. Filling unused packet\n", bytes_returned);
-				*/
-								/* Grab next packet */
-								bytes_returned = GetMoreData(
-									ALmixer_Channel_List[i].almixer_data,
-										ALmixer_Channel_List[i].almixer_data->buffer[
-										ALmixer_Channel_List[i].almixer_data->num_buffers_in_use]
-								);
-								/*
-				fprintf(stderr, "We reread %d bytes into unused packet\n", bytes_returned);
-				*/
-							}
-							/* Refilling unqueued packet */
-							else
-							{
-								/*
-				fprintf(stderr, "We got %d bytes from reading loop. Filling unqueued packet\n", bytes_returned);
-				*/
-								/* Grab next packet */
-								bytes_returned = GetMoreData(
-									ALmixer_Channel_List[i].almixer_data,
-									unqueued_buffer_id);
-								/*
-				fprintf(stderr, "We reread %d bytes into unqueued packet\n", bytes_returned);
-				*/
-							}	
-							/* Another error check */
-							/*
-							if(bytes_returned <= 0)
-							*/
-							if(0 == bytes_returned)
-							{
-		fprintf(stderr, "??????????ERROR\n");
-								ALmixer_SetError("Could not loop because after rewind, no data could be retrieved");
-								/* Problem occurred...not sure what to do */
-								/* Go to next loop? */
-								error_flag--;
-								/* Set the eof flag to force a quit so 
-								 * we don't get stuck in an infinite loop
-								 */
-								ALmixer_Channel_List[i].almixer_data->eof = 1;
-								continue;
-							}	
-							/* We made it to the end. We still need 
-							 * to BufferData, so let this branch
-							 * fall into the next piece of 
-							 * code below which will handle that 
-							 */
-
-							
-						} /* END loop check */
-						else
-						{
-							/* No more loops to do. 
-							 * EOF flag should be set.
-							 * Just go to next loop and
-							 * let things be handled correctly
-							 * in future update calls
-							 */
-/*
-						fprintf(stderr, "SHOULD BE EOF\n");
-							
-							PrintQueueStatus(ALmixer_Channel_List[i].alsource);
-*/							
-							continue;
-						}
-					} /* END if bytes_returned == 0 */
-/********* Possible trouble point. I might be queueing empty buffers on the mac. 
- * This check doesn't say if the buffer is valid. Only the EOF assumption is a clue at this point 
- */
-					/* Fall here */
-					/* Everything is normal. We aren't
-					 * at an EOF, but need to simply
-					 * queue more data. The data is already checked for good, 
-					 * so queue it up */
-					if(ALmixer_Channel_List[i].almixer_data->num_buffers_in_use 
-						< ALmixer_Channel_List[i].almixer_data->max_queue_buffers) 
-					{
-						/* Keep count of how many buffers we have 
-						 * to queue so we can return the value 
-						 */
-						retval++;
-						/*
-						fprintf(stderr, "NOT_EOF???, about to Queue more data for num_buffers (%d) < max_queue (%d)\n",
-								ALmixer_Channel_List[i].almixer_data->num_buffers_in_use,
-								ALmixer_Channel_List[i].almixer_data->max_queue_buffers);
-						*/		
-						alSourceQueueBuffers(
-							ALmixer_Channel_List[i].alsource,
-							1, 
-							&ALmixer_Channel_List[i].almixer_data->buffer[ 
-								ALmixer_Channel_List[i].almixer_data->num_buffers_in_use]
-						);
-						if((error = alGetError()) != AL_NO_ERROR)
-						{
-							fprintf(stderr, "56Testing error: %s\n",
-								alGetString(error));				
-						}
-						/* This is part of the hideous Nvidia workaround. In order to figure out
-						 * which buffer to show during callbacks (for things like
-						 * o-scopes), I must keep a copy of the buffers that are queued in my own
-						 * data structure. This code will be called only if
-						 * "access_data" was set, indicated by whether the queue is NULL.
-						 */
-						if(ALmixer_Channel_List[i].almixer_data->circular_buffer_queue != NULL)
-						{
-							ALuint queue_ret_flag;
-//				fprintf(stderr, "56d: CircularQueue_PushBack.\n");
-							queue_ret_flag = CircularQueueUnsignedInt_PushBack(
-								ALmixer_Channel_List[i].almixer_data->circular_buffer_queue, 
-								ALmixer_Channel_List[i].almixer_data->buffer[ALmixer_Channel_List[i].almixer_data->num_buffers_in_use]
-							);	
-							if(0 == queue_ret_flag)
-							{
-								fprintf(stderr, "56aSerious internal error: CircularQueue could not push into queue.\n");
-								ALmixer_SetError("Serious internal error: CircularQueue failed to push into queue");
-							}
-							/*
-							else
-							{
-								CircularQueueUnsignedInt_Print(ALmixer_Channel_List[i].almixer_data->circular_buffer_queue);
-							}
-							 */
-						}
-					}
-					/* for processed > 0 */
 					else
 					{
-						/* Keep count of how many buffers we have 
-						 * to queue so we can return the value 
-						 */
-						retval++;
-/*
-						fprintf(stderr, "NOT_EOF, about to Queue more data for filled max_queue (%d)\n",
-								ALmixer_Channel_List[i].almixer_data->max_queue_buffers);
-*/
-						alSourceQueueBuffers(
-							ALmixer_Channel_List[i].alsource,
-							1, &unqueued_buffer_id);
-						if((error = alGetError()) != AL_NO_ERROR)
+						/* Let's continue to remove the used up
+						 * buffers as they come in. */
+						if(buffers_processed > 0)
 						{
-							ALmixer_SetError("Could not QueueBuffer: %s",
-								alGetString(error) );
-							error_flag--;
-							continue;
-						}
-						/* This is part of the hideous Nvidia workaround. In order to figure out
-						 * which buffer to show during callbacks (for things like
-						 * o-scopes), I must keep a copy of the buffers that are queued in my own
-						 * data structure. This code will be called only if
-						 * "access_data" was set, indicated by whether the queue is NULL.
-						 */
-						if(ALmixer_Channel_List[i].almixer_data->circular_buffer_queue != NULL)
-						{
-							ALuint queue_ret_flag;
-//				fprintf(stderr, "56e: CircularQueue_PushBack.\n");
-							queue_ret_flag = CircularQueueUnsignedInt_PushBack(
-								ALmixer_Channel_List[i].almixer_data->circular_buffer_queue, 
-								unqueued_buffer_id
-							);
-							if(0 == queue_ret_flag)
-							{
-								fprintf(stderr, "56bSerious internal error: CircularQueue could not push into queue.\n");
-								ALmixer_SetError("Serious internal error: CircularQueue failed to push into queue");
-							}
-#if 0
-							else
-							{
-								CircularQueueUnsignedInt_Print(ALmixer_Channel_List[i].almixer_data->circular_buffer_queue);
-							}
-#endif
-						}
-					}
-					/* If we used an available buffer queue,
-					 * then we need to update the number of them in use
-					 */
-					if(ALmixer_Channel_List[i].almixer_data->num_buffers_in_use 
-						< ALmixer_Channel_List[i].almixer_data->max_queue_buffers) 
-					{
-						/* Increment the number of buffers in use */
-						ALmixer_Channel_List[i].almixer_data->num_buffers_in_use++;
-					}
-					/* Might want to check state */
-					/* In case the playback stopped,
-					 * we need to resume */
-					#if 1 
-					/* Try not refetching the state here because I'm getting a duplicate
-						 buffer playback (hiccup) */
-					alGetSourcei(
-						ALmixer_Channel_List[i].alsource,
-						AL_SOURCE_STATE, &state
-					);
-					if((error = alGetError()) != AL_NO_ERROR)
-					{
-						fprintf(stderr, "57bTesting error: %s\n",
-							alGetString(error));				
-					}
-					/* Get the number of buffers processed
-					 */
-					alGetSourcei(
-						ALmixer_Channel_List[i].alsource,
-						AL_BUFFERS_PROCESSED, 
-						&buffers_processed
-					);
-					if((error = alGetError()) != AL_NO_ERROR)
-					{
-						fprintf(stderr, "57cError, Can't get buffers_processed: %s\n",
-							alGetString(error));				
-					}
-					#endif
-					if(AL_STOPPED == state)
-					{
-					/*
-						fprintf(stderr, "Resuming in not eof\n");
-					*/
-							/* Okay, here's another lately discovered problem:
-							 * I can't find it in the spec, but for at least some of the 
-							 * implementations, if I call play on a stopped source that 
-							 * has processed buffers, all those buffers get marked as unprocessed
-							 * on alSourcePlay. So if I had a queue of 25 with 24 of the buffers
-							 * processed, on resume, the earlier 24 buffers will get replayed,
-							 * causing a "hiccup" like sound in the playback.
-							 * To avoid this, I must unqueue all processed buffers before
-							 * calling play. But to complicate things, I need to worry about resyncing
-							 * the circular queue with this since I designed this thing
-							 * with some correlation between the two. However, I might
-							 * have already handled this, so I will try writing this code without
-							 * syncing for now.
-							 * There is currently an assumption that a buffer 
-							 * was queued above so I actually have something
-							 * to play.
-							 */
 							ALint temp_count;
-/*
-							fprintf(stderr, "STOPPED2, need to clear processed, status is:\n");
-							PrintQueueStatus(ALmixer_Channel_List[i].alsource);
-*/
-
+							/* Do as a for-loop because I don't want
+							 * to have to create an array for the 
+							 * unqueued_buffer_id's
+							 */
 							for(temp_count=0; temp_count<buffers_processed; temp_count++)
 							{
+								/*
+								fprintf(stderr, "unqueuing remainder, %d\n", temp_count);
+								*/
 								alSourceUnqueueBuffers(
 									ALmixer_Channel_List[i].alsource,
 									1, &unqueued_buffer_id
 								);
 								if((error = alGetError()) != AL_NO_ERROR)
 								{
-									fprintf(stderr, "58aTesting error: %s\n",
-										alGetString(error));				
-									error_flag--;
+									fprintf(stderr, "59Testing error: %s\n",
+											alGetString(error));				
 								}
 							}
-/*
-							fprintf(stderr, "After unqueue clear...:\n");
-							PrintQueueStatus(ALmixer_Channel_List[i].alsource);
-*/
-
-							alSourcePlay(ALmixer_Channel_List[i].alsource);
-							if((error = alGetError()) != AL_NO_ERROR)
-							{
-								fprintf(stderr, "55Tbesting 8rror: %s\n",
-									alGetString(error));				
-							}
-					}
-					continue;
-				} /* END if( ! eof) */
-				/* We have hit EOF in the SDL_Sound sample and there
-				 * are no more loops. However, there may still be
-				 * buffers in the OpenAL queue which still need to
-				 * be played out. The following body of code will
-				 * determine if play is still happening or 
-				 * initiate the stop/cleanup sequenece.
-				 */
-				else
-				{
-					/* Let's continue to remove the used up
-					 * buffers as they come in. */
-					if(buffers_processed > 0)
-					{
-						ALint temp_count;
-						/* Do as a for-loop because I don't want
-						 * to have to create an array for the 
-						 * unqueued_buffer_id's
-						 */
-						for(temp_count=0; temp_count<buffers_processed; temp_count++)
-						{
 							/*
-							fprintf(stderr, "unqueuing remainder, %d\n", temp_count);
+							fprintf(stderr, "done unqueuing remainder for this loop, %d\n", temp_count);
 							*/
-							alSourceUnqueueBuffers(
-								ALmixer_Channel_List[i].alsource,
-								1, &unqueued_buffer_id
-							);
+
+							/* Need to update counts since we removed everything. 
+							 * If we don't update the counts here, we end up in the
+							 *	"Shouldn't be here section, but maybe it's okay due to race conditions"
+							 */
+							alGetSourcei(
+										 ALmixer_Channel_List[i].alsource,
+										 AL_BUFFERS_QUEUED, &buffers_still_queued
+										 );
 							if((error = alGetError()) != AL_NO_ERROR)
 							{
-								fprintf(stderr, "59Testing error: %s\n",
+								fprintf(stderr, "5100Testing error: %s\n",
+										alGetString(error));				
+							}
+							/* Get the number of buffers processed
+								* so we know if we need to refill 
+								*/
+							alGetSourcei(
+										 ALmixer_Channel_List[i].alsource,
+										 AL_BUFFERS_PROCESSED, &buffers_processed
+										 );
+							if((error = alGetError()) != AL_NO_ERROR)
+							{
+								fprintf(stderr, "5200Testing error: %s\n",
 										alGetString(error));				
 							}
 						}
-						/*
-						fprintf(stderr, "done unqueuing remainder for this loop, %d\n", temp_count);
-						*/
 
-						/* Need to update counts since we removed everything. 
-						 * If we don't update the counts here, we end up in the
-						 *	"Shouldn't be here section, but maybe it's okay due to race conditions"
+
+						/* Else if buffers_processed == 0
+						 * and buffers_still_queued == 0.
+						 * then we check to see if the source
+						 * is still playing. Quit if stopped
+						 * We shouldn't need to worry about
+						 * looping because that should have
+						 * been handled above.
 						 */
-						alGetSourcei(
-									 ALmixer_Channel_List[i].alsource,
-									 AL_BUFFERS_QUEUED, &buffers_still_queued
-									 );
-						if((error = alGetError()) != AL_NO_ERROR)
+						if(0 == buffers_still_queued)
 						{
-							fprintf(stderr, "5100Testing error: %s\n",
-									alGetString(error));				
-						}
-						/* Get the number of buffers processed
-							* so we know if we need to refill 
-							*/
-						alGetSourcei(
-									 ALmixer_Channel_List[i].alsource,
-									 AL_BUFFERS_PROCESSED, &buffers_processed
-									 );
-						if((error = alGetError()) != AL_NO_ERROR)
-						{
-							fprintf(stderr, "5200Testing error: %s\n",
-									alGetString(error));				
-						}
-					}
-
-
-					/* Else if buffers_processed == 0
-					 * and buffers_still_queued == 0.
-					 * then we check to see if the source
-					 * is still playing. Quit if stopped
-					 * We shouldn't need to worry about
-					 * looping because that should have
-					 * been handled above.
-					 */
-					if(0 == buffers_still_queued)
-					{
-						/* Make sure playback has stopped before
-						 * we shutdown.
-						 */
-						alGetSourcei(
-							ALmixer_Channel_List[i].alsource,
-							AL_SOURCE_STATE, &state
-						);
-	if((error = alGetError()) != AL_NO_ERROR)
-	{
-		fprintf(stderr, "60Testing error: %s\n",
-			alGetString(error));				
-	}
-						if(AL_STOPPED == state)
-						{
-							ALmixer_Channel_List[i].almixer_data->num_buffers_in_use  = 0;
-							/* Playback has ended. 
-							 * Loop if necessary, or launch callback
-							 * and clear channel (or clear channel and
-							 * then launch callback?)
-							 * Update: Need to do callback first because I reference the mixer_data and source
+							/* Make sure playback has stopped before
+							 * we shutdown.
 							 */
+							alGetSourcei(
+								ALmixer_Channel_List[i].alsource,
+								AL_SOURCE_STATE, &state
+							);
+		if((error = alGetError()) != AL_NO_ERROR)
+		{
+			fprintf(stderr, "60Testing error: %s\n",
+				alGetString(error));				
+		}
+							if(AL_STOPPED == state)
+							{
+								ALmixer_Channel_List[i].almixer_data->num_buffers_in_use  = 0;
+								/* Playback has ended. 
+								 * Loop if necessary, or launch callback
+								 * and clear channel (or clear channel and
+								 * then launch callback?)
+								 * Update: Need to do callback first because I reference the mixer_data and source
+								 */
 
-							/* Launch callback */
-							Invoke_Channel_Done_Callback(i, AL_TRUE);
+								/* Launch callback */
+								Invoke_Channel_Done_Callback(i, AL_TRUE);
 
-							Clean_Channel(i);
-							/* Subtract counter */
-							Is_Playing_global--;
-	
-	
-							/* We're done for this loop.
-							 * Go to next channel 
-							 */
-							continue;
-						}
-					} /* End end-playback */
-					else
-					{
-						/* Need to run out buffer */
-			#if 1
-						/* Might want to check state */
-						/* In case the playback stopped,
-						 * we need to resume */
-						alGetSourcei(
-							ALmixer_Channel_List[i].alsource,
-							AL_SOURCE_STATE, &state
-						);
-	if((error = alGetError()) != AL_NO_ERROR)
-	{
-		fprintf(stderr, "61Testing error: %s\n",
-			alGetString(error));				
-	}
-						if(AL_STOPPED == state)
+								Clean_Channel(i);
+								/* Subtract counter */
+								Is_Playing_global--;
+		
+		
+								/* We're done for this loop.
+								 * Go to next channel 
+								 */
+								
+								/* I used to call continue here, but continue isn't safe anymore because we are in the number_of_queue_buffers_per_pass loop now.
+								 * We should break, but we need to be careful that there is no code that is run once we break that wasn't run before.
+								 * We want to make sure we go immediately to the next iteration in the channel loop.
+								 */
+								 break;
+							}
+						} /* End end-playback */
+						else
 						{
-							/*
-		fprintf(stderr, "Shouldn't be here. %d Buffers still in queue, but play stopped. This might be correct though because race conditions could have caused the STOP to happen right after our other tests...Checking queue status...\n", buffers_still_queued);
-		*/
-/*
-							PrintQueueStatus(ALmixer_Channel_List[i].alsource);
-*/							
-							/* Rather than force unqueuing the buffer, let's see if
-							* setting the buffer to none works (the OpenAL 1.0 
-							* Reference Annotation suggests this should work).								 
-							*/
-							alSourcei(ALmixer_Channel_List[i].alsource,
-									  AL_BUFFER, AL_NONE); 
-/*							
-							PrintQueueStatus(ALmixer_Channel_List[i].alsource);
-*/
-							/* This doesn't work because in some cases, I think
-							 * it causes the sound to be replayed
-							 */
-							/*
-							fprintf(stderr, "Resuming in eof (trying to run out buffers\n");
-							alSourcePlay(ALmixer_Channel_List[i].alsource);
-		*/
-						}
-			#endif
-					} /* End trap section */
-				} /* End POST-EOF use-up buffer section */
+							/* Need to run out buffer */
+				#if 1
+							/* Might want to check state */
+							/* In case the playback stopped,
+							 * we need to resume */
+							alGetSourcei(
+								ALmixer_Channel_List[i].alsource,
+								AL_SOURCE_STATE, &state
+							);
+		if((error = alGetError()) != AL_NO_ERROR)
+		{
+			fprintf(stderr, "61Testing error: %s\n",
+				alGetString(error));				
+		}
+							if(AL_STOPPED == state)
+							{
+								/*
+			fprintf(stderr, "Shouldn't be here. %d Buffers still in queue, but play stopped. This might be correct though because race conditions could have caused the STOP to happen right after our other tests...Checking queue status...\n", buffers_still_queued);
+			*/
+	/*
+								PrintQueueStatus(ALmixer_Channel_List[i].alsource);
+	*/							
+								/* Rather than force unqueuing the buffer, let's see if
+								* setting the buffer to none works (the OpenAL 1.0 
+								* Reference Annotation suggests this should work).								 
+								*/
+								alSourcei(ALmixer_Channel_List[i].alsource,
+										  AL_BUFFER, AL_NONE); 
+	/*							
+								PrintQueueStatus(ALmixer_Channel_List[i].alsource);
+	*/
+								/* This doesn't work because in some cases, I think
+								 * it causes the sound to be replayed
+								 */
+								/*
+								fprintf(stderr, "Resuming in eof (trying to run out buffers\n");
+								alSourcePlay(ALmixer_Channel_List[i].alsource);
+			*/
+							}
+				#endif
+						} /* End trap section */
+					} /* End POST-EOF use-up buffer section */
 
-			} /* END NEW number of queue buffers per pass */
+				} /* END NEW number of queue buffers per pass */
 
 			} /* END Streamed section */
 		} /* END channel in use */
@@ -7829,7 +7863,7 @@ ALint ALmixer_ReserveChannels(ALint num)
 	
 
 
-static ALmixer_Data* DoLoad(Sound_Sample* sample, ALuint buffersize, ALboolean decode_mode_is_predecoded, ALuint max_queue_buffers, ALuint num_startup_buffers, ALboolean access_data)
+static ALmixer_Data* DoLoad(Sound_Sample* sample, ALuint buffersize, ALboolean decode_mode_is_predecoded, ALuint max_queue_buffers, ALuint num_startup_buffers, ALuint suggested_number_of_buffers_to_queue_per_update_pass, ALuint access_data)
 {
 	ALuint bytes_decoded;
 	ALmixer_Data* ret_data;
@@ -7882,8 +7916,17 @@ static ALmixer_Data* DoLoad(Sound_Sample* sample, ALuint buffersize, ALboolean d
 	}
 	ret_data->num_startup_buffers = num_startup_buffers;
 
-	/* TODO: Expose value through public API */
-	ret_data->num_target_buffers_per_pass = 1;
+	/* Set up the update pass buffers */
+	if(0 == suggested_number_of_buffers_to_queue_per_update_pass)
+	{
+		suggested_number_of_buffers_to_queue_per_update_pass = ALMIXER_DEFAULT_BUFFERS_TO_QUEUE_PER_UPDATE_PASS;
+	}
+	/* Make sure update pass up buffers is less or equal to max_queue_buffers */
+	if(suggested_number_of_buffers_to_queue_per_update_pass > max_queue_buffers)
+	{
+		suggested_number_of_buffers_to_queue_per_update_pass = max_queue_buffers;
+	}
+	ret_data->num_target_buffers_per_pass = suggested_number_of_buffers_to_queue_per_update_pass;
 
 	ret_data->buffer_map_list = NULL;
 	ret_data->current_buffer = 0;
@@ -8377,7 +8420,7 @@ static ALmixer_Data* DoLoad(Sound_Sample* sample, ALuint buffersize, ALboolean d
  * must specify it, so I had to bring it back.
  * Remember I must close the rwops if there is an error before NewSample()
  */
-ALmixer_Data* ALmixer_LoadSample_RW(ALmixer_RWops* rwops, const char* fileext, ALuint buffersize, ALboolean decode_mode_is_predecoded, ALuint max_queue_buffers, ALuint num_startup_buffers, ALboolean access_data)
+ALmixer_Data* ALmixer_LoadSample_RW(ALmixer_RWops* rwops, const char* fileext, ALuint buffersize, ALboolean decode_mode_is_predecoded, ALuint max_queue_buffers, ALuint num_startup_buffers, ALuint suggested_number_of_buffers_to_queue_per_update_pass, ALuint access_data)
 {
 	Sound_Sample* sample = NULL;
 	Sound_AudioInfo target;
@@ -8418,7 +8461,7 @@ ALmixer_Data* ALmixer_LoadSample_RW(ALmixer_RWops* rwops, const char* fileext, A
 		return NULL;
 	}
 
-	return( DoLoad(sample, buffersize, decode_mode_is_predecoded, max_queue_buffers, num_startup_buffers, access_data));
+	return( DoLoad(sample, buffersize, decode_mode_is_predecoded, max_queue_buffers, num_startup_buffers, suggested_number_of_buffers_to_queue_per_update_pass, access_data));
 }
 
 
@@ -8428,7 +8471,7 @@ ALmixer_Data* ALmixer_LoadSample_RW(ALmixer_RWops* rwops, const char* fileext, A
  * error checking and the fact that streamed/predecoded files
  * must be treated differently.
  */
-ALmixer_Data* ALmixer_LoadSample(const char* filename, ALuint buffersize, ALboolean decode_mode_is_predecoded, ALuint max_queue_buffers, ALuint num_startup_buffers, ALboolean access_data)
+ALmixer_Data* ALmixer_LoadSample(const char* filename, ALuint buffersize, ALboolean decode_mode_is_predecoded, ALuint max_queue_buffers, ALuint num_startup_buffers, ALuint suggested_number_of_buffers_to_queue_per_update_pass, ALuint access_data)
 {
 	Sound_Sample* sample = NULL;
 	Sound_AudioInfo target;
@@ -8528,14 +8571,14 @@ ALmixer_Data* ALmixer_LoadSample(const char* filename, ALuint buffersize, ALbool
 	/*
 		fprintf(stderr, "Correction test: Actual rate=%d, desired=%d, actual format=%d, desired format=%d\n", sample->actual.rate, sample->desired.rate, sample->actual.format, sample->desired.format);
 */
-	return( DoLoad(sample, buffersize, decode_mode_is_predecoded, max_queue_buffers, num_startup_buffers, access_data));
+	return( DoLoad(sample, buffersize, decode_mode_is_predecoded, max_queue_buffers, num_startup_buffers, suggested_number_of_buffers_to_queue_per_update_pass, access_data));
 }
 
 
 /* This is a back door for RAW samples or if you need the
  * AudioInfo field. Use at your own risk.
  */
-ALmixer_Data* ALmixer_LoadSample_RAW_RW(ALmixer_RWops* rwops, const char* fileext, ALmixer_AudioInfo* desired, ALuint buffersize, ALboolean decode_mode_is_predecoded, ALuint max_queue_buffers, ALuint num_startup_buffers, ALboolean access_data)
+ALmixer_Data* ALmixer_LoadSample_RAW_RW(ALmixer_RWops* rwops, const char* fileext, ALmixer_AudioInfo* desired, ALuint buffersize, ALboolean decode_mode_is_predecoded, ALuint max_queue_buffers, ALuint num_startup_buffers, ALuint suggested_number_of_buffers_to_queue_per_update_pass, ALuint access_data)
 {
 	Sound_Sample* sample = NULL;
 	Sound_AudioInfo sound_desired;
@@ -8568,7 +8611,7 @@ ALmixer_Data* ALmixer_LoadSample_RAW_RW(ALmixer_RWops* rwops, const char* fileex
 		ALmixer_SetError(Sound_GetError());
 		return NULL;
 	}
-	return( DoLoad(sample, buffersize, decode_mode_is_predecoded, max_queue_buffers, num_startup_buffers, access_data));
+	return( DoLoad(sample, buffersize, decode_mode_is_predecoded, max_queue_buffers, num_startup_buffers,suggested_number_of_buffers_to_queue_per_update_pass, access_data));
 }
 
 
@@ -8577,7 +8620,7 @@ ALmixer_Data* ALmixer_LoadSample_RAW_RW(ALmixer_RWops* rwops, const char* fileex
 /* This is a back door for RAW samples or if you need the
  * AudioInfo field. Use at your own risk.
  */
-ALmixer_Data* ALmixer_LoadSample_RAW(const char* filename, ALmixer_AudioInfo* desired, ALuint buffersize, ALboolean decode_mode_is_predecoded, ALuint max_queue_buffers, ALuint num_startup_buffers, ALboolean access_data)
+ALmixer_Data* ALmixer_LoadSample_RAW(const char* filename, ALmixer_AudioInfo* desired, ALuint buffersize, ALboolean decode_mode_is_predecoded, ALuint max_queue_buffers, ALuint num_startup_buffers, ALuint suggested_number_of_buffers_to_queue_per_update_pass, ALuint access_data)
 {
 	Sound_Sample* sample = NULL;
 	Sound_AudioInfo sound_desired;
@@ -8611,7 +8654,7 @@ ALmixer_Data* ALmixer_LoadSample_RAW(const char* filename, ALmixer_AudioInfo* de
 		ALmixer_SetError(Sound_GetError());
 		return NULL;
 	}
-	return( DoLoad(sample, buffersize, decode_mode_is_predecoded, max_queue_buffers, num_startup_buffers, access_data));
+	return( DoLoad(sample, buffersize, decode_mode_is_predecoded, max_queue_buffers, num_startup_buffers, suggested_number_of_buffers_to_queue_per_update_pass, access_data));
 }
 
 
