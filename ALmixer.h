@@ -372,14 +372,14 @@ extern ALMIXER_DECLSPEC ALboolean ALMIXER_CALL ALmixer_InitMixer(ALuint num_sour
 /**
  * (EXPERIMENTAL) Call to notify ALmixer that your device needs to handle an interruption.
  * (EXPERIMENTAL) For devices like iOS that need special handling for interruption events like phone calls and alarms,
- * this function will do the correct platform correct thing to handle the interruption w.r.t. OpenAL.
+ * this function will do the correct platform correct thing to handle the interruption w.r.t. OpenAL. This calls ALmixer_SuspendUpdates().
  */
 extern ALMIXER_DECLSPEC void ALMIXER_CALL ALmixer_BeginInterruption(void);
 
 /**
  * (EXPERIMENTAL) Call to notify ALmixer that your device needs to resume from an interruption.
  * (EXPERIMENTAL) For devices like iOS that need special handling for interruption events like phone calls and alarms,
- * this function will do the correct platform correct thing to resume from the interruption w.r.t. OpenAL.
+ * this function will do the correct platform correct thing to resume from the interruption w.r.t. OpenAL. This calls ALmixer_ResumeUpdates().
  */
 extern ALMIXER_DECLSPEC void ALMIXER_CALL ALmixer_EndInterruption(void);
 
@@ -389,6 +389,24 @@ extern ALMIXER_DECLSPEC void ALMIXER_CALL ALmixer_EndInterruption(void);
  * this function will do the correct platform correct thing to determine if in an interruption.
  */	
 extern ALMIXER_DECLSPEC ALboolean ALmixer_IsInInterruption(void);
+
+
+/**
+ * (EXPERIMENTAL) Destroys the background update thread (ENABLE_ALMIXER_THREADS only). 
+ * (EXPERIMENTAL) Destroys the background update thread (ENABLE_ALMIXER_THREADS only). BeginInterruption used to do this internally, but this was split off due to an iOS OpenAL race condition bug (10081775). Being able to manipulate the thread without manipulating the context was useful for suspend/resume backgrounding when not dealing with a full-blown interruption event.
+ */
+extern ALMIXER_DECLSPEC void ALMIXER_CALL ALmixer_SuspendUpdates(void);
+
+/**
+ * (EXPERIMENTAL) Recreates the background update thread (ENABLE_ALMIXER_THREADS only). 
+ * (EXPERIMENTAL) Recreates the background update thread (ENABLE_ALMIXER_THREADS only). EndInterruption used to do this internally, but this was split off due to an iOS OpenAL race condition bug (10081775). Being able to manipulate the thread without manipulating the context was useful for suspend/resume backgrounding when not dealing with a full-blown interruption event.
+ */
+extern ALMIXER_DECLSPEC void ALMIXER_CALL ALmixer_ResumeUpdates(void);
+
+/**
+ * (EXPERIMENTAL) Call to determine if in ALmixer_SuspendUpdates(). (ENABLE_ALMIXER_THREADS only.)
+ */
+extern ALMIXER_DECLSPEC ALboolean ALmixer_AreUpdatesSuspended(void);
 
 	
 /**
