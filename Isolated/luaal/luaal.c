@@ -144,6 +144,7 @@ static int lua_getTypeForEnum(ALenum enum_parameter)
 			break;
 		}
 
+		case AL_SOURCE_STATE:
 		case AL_SOURCE_TYPE:
 		case AL_BUFFER:
 		case AL_BUFFERS_QUEUED:
