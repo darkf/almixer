@@ -2820,11 +2820,11 @@ static ALint Internal_PauseChannel(ALint channel)
 				ALmixer_Channel_List[channel].alsource,
 				AL_SOURCE_STATE, &state
 			);
-	if((error = alGetError()) != AL_NO_ERROR)
-	{
-		fprintf(stderr, "29Testing error: %s\n",
-			alGetString(error));				
-	}
+			if((error = alGetError()) != AL_NO_ERROR)
+			{
+				fprintf(stderr, "Internal_PauseChannel specific channel error: %s\n",
+				alGetString(error));				
+			}
 			if(AL_PLAYING == state)
 			{
 				/* Count the actual number of channels being paused */
@@ -2903,11 +2903,11 @@ static ALint Internal_PauseChannel(ALint channel)
 					ALmixer_Channel_List[i].alsource,
 					AL_SOURCE_STATE, &state
 				);
-	if((error = alGetError()) != AL_NO_ERROR)
-	{
-		fprintf(stderr, "30Testing error: %s\n",
-			alGetString(error));				
-	}
+				if((error = alGetError()) != AL_NO_ERROR)
+				{
+					fprintf(stderr, "Internal_PauseChannel all channels error: %s\n",
+					alGetString(error));				
+				}
 				if(AL_PLAYING == state)
 				{
 					/* Count the actual number of channels being paused */
@@ -5232,15 +5232,16 @@ static ALint Update_ALmixer(void* data)
 				ALuint number_of_buffers_to_queue_this_pass = ALmixer_Channel_List[i].almixer_data->num_target_buffers_per_pass;
 				ALuint current_count_of_buffer_queue_passes = 0;
 				
-#if 0
-		/********* Remove this **********/
-		fprintf(stderr, "For Streamed\n");
+/*		fprintf(stderr, "For Streamed\n"); */
 				
 	alGetSourcei(
 		ALmixer_Channel_List[i].alsource,
 		AL_SOURCE_STATE, &state
 				);
-	switch(state) {
+#if 0
+		/********* Remove this **********/
+	switch(state)
+	{
                 case AL_PLAYING:
 				fprintf(stderr, "Channel '%d' is PLAYING\n", i);
 				break;
@@ -7462,18 +7463,9 @@ void ALmixer_BeginInterruption()
 	{
 		return;
 	}
-#ifdef ENABLE_ALMIXER_THREADS
-	/* Kill bookkeeping thread to help minimize wasted CPU resources */
 
-	/* Is locking really necessary here? */
-/*	SDL_LockMutex(s_simpleLock); */
-	g_StreamThreadEnabled = AL_FALSE;
-/*	SDL_UnlockMutex(s_simpleLock); */
+	ALmixer_SuspendUpdates();
 
-	SDL_WaitThread(Stream_Thread_global, NULL);
-	Stream_Thread_global = NULL;
-
-#endif
 	s_interruptionContext = alcGetCurrentContext();
 	if(NULL != s_interruptionContext)
 	{
@@ -7513,15 +7505,8 @@ void ALmixer_EndInterruption()
 		alcProcessContext(s_interruptionContext);
 		s_interruptionContext = NULL;
 	}
-#ifdef ENABLE_ALMIXER_THREADS
-	g_StreamThreadEnabled = AL_TRUE;
 
-	Stream_Thread_global = SDL_CreateThread(Stream_Data_Thread_Callback, NULL);
-	if(NULL == Stream_Thread_global)
-	{
-		fprintf(stderr, "Critical Error: Could not create bookkeeping thread in EndInterruption\n");
-	}
-#endif
+	ALmixer_ResumeUpdates();
 	g_inInterruption = AL_FALSE;
 }
 
@@ -7533,6 +7518,62 @@ ALboolean ALmixer_IsInInterruption()
 		return AL_FALSE;
 	}
 	return g_inInterruption;
+}
+
+void ALmixer_SuspendUpdates()
+{
+	if(AL_TRUE == ALmixer_AreUpdatesSuspended())
+	{
+		return;
+	}
+#ifdef ENABLE_ALMIXER_THREADS
+	/* Kill bookkeeping thread to help minimize wasted CPU resources */
+	
+	/* Is locking really necessary here? */
+	/*	SDL_LockMutex(s_simpleLock); */
+	g_StreamThreadEnabled = AL_FALSE;
+	/*	SDL_UnlockMutex(s_simpleLock); */
+	
+	SDL_WaitThread(Stream_Thread_global, NULL);
+	Stream_Thread_global = NULL;
+#endif
+}
+
+void ALmixer_ResumeUpdates()
+{
+	if(AL_FALSE == ALmixer_AreUpdatesSuspended())
+	{
+		return;
+	}
+
+#ifdef ENABLE_ALMIXER_THREADS
+	/* This must be set before the thread is created to prevent the thread from exiting. */
+	g_StreamThreadEnabled = AL_TRUE;
+	
+	Stream_Thread_global = SDL_CreateThread(Stream_Data_Thread_Callback, NULL);
+	if(NULL == Stream_Thread_global)
+	{
+		fprintf(stderr, "Critical Error: Could not create bookkeeping thread in EndInterruption\n");
+	}
+	/* Note: Only a few platforms change the priority. See implementation for notes. */
+	Internal_LowerThreadPriority(Stream_Thread_global);	
+#endif
+}
+
+ALboolean ALmixer_AreUpdatesSuspended()
+{
+#ifdef ENABLE_ALMIXER_THREADS
+	if(AL_FALSE == g_StreamThreadEnabled)
+	{
+		return AL_TRUE;
+	}
+	else
+	{
+		return AL_FALSE;
+	}
+#else
+	return AL_FALSE;
+#endif
 }
 
 /* Keep the return value void to allow easy use with
@@ -8487,6 +8528,10 @@ ALmixer_Data* ALmixer_LoadSample(const char* filename, ALuint buffersize, ALbool
 	target.channels = 0;
 	target.rate = 0;
 	
+	if(0 == buffersize)
+	{
+		buffersize = ALMIXER_DEFAULT_BUFFERSIZE;
+	}
 #if 0
 	/* This requires my new additions to SDL_sound. It will
 	 * convert the sample to the proper endian order.
