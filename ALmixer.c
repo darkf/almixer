@@ -2689,7 +2689,7 @@ fprintf(stderr, "Inside 000 >>>>>>>>>>Loops=%d\n", ALmixer_Channel_List[channel]
 			ALuint queue_ret_flag;
 			for(k=0; k<data->num_buffers_in_use; k++)
 			{
-//				fprintf(stderr, "56c: CircularQueue_PushBack.\n");
+/*				fprintf(stderr, "56c: CircularQueue_PushBack.\n"); */
 				queue_ret_flag = CircularQueueUnsignedInt_PushBack(data->circular_buffer_queue, data->buffer[k]);
 				if(0 == queue_ret_flag)
 				{
@@ -5276,7 +5276,7 @@ static ALint Update_ALmixer(void* data)
 				 /* WARNING: It looks like Snow Leopard some times crashes on this call under x86_64
 				  * typically when I suffer a lot of buffer underruns.
 				  */
-//				 fprintf(stderr, "calling AL_BUFFERS_PROCESSED on source:%d", ALmixer_Channel_List[i].alsource);
+/*				 fprintf(stderr, "calling AL_BUFFERS_PROCESSED on source:%d", ALmixer_Channel_List[i].alsource); */
 				alGetSourcei(
 					ALmixer_Channel_List[i].alsource,
 					AL_BUFFERS_PROCESSED, &buffers_processed
@@ -5286,7 +5286,7 @@ static ALint Update_ALmixer(void* data)
 					fprintf(stderr, "52Testing error: %s\n",
 						alGetString(error));				
 				}
-//				fprintf(stderr, "finished AL_BUFFERS_PROCESSED, buffers_processed=%d", buffers_processed);
+/*				fprintf(stderr, "finished AL_BUFFERS_PROCESSED, buffers_processed=%d", buffers_processed); */
 
  /* WTF!!! The Nvidia distribution is failing on the alGetSourcei(source, AL_BUFFER, buf_id) call.
  * I need this call to figure out which buffer OpenAL is currently playing. 
@@ -5483,7 +5483,7 @@ static ALint Update_ALmixer(void* data)
 				if(AL_STOPPED == state)
 				{
 					number_of_buffers_to_queue_this_pass = ALmixer_Channel_List[i].almixer_data->num_startup_buffers;
-//					fprintf(stderr, "assuming underrun condition, using num_startup_buffers=%d\n", number_of_buffers_to_queue_this_pass);
+/*					fprintf(stderr, "assuming underrun condition, using num_startup_buffers=%d\n", number_of_buffers_to_queue_this_pass); */
 				}	
 
 				/* Don't bother to check to make sure the number_of_buffers_to_queue_this_pass does not exceed the maximum number of buffers because of the logic hack bug. */
@@ -5497,7 +5497,25 @@ static ALint Update_ALmixer(void* data)
 				}
 				for(current_count_of_buffer_queue_passes=0; current_count_of_buffer_queue_passes<number_of_buffers_to_queue_this_pass; current_count_of_buffer_queue_passes++)
 				{
-//					fprintf(stderr, "current_count_of_buffer_queue_passes:%d\n",  current_count_of_buffer_queue_passes);
+/*					fprintf(stderr, "current_count_of_buffer_queue_passes:%d\n",  current_count_of_buffer_queue_passes); */
+
+					/* Because I introduced this for-loop, I think I need to regrab the number of processed buffers because
+					 * the number may now be stale from previous iterations. I suppose I could do it at the end of the loop,
+					 * but the logic flow is already too complicated to ensure that the block is being hit.
+					 */
+					/* Get the number of buffers processed
+					*/
+					alGetSourcei(
+						ALmixer_Channel_List[i].alsource,
+						AL_BUFFERS_PROCESSED, 
+						&buffers_processed
+					);
+					if((error = alGetError()) != AL_NO_ERROR)
+					{
+						fprintf(stderr, "59aTestingError, Can't get buffers_processed: %s\n",
+							alGetString(error));				
+					}
+					
 
 					/* For this to work, we must rely on EVERYTHING
 					 * else to unset the EOF if there is looping.
@@ -5918,7 +5936,7 @@ static ALint Update_ALmixer(void* data)
 							if(ALmixer_Channel_List[i].almixer_data->circular_buffer_queue != NULL)
 							{
 								ALuint queue_ret_flag;
-	//				fprintf(stderr, "56d: CircularQueue_PushBack.\n");
+	/* 				fprintf(stderr, "56d: CircularQueue_PushBack.\n"); */
 								queue_ret_flag = CircularQueueUnsignedInt_PushBack(
 									ALmixer_Channel_List[i].almixer_data->circular_buffer_queue, 
 									ALmixer_Channel_List[i].almixer_data->buffer[ALmixer_Channel_List[i].almixer_data->num_buffers_in_use]
@@ -5966,7 +5984,7 @@ static ALint Update_ALmixer(void* data)
 							if(ALmixer_Channel_List[i].almixer_data->circular_buffer_queue != NULL)
 							{
 								ALuint queue_ret_flag;
-	//				fprintf(stderr, "56e: CircularQueue_PushBack.\n");
+	/* 				fprintf(stderr, "56e: CircularQueue_PushBack.\n"); */
 								queue_ret_flag = CircularQueueUnsignedInt_PushBack(
 									ALmixer_Channel_List[i].almixer_data->circular_buffer_queue, 
 									unqueued_buffer_id
@@ -7737,7 +7755,7 @@ void ALmixer_SetError(const char* err_str, ...)
 	}
 	va_list argp;
 	va_start(argp, err_str);
-	// SDL_SetError which I'm emulating has no number parameter.
+	/* SDL_SetError which I'm emulating has no number parameter. */
 	TError_SetErrorv(s_ALmixerErrorPool, 1, err_str, argp);
 	va_end(argp);
 }
@@ -8268,7 +8286,7 @@ static ALmixer_Data* DoLoad(Sound_Sample* sample, ALuint buffersize, ALboolean d
 						free(ret_data->buffer_map_list[j].data);
 						j--;
 					}
-					// Delete for j=0 because the while loop misses the last one
+					/* Delete for j=0 because the while loop misses the last one */
 					free(ret_data->buffer_map_list[j].data);
 
 					free(ret_data->buffer_map_list);
