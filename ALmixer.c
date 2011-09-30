@@ -1692,6 +1692,147 @@ static ALint Internal_FindFreeChannel(ALint start_channel)
 }
 
 
+static ALboolean Internal_DetachBuffersFromSource(ALuint source_id, ALboolean is_predecoded)
+{
+	ALboolean retval = AL_TRUE;
+	ALint buffers_processed;
+	ALenum error;
+	/* Here's the situation. My old method of using
+	 * alSourceUnqueueBuffers() seemed to be invalid in light
+	 * of all the problems I suffered through with getting 
+	 * the CoreData backend to work with this code.
+	 * As such, I'm changing all the code to set the buffer to
+	 * AL_NONE. Furthermore, the queued vs. non-queued issue
+	 * doesn't need to apply here. For non-queued, Loki,
+	 * Creative Windows, and CoreAudio seem to leave the 
+	 * buffer queued (Old Mac didn't.) For queued, we need to 
+	 * remove the processed buffers and force remove the
+	 * still-queued buffers.
+	 * Update: This code is was changed agian due to a serious regression bug in iOS 5.0
+	 * Since the 1.1 spec, I think I can make some simplifying assumptions sans the iOS 5.0 bug.
+	 * Before I looked at buffers_still_queued and buffers_processed.
+	 * According to the spec, all buffers get marked processed when alSourceStop is called.
+	 * Also, in addition, alSourcei(source, AL_BUFFER, AL_NONE) is supposed
+	 * to detach buffers for both streamed and non-streamed so all the code
+	 * should just go through that.
+	 * Unfortunately, the iOS 5.0 bug doesn't detach/clear buffers with AL_NONE.
+	 * So I need a special handler for iOS 5.0 which manually unqueues the buffers.
+	 * Ironically, I think the original Mac version did not work reliably
+	 * with unqueuing buffers which is why I moved the code to the AL_NONE
+	 * solution in the first place. This means for safety, I need to
+	 * conditionalize the workaround as not to risk breaking Mac or other * platforms.
+	 */
+#ifdef __APPLE__  /* iOS 5.0 workaround */
+	#if (TARGET_OS_IPHONE == 1) || (TARGET_IPHONE_SIMULATOR == 1)
+	/*
+		fprintf(stderr, "kCFCoreFoundationVersionNumber: %lf\n", kCFCoreFoundationVersionNumber);
+	 */
+		/* I needed a C way to get the iOS version at runtime. This is returning 674.0 iOS 5.0 Beta 7. Apple hasn't updated the headers
+		 * for these constants since iOS 4.2, so I don't know if the value is also catching 4.3.
+		 * TODO: Once I learn which version Apple fixes the bug in, I need to update the range so this check is not run on fixed versions.
+		 */
+		if(kCFCoreFoundationVersionNumber >= 674.0)
+		{
+			if(AL_FALSE == is_predecoded)
+			{
+				ALint buffers_processed;
+				/* Wow this is the bug that just keeps on sucking. There is even a race condition bug where the unqueue may not actually work. 
+				 * So I have to keep doing it until it does.
+				 */
+				do
+				{
+					ALint temp_count;
+					
+					/* Wow this is the bug that just keeps on sucking. There is even a race condition bug where the unqueue may not actually work. 
+					 * So I have to keep doing it until it does.
+					 * Sleeping for 20ms seems to help. 10ms was not long enough. (iPad 2)
+					 */
+					ALmixer_Delay(20);
+
+					alGetSourcei(
+						source_id,
+						AL_BUFFERS_PROCESSED, &buffers_processed
+					);
+					if((error = alGetError()) != AL_NO_ERROR)
+					{
+						fprintf(stderr, "17aTesting Error with buffers_processed on Halt. (You may be seeing this because of a bad Apple OpenAL iOS 5.0 regression bug): %s",
+							alGetString(error));
+						ALmixer_SetError("Failed detecting still processed buffers: %s",
+							alGetString(error) );
+						/* This whole iOS 5.0 bug is so messed up that returning an error value probably isn't helpful.
+						retval = AL_FALSE;
+						*/
+					}
+					/*
+					fprintf(stderr, "Going to unqueue %d buffers\n", buffers_processed);
+					 */
+					for(temp_count=0; temp_count<buffers_processed; temp_count++)
+					{
+						ALuint unqueued_buffer_id;
+
+						alSourceUnqueueBuffers(
+							source_id,
+							1, &unqueued_buffer_id
+						);
+						if((error = alGetError()) != AL_NO_ERROR)
+						{
+							fprintf(stderr, "17bTesting error with unqueuing buffers on Halt (You may be seeing this because of a bad Apple OpenAL iOS 5.0 regression bug): %s\n",
+								alGetString(error));				
+							/* This whole iOS 5.0 bug is so messed up that returning an error value probably isn't helpful.
+							 retval = AL_FALSE;
+							 */
+						}
+					}
+					
+					alGetSourcei(
+								 source_id,
+								 AL_BUFFERS_PROCESSED, &buffers_processed
+								 );
+					if((error = alGetError()) != AL_NO_ERROR)
+					{
+						fprintf(stderr, "17cTesting Error with buffers_processed on Halt. (You may be seeing this because of a bad Apple OpenAL iOS 5.0 regression bug): %s",
+								alGetString(error));
+						ALmixer_SetError("Failed detecting still processed buffers: %s",
+										 alGetString(error) );
+						/* This whole iOS 5.0 bug is so messed up that returning an error value probably isn't helpful.
+						 retval = AL_FALSE;
+						 */
+					}
+					/*
+					fprintf(stderr, "unqueued buffers should be 0. Actual value is %d\n", buffers_processed);
+					*/
+					/* Wow this is the bug that just keeps on sucking. There is an additional race condition bug where the unqueue may not actually work. 
+					 * So I have to keep doing it until it does.
+					 * I hope this doesn't infinite loop.
+					 */
+					if(0 != buffers_processed)
+					{
+						fprintf(stderr, "Evil Apple OpenAL iOS 5.0 race condition. Buffers didn't actually unqueue. Repeating unqueue loop.\n");
+					}
+				} while(0 != buffers_processed);
+
+			}
+		}		
+	
+
+	#endif
+#endif /* iOS 5.0 workaround */
+
+		/* According to the spec, this is the best way to clear a source. 
+		 * This is supposed to work for both streamed and non-streamed sources. 
+		 */
+		alSourcei(source_id, AL_BUFFER, AL_NONE);
+		if((error = alGetError()) != AL_NO_ERROR)
+		{
+			fprintf(stderr, "17dTesting Error with clearing buffer from source: %s",
+				alGetString(error));
+			ALmixer_SetError("Failed to clear buffer from source: %s",
+				alGetString(error) );
+			retval = AL_FALSE;
+		}
+
+		return retval;
+}
 
 /* Will return the number of channels halted
  * or 0 for error
@@ -1701,8 +1842,7 @@ static ALint Internal_HaltChannel(ALint channel, ALboolean did_finish_naturally)
 	ALint retval = 0;
 	ALint counter = 0;
 	ALenum error;
-	ALint buffers_still_queued;
-	ALint buffers_processed;
+	ALboolean clear_succeeded;
 
 	if(channel >= Number_of_Channels_global)
 	{
@@ -1721,59 +1861,13 @@ static ALint Internal_HaltChannel(ALint channel, ALboolean did_finish_naturally)
 				fprintf(stderr, "14Testing error: %s\n",
 					alGetString(error));				
 			}
-			/* Here's the situation. My old method of using
-			 * alSourceUnqueueBuffers() seemed to be invalid in light
-			 * of all the problems I suffered through with getting 
-			 * the CoreData backend to work with this code.
-			 * As such, I'm changing all the code to set the buffer to
-			 * AL_NONE. Furthermore, the queued vs. non-queued issue
-			 * doesn't need to apply here. For non-queued, Loki,
-			 * Creative Windows, and CoreAudio seem to leave the 
-			 * buffer queued (Old Mac didn't.) For queued, we need to 
-			 * remove the processed buffers and force remove the
-			 * still-queued buffers.
-			 */
-			alGetSourcei(
-				ALmixer_Channel_List[channel].alsource,
-				AL_BUFFERS_QUEUED, &buffers_still_queued
-			);
-			if((error = alGetError()) != AL_NO_ERROR)
+
+			clear_succeeded = Internal_DetachBuffersFromSource(ALmixer_Channel_List[channel].alsource, ALmixer_Channel_List[channel].almixer_data->decoded_all);
+			if(AL_FALSE == clear_succeeded)
 			{
-				fprintf(stderr, "17Testing Error with buffers_still_queued: %s",
-					alGetString(error));
-				ALmixer_SetError("Failed detecting still queued buffers: %s",
-					alGetString(error) );
 				retval = -1;
 			}
-			alGetSourcei(
-				ALmixer_Channel_List[channel].alsource,
-				AL_BUFFERS_PROCESSED, &buffers_processed
-			);
-			if((error = alGetError()) != AL_NO_ERROR)
-			{
-				fprintf(stderr, "17Testing Error with buffers_processed: %s",
-					alGetString(error));
-				ALmixer_SetError("Failed detecting still processed buffers: %s",
-					alGetString(error) );
-				retval = -1;
-			}
-			/* If either of these is greater than 0, it means we need
-			 * to clear the source
-			 */
-			if((buffers_still_queued > 0) || (buffers_processed > 0))
-			{
-				alSourcei(ALmixer_Channel_List[channel].alsource,
-					AL_BUFFER,
-					AL_NONE);
-				if((error = alGetError()) != AL_NO_ERROR)
-				{
-					fprintf(stderr, "17Testing Error with clearing buffer from source: %s",
-						alGetString(error));
-					ALmixer_SetError("Failed to clear buffer from source: %s",
-						alGetString(error) );
-					retval = -1;
-				}
-			}
+			
 
 			ALmixer_Channel_List[channel].almixer_data->num_buffers_in_use  = 0;
 
@@ -1801,60 +1895,12 @@ static ALint Internal_HaltChannel(ALint channel, ALboolean did_finish_naturally)
 						alGetString(error));				
 				}
 
-				/* Here's the situation. My old method of using
-				 * alSourceUnqueueBuffers() seemed to be invalid in light
-				 * of all the problems I suffered through with getting 
-				 * the CoreData backend to work with this code.
-				 * As such, I'm changing all the code to set the buffer to
-				 * AL_NONE. Furthermore, the queued vs. non-queued issue
-				 * doesn't need to apply here. For non-queued, Loki,
-				 * Creative Windows, and CoreAudio seem to leave the 
-				 * buffer queued (Old Mac didn't.) For queued, we need to 
-				 * remove the processed buffers and force remove the
-				 * still-queued buffers.
-				 */
-				alGetSourcei(
-					ALmixer_Channel_List[i].alsource,
-					AL_BUFFERS_QUEUED, &buffers_still_queued
-				);
-				if((error = alGetError()) != AL_NO_ERROR)
+				clear_succeeded = Internal_DetachBuffersFromSource(ALmixer_Channel_List[i].alsource, ALmixer_Channel_List[i].almixer_data->decoded_all);
+				if(AL_FALSE == clear_succeeded)
 				{
-					fprintf(stderr, "17Testing Error with buffers_still_queued: %s",
-						alGetString(error));
-					ALmixer_SetError("Failed detecting still queued buffers: %s",
-						alGetString(error) );
 					retval = -1;
 				}
-				alGetSourcei(
-					ALmixer_Channel_List[i].alsource,
-					AL_BUFFERS_PROCESSED, &buffers_processed
-				);
-				if((error = alGetError()) != AL_NO_ERROR)
-				{
-					fprintf(stderr, "17Testing Error with buffers_processed: %s",
-						alGetString(error));
-					ALmixer_SetError("Failed detecting still processed buffers: %s",
-						alGetString(error) );
-					retval = -1;
-				}
-				/* If either of these is greater than 0, it means we need
-				 * to clear the source
-				 */
-				if((buffers_still_queued > 0) || (buffers_processed > 0))
-				{
-					alSourcei(ALmixer_Channel_List[i].alsource,
-						AL_BUFFER,
-						AL_NONE);
-					if((error = alGetError()) != AL_NO_ERROR)
-					{
-						fprintf(stderr, "17Testing Error with clearing buffer from source: %s",
-							alGetString(error));
-						ALmixer_SetError("Failed to clear buffer from source: %s",
-							alGetString(error) );
-						retval = -1;
-					}
-				}
-				
+			
 				ALmixer_Channel_List[i].almixer_data->num_buffers_in_use  = 0;
 
 				/* Launch callback for consistency? */
@@ -5173,36 +5219,11 @@ static ALint Update_ALmixer(void* data)
 						}
 						if(buffers_still_queued > 0)
 						{
-
-#if 0 /* This triggers an error in OS X Core Audio. */
-							alSourceUnqueueBuffers(
-								ALmixer_Channel_List[i].alsource,
-								1, 
-								ALmixer_Channel_List[i].almixer_data->buffer
-							);
-#else
-/*							fprintf(stderr, "In the Bob Aron section...about to clear source\n");
-							PrintQueueStatus(ALmixer_Channel_List[i].alsource);
-*/							
-							/* Rather than force unqueuing the buffer, let's see if
-							 * setting the buffer to none works (the OpenAL 1.0 
-							 * Reference Annotation suggests this should work).							 
-							 */
-							alSourcei(ALmixer_Channel_List[i].alsource,
-										AL_BUFFER, AL_NONE); 
-							/*
-							PrintQueueStatus(ALmixer_Channel_List[i].alsource);
-							*/	
-#endif								
-							if((error = alGetError()) != AL_NO_ERROR)
+							ALboolean clear_succeeded = Internal_DetachBuffersFromSource(ALmixer_Channel_List[i].alsource, ALmixer_Channel_List[i].almixer_data->decoded_all);
+							if(AL_FALSE == clear_succeeded)
 							{
-		fprintf(stderr, "Error with unqueue, after alSourceUnqueueBuffers, buffers_still_queued=%d, error is: %s", buffers_still_queued,
-								alGetString(error));
-								ALmixer_SetError("Predecoded Unqueue buffer failed: %s",
-									alGetString(error) );
 								error_flag--;
 							}
-
 						}
 						
 						/* Launch callback */
@@ -6238,8 +6259,11 @@ static ALint Update_ALmixer(void* data)
 								* setting the buffer to none works (the OpenAL 1.0 
 								* Reference Annotation suggests this should work).								 
 								*/
-								alSourcei(ALmixer_Channel_List[i].alsource,
-										  AL_BUFFER, AL_NONE); 
+								ALboolean clear_succeeded = Internal_DetachBuffersFromSource(ALmixer_Channel_List[i].alsource, ALmixer_Channel_List[i].almixer_data->decoded_all);
+								if(AL_FALSE == clear_succeeded)
+								{
+									error_flag--;
+								}
 	/*							
 								PrintQueueStatus(ALmixer_Channel_List[i].alsource);
 	*/
