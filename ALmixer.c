@@ -1695,7 +1695,6 @@ static ALint Internal_FindFreeChannel(ALint start_channel)
 static ALboolean Internal_DetachBuffersFromSource(ALuint source_id, ALboolean is_predecoded)
 {
 	ALboolean retval = AL_TRUE;
-	ALint buffers_processed;
 	ALenum error;
 	/* Here's the situation. My old method of using
 	 * alSourceUnqueueBuffers() seemed to be invalid in light
@@ -2225,7 +2224,7 @@ static ALint Internal_RewindChannel(ALint channel)
 		/* only need to process channel if in use */
 		if(ALmixer_Channel_List[channel].channel_in_use)
 		{
-
+			running_count = 1;
 			/* What should I do? Do I just rewind the channel
 			 * or also rewind the data? Since the data is
 			 * shared, let's make it the user's responsibility
@@ -2289,7 +2288,10 @@ static ALint Internal_RewindChannel(ALint channel)
 				 * much data is queued. Recommend users call Halt
 				 * before rewind if they want immediate results.
 				 */
-				retval = Internal_RewindData(ALmixer_Channel_List[channel].almixer_data);
+				if(AL_FALSE == Internal_RewindData(ALmixer_Channel_List[channel].almixer_data))
+				{
+					retval = -1;
+				}
 			}
 		}
 	}
@@ -2302,6 +2304,7 @@ static ALint Internal_RewindChannel(ALint channel)
 			/* only need to process channel if in use */
 			if(ALmixer_Channel_List[i].channel_in_use)
 			{
+				running_count++;
 				/* What should I do? Do I just rewind the channel
 				 * or also rewind the data? Since the data is
 				 * shared, let's make it the user's responsibility
@@ -2365,7 +2368,10 @@ static ALint Internal_RewindChannel(ALint channel)
 					 * much data is queued. Recommend users call Halt
 					 * before rewind if they want immediate results.
 					 */
-					running_count += Internal_RewindData(ALmixer_Channel_List[i].almixer_data);
+					if(AL_FALSE == Internal_RewindData(ALmixer_Channel_List[i].almixer_data))
+					{
+						retval = -1;
+					}
 				}
 			}
 		}
@@ -3337,18 +3343,8 @@ static ALint Internal_SeekChannel(ALint channel, ALuint msec)
 									 alGetString(error) );
 					retval = -1;
 				}
-				/* Need to resume playback if it was originally playing */
-				if(AL_PLAYING == state)
-				{
-					alSourcePlay(ALmixer_Channel_List[channel].alsource);
-					if((error = alGetError()) != AL_NO_ERROR)
-					{
-						ALmixer_SetError("%s",
-										 alGetString(error) );
-						retval = -1;
-					}
-				}
-				else if(AL_PAUSED == state)
+				/* OpenAL 1.1 spec says if this succeeds on a playing source, it will automatically jump */
+				if(AL_PAUSED == state)
 				{
 					/* HACK: The problem is that when paused, after
 					 * the Rewind, I can't get it off the INITIAL
@@ -3377,8 +3373,12 @@ static ALint Internal_SeekChannel(ALint channel, ALuint msec)
 				 * much data is queued. Recommend users call Halt
 				 * before rewind if they want immediate results.
 				 */
-				retval = Internal_SeekData(ALmixer_Channel_List[channel].almixer_data, msec);
+				if(AL_FALSE == Internal_SeekData(ALmixer_Channel_List[channel].almixer_data, msec))
+				{
+					retval = -1;
+				}
 			}
+			running_count = 1;
 		}
 	}
 	/* The user wants to rewind all channels */
@@ -3409,6 +3409,7 @@ static ALint Internal_SeekChannel(ALint channel, ALuint msec)
 								alGetString(error));				
 					}
 
+					/* OpenAL 1.1 spec says if this succeeds on a playing source, it will automatically jump */
 					alSourcef(ALmixer_Channel_List[channel].alsource, AL_SEC_OFFSET, sec_offset);
 					if((error = alGetError()) != AL_NO_ERROR)
 					{
@@ -3416,18 +3417,7 @@ static ALint Internal_SeekChannel(ALint channel, ALuint msec)
 										 alGetString(error) );
 						retval = -1;
 					}
-					/* Need to resume playback if it was originally playing */
-					if(AL_PLAYING == state)
-					{
-						alSourcePlay(ALmixer_Channel_List[i].alsource);
-						if((error = alGetError()) != AL_NO_ERROR)
-						{
-							ALmixer_SetError("%s",
-											 alGetString(error) );
-							retval = -1;
-						}
-					}
-					else if(AL_PAUSED == state)
+					if(AL_PAUSED == state)
 					{
 						/* HACK: The problem is that when paused, after
 						 * the Rewind, I can't get it off the INITIAL
@@ -3456,8 +3446,12 @@ static ALint Internal_SeekChannel(ALint channel, ALuint msec)
 					 * much data is queued. Recommend users call Halt
 					 * before rewind if they want immediate results.
 					 */
-					running_count += Internal_SeekData(ALmixer_Channel_List[i].almixer_data, msec);
+					if(AL_FALSE == Internal_SeekData(ALmixer_Channel_List[i].almixer_data, msec))
+					{
+						retval = -1;
+					}
 				}
+				running_count++;
 			}
 		}
 	}
