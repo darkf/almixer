@@ -1732,88 +1732,95 @@ static ALboolean Internal_DetachBuffersFromSource(ALuint source_id, ALboolean is
 		 */
 		if(kCFCoreFoundationVersionNumber >= 674.0)
 		{
-			if(AL_FALSE == is_predecoded)
+			/* For OpenAL experts, this is contrary to what you know, but must be done because the OpenAL implementation is broken.
+			   Instead of unqueuing buffers on only streaming sources, it appears that alSourcei(source, AL_BUFFER, AL_NONE) is not reliable at all.
+			   In cases where I switch between stream and non-stream on the same source and then stream again, the bug breaks playback on the third playback
+			   and only one buffer plays.
+			   The workaround seems to be to always unqueue buffers regardless of whether the source is streamed or not. 
+			   And then avoid calling (source, AL_BUFFER, AL_NONE)
+			   From past experience, I know it is a bad idea to try to unqueue buffers from a non-streamed source (which is the contrary to OpenAL part),
+			   but this seems to work for this bug.
+			 */
+			ALint buffers_processed;
+			/* Wow this is the bug that just keeps on sucking. There is even a race condition bug where the unqueue may not actually work. 
+			 * So I have to keep doing it until it does.
+			 */
+			do
 			{
-				ALint buffers_processed;
+				ALint temp_count;
+				
 				/* Wow this is the bug that just keeps on sucking. There is even a race condition bug where the unqueue may not actually work. 
 				 * So I have to keep doing it until it does.
+				 * Sleeping for 20ms seems to help. 10ms was not long enough. (iPad 2)
 				 */
-				do
-				{
-					ALint temp_count;
-					
-					/* Wow this is the bug that just keeps on sucking. There is even a race condition bug where the unqueue may not actually work. 
-					 * So I have to keep doing it until it does.
-					 * Sleeping for 20ms seems to help. 10ms was not long enough. (iPad 2)
-					 */
-					ALmixer_Delay(20);
+				ALmixer_Delay(20);
 
-					alGetSourcei(
+				alGetSourcei(
+					source_id,
+					AL_BUFFERS_PROCESSED, &buffers_processed
+				);
+				if((error = alGetError()) != AL_NO_ERROR)
+				{
+					fprintf(stderr, "17aTesting Error with buffers_processed on Halt. (You may be seeing this because of a bad Apple OpenAL iOS 5.0 regression bug): %s",
+						alGetString(error));
+					ALmixer_SetError("Failed detecting still processed buffers: %s",
+						alGetString(error) );
+					/* This whole iOS 5.0 bug is so messed up that returning an error value probably isn't helpful.
+					retval = AL_FALSE;
+					*/
+				}
+				/*
+				fprintf(stderr, "Going to unqueue %d buffers\n", buffers_processed);
+				 */
+				for(temp_count=0; temp_count<buffers_processed; temp_count++)
+				{
+					ALuint unqueued_buffer_id;
+
+					alSourceUnqueueBuffers(
 						source_id,
-						AL_BUFFERS_PROCESSED, &buffers_processed
+						1, &unqueued_buffer_id
 					);
 					if((error = alGetError()) != AL_NO_ERROR)
 					{
-						fprintf(stderr, "17aTesting Error with buffers_processed on Halt. (You may be seeing this because of a bad Apple OpenAL iOS 5.0 regression bug): %s",
-							alGetString(error));
-						ALmixer_SetError("Failed detecting still processed buffers: %s",
-							alGetString(error) );
-						/* This whole iOS 5.0 bug is so messed up that returning an error value probably isn't helpful.
-						retval = AL_FALSE;
-						*/
-					}
-					/*
-					fprintf(stderr, "Going to unqueue %d buffers\n", buffers_processed);
-					 */
-					for(temp_count=0; temp_count<buffers_processed; temp_count++)
-					{
-						ALuint unqueued_buffer_id;
-
-						alSourceUnqueueBuffers(
-							source_id,
-							1, &unqueued_buffer_id
-						);
-						if((error = alGetError()) != AL_NO_ERROR)
-						{
-							fprintf(stderr, "17bTesting error with unqueuing buffers on Halt (You may be seeing this because of a bad Apple OpenAL iOS 5.0 regression bug): %s\n",
-								alGetString(error));				
-							/* This whole iOS 5.0 bug is so messed up that returning an error value probably isn't helpful.
-							 retval = AL_FALSE;
-							 */
-						}
-					}
-					
-					alGetSourcei(
-								 source_id,
-								 AL_BUFFERS_PROCESSED, &buffers_processed
-								 );
-					if((error = alGetError()) != AL_NO_ERROR)
-					{
-						fprintf(stderr, "17cTesting Error with buffers_processed on Halt. (You may be seeing this because of a bad Apple OpenAL iOS 5.0 regression bug): %s",
-								alGetString(error));
-						ALmixer_SetError("Failed detecting still processed buffers: %s",
-										 alGetString(error) );
+						fprintf(stderr, "17bTesting error with unqueuing buffers on Halt (You may be seeing this because of a bad Apple OpenAL iOS 5.0 regression bug): %s\n",
+							alGetString(error));				
 						/* This whole iOS 5.0 bug is so messed up that returning an error value probably isn't helpful.
 						 retval = AL_FALSE;
 						 */
 					}
-					/*
-					fprintf(stderr, "unqueued buffers should be 0. Actual value is %d\n", buffers_processed);
-					*/
-					/* Wow this is the bug that just keeps on sucking. There is an additional race condition bug where the unqueue may not actually work. 
-					 * So I have to keep doing it until it does.
-					 * I hope this doesn't infinite loop.
+				}
+				
+				alGetSourcei(
+							 source_id,
+							 AL_BUFFERS_PROCESSED, &buffers_processed
+							 );
+				if((error = alGetError()) != AL_NO_ERROR)
+				{
+					fprintf(stderr, "17cTesting Error with buffers_processed on Halt. (You may be seeing this because of a bad Apple OpenAL iOS 5.0 regression bug): %s",
+							alGetString(error));
+					ALmixer_SetError("Failed detecting still processed buffers: %s",
+									 alGetString(error) );
+					/* This whole iOS 5.0 bug is so messed up that returning an error value probably isn't helpful.
+					 retval = AL_FALSE;
 					 */
-					if(0 != buffers_processed)
-					{
-						fprintf(stderr, "Evil Apple OpenAL iOS 5.0 race condition. Buffers didn't actually unqueue. Repeating unqueue loop.\n");
-					}
-				} while(0 != buffers_processed);
+				}
+				/*
+				fprintf(stderr, "unqueued buffers should be 0. Actual value is %d\n", buffers_processed);
+				*/
+				/* Wow this is the bug that just keeps on sucking. There is an additional race condition bug where the unqueue may not actually work. 
+				 * So I have to keep doing it until it does.
+				 * I hope this doesn't infinite loop.
+				 */
+				if(0 != buffers_processed)
+				{
+					fprintf(stderr, "Evil Apple OpenAL iOS 5.0 race condition. Buffers didn't actually unqueue. Repeating unqueue loop.\n");
+				}
+			} while(0 != buffers_processed);
 
-			}
+			/* Avoid calling the normal cleanup because part of this bug seems to be triggered by alSourcei(source_id, AL_BUFFER, AL_NONE); */
+			return retval;
 		}		
 	
-
 	#endif
 #endif /* iOS 5.0 workaround */
 
