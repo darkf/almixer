@@ -367,8 +367,8 @@ static int OGG_seek(Sound_Sample *sample, uint32_t ms)
 {
     Sound_SampleInternal *internal = (Sound_SampleInternal *) sample->opaque;
     OggVorbis_File *vf = (OggVorbis_File *) internal->decoder_private;
-    double timepos = (((double) ms) / 1000.0);
-    BAIL_IF_MACRO(ov_time_seek(vf, timepos) < 0, ERR_IO_ERROR, 0);
+	/* Unlike Vorbis, Tremor uses integer milliseconds instead of double seconds. */
+    BAIL_IF_MACRO(ov_time_seek(vf, (ogg_int64_t)ms) < 0, ERR_IO_ERROR, 0);
     return(1);
 } /* OGG_seek */
 
