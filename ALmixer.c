@@ -1728,9 +1728,11 @@ static ALboolean Internal_DetachBuffersFromSource(ALuint source_id, ALboolean is
 	 */
 		/* I needed a C way to get the iOS version at runtime. This is returning 674.0 iOS 5.0 Beta 7. Apple hasn't updated the headers
 		 * for these constants since iOS 4.2, so I don't know if the value is also catching 4.3.
+		 * iOS 5.0.1 final is returning 675.0.
 		 * TODO: Once I learn which version Apple fixes the bug in, I need to update the range so this check is not run on fixed versions.
+		 * iOS 5.1 Beta 1 is returning 690.0.
 		 */
-		if(kCFCoreFoundationVersionNumber >= 674.0)
+		if(kCFCoreFoundationVersionNumber >= 674.0 &&  kCFCoreFoundationVersionNumber < 690.0)
 		{
 			/* For OpenAL experts, this is contrary to what you know, but must be done because the OpenAL implementation is broken.
 			   Instead of unqueuing buffers on only streaming sources, it appears that alSourcei(source, AL_BUFFER, AL_NONE) is not reliable at all.
@@ -1742,6 +1744,15 @@ static ALboolean Internal_DetachBuffersFromSource(ALuint source_id, ALboolean is
 			   but this seems to work for this bug.
 			 */
 			ALint buffers_processed;
+			/* Crap. Another iOS 5.0 problem. It seems our loop workaround below can get in cases where the buffer never clears.
+			 * It appears that in some cases (probably predecoded, but not always which makes it hard), that the buffer never can be unqueued.
+			 * I think it may possibly happen if you never use a source for streaming, and it is also possible it happens after loading or using a certain number of sources.
+			 * So to workaround, we need to abort after a certain amount of time to prevent an infinite loop check.
+			 * Some testing on iPad 2, 122ms is the highest number I've seen so far. So maybe 200ms is the cap?
+			 */
+			ALuint timeout_counter = ALmixer_GetTicks();
+			const ALuint MAX_NUMBER_OF_TICKS_TO_WAIT_IN_WORKAROUND = 200;
+
 			/* Wow this is the bug that just keeps on sucking. There is even a race condition bug where the unqueue may not actually work. 
 			 * So I have to keep doing it until it does.
 			 */
@@ -1751,9 +1762,14 @@ static ALboolean Internal_DetachBuffersFromSource(ALuint source_id, ALboolean is
 				
 				/* Wow this is the bug that just keeps on sucking. There is even a race condition bug where the unqueue may not actually work. 
 				 * So I have to keep doing it until it does.
-				 * Sleeping for 20ms seems to help. 10ms was not long enough. (iPad 2)
+				 * Sleeping for 20ms seems to help. 10ms was not long enough. (iPad 2).
+				 * Update: A user is hitting this in a tight loop and calling dozens/hundreds of times. The sleep some times seems to result in a stutter.
+				 * My theory is that there is thread contention and sleeps may be queuing up. The workaround seems to be reduce the sleep or eliminate it.
+				 * I prefer to reduce it because fundamentally I am waiting for the Core Audio/OpenAL thread to finish processing so yielding seems like a good idea.
+				 * The flipside is that I hit a lot of OpenAL errors because the commands keep failing and I'm burning CPU unnecessarily.
+				 * So far, the OpenAL errors seem harmless and there are no serious cascading failures I've encountered.
 				 */
-				ALmixer_Delay(20);
+				ALmixer_Delay(0);
 
 				alGetSourcei(
 					source_id,
@@ -1782,8 +1798,9 @@ static ALboolean Internal_DetachBuffersFromSource(ALuint source_id, ALboolean is
 					);
 					if((error = alGetError()) != AL_NO_ERROR)
 					{
-						fprintf(stderr, "17bTesting error with unqueuing buffers on Halt (You may be seeing this because of a bad Apple OpenAL iOS 5.0 regression bug): %s\n",
-							alGetString(error));				
+						/* Disabling this print because we hit it way too much with the usleep(0) */
+/*						fprintf(stderr, "17bTesting error with unqueuing buffers on Halt (You may be seeing this because of a bad Apple OpenAL iOS 5.0 regression bug): %s\n",	alGetString(error));
+ */
 						/* This whole iOS 5.0 bug is so messed up that returning an error value probably isn't helpful.
 						 retval = AL_FALSE;
 						 */
@@ -1796,10 +1813,8 @@ static ALboolean Internal_DetachBuffersFromSource(ALuint source_id, ALboolean is
 							 );
 				if((error = alGetError()) != AL_NO_ERROR)
 				{
-					fprintf(stderr, "17cTesting Error with buffers_processed on Halt. (You may be seeing this because of a bad Apple OpenAL iOS 5.0 regression bug): %s",
-							alGetString(error));
-					ALmixer_SetError("Failed detecting still processed buffers: %s",
-									 alGetString(error) );
+					fprintf(stderr, "17cTesting Error with buffers_processed on Halt. (You may be seeing this because of a bad Apple OpenAL iOS 5.0 regression bug): %s", alGetString(error));
+					ALmixer_SetError("Failed detecting still processed buffers: %s", alGetString(error) );
 					/* This whole iOS 5.0 bug is so messed up that returning an error value probably isn't helpful.
 					 retval = AL_FALSE;
 					 */
@@ -1811,15 +1826,18 @@ static ALboolean Internal_DetachBuffersFromSource(ALuint source_id, ALboolean is
 				 * So I have to keep doing it until it does.
 				 * I hope this doesn't infinite loop.
 				 */
+				/* Disabling this print because we hit it way too much with the usleep(0) */
+				/*
 				if(0 != buffers_processed)
 				{
-					fprintf(stderr, "Evil Apple OpenAL iOS 5.0 race condition. Buffers didn't actually unqueue. Repeating unqueue loop.\n");
+					fprintf(stderr, "Evil Apple OpenAL iOS 5.0 race condition. Buffers didn't actually unqueue. Repeating unqueue loop. %d, %d %d\n", ALmixer_GetTicks(), timeout_counter, ALmixer_GetTicks()-timeout_counter);
 				}
-			} while(0 != buffers_processed);
+				*/
+			} while(0 != buffers_processed && ( (ALmixer_GetTicks()-timeout_counter) < MAX_NUMBER_OF_TICKS_TO_WAIT_IN_WORKAROUND) );
 
 			/* Avoid calling the normal cleanup because part of this bug seems to be triggered by alSourcei(source_id, AL_BUFFER, AL_NONE); */
 			return retval;
-		}		
+		}
 	
 	#endif
 #endif /* iOS 5.0 workaround */
