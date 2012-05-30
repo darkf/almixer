@@ -26,6 +26,44 @@
 extern "C" {
 #endif
 
+#ifndef DOXYGEN_SHOULD_IGNORE_THIS
+/** @cond DOXYGEN_SHOULD_IGNORE_THIS */
+
+/* Note: For Doxygen to produce clean output, you should set the 
+ * PREDEFINED option to remove C_CIRCULAR_QUEUE_DECLSPEC, C_CIRCULAR_QUEUE_CALL, and
+ * the DOXYGEN_SHOULD_IGNORE_THIS blocks.
+ * PREDEFINED = DOXYGEN_SHOULD_IGNORE_THIS=1 C_CIRCULAR_QUEUE_DECLSPEC= C_CIRCULAR_QUEUE_CALL=
+ */
+
+/** Windows needs to know explicitly which functions to export in a DLL. */
+#if defined(_WIN32)
+	#if defined(C_CIRCULAR_QUEUE_BUILD_LIBRARY)
+		#define C_CIRCULAR_QUEUE_DECLSPEC __declspec(dllexport)
+	#else
+		#define C_CIRCULAR_QUEUE_DECLSPEC __declspec(dllimport)
+	#endif
+#else
+	#if defined(C_CIRCULAR_QUEUE_BUILD_LIBRARY)
+		#if defined (__GNUC__) && __GNUC__ >= 4
+			#define C_CIRCULAR_QUEUE_DECLSPEC __attribute__((visibility("default")))
+		#else
+			#define C_CIRCULAR_QUEUE_DECLSPEC
+		#endif
+	#else
+		#define C_CIRCULAR_QUEUE_DECLSPEC
+	#endif
+#endif
+
+/* For Windows, by default, use the C calling convention */
+#if defined(_WIN32)
+	#define C_CIRCULAR_QUEUE_CALL __cdecl
+#else
+	#define C_CIRCULAR_QUEUE_CALL
+#endif
+
+/** @endcond DOXYGEN_SHOULD_IGNORE_THIS */
+#endif /* DOXYGEN_SHOULD_IGNORE_THIS */
+
 /**
  * @file
  * This is a C-based Circular queue class. 
@@ -133,7 +171,7 @@ struct CircularQueueUnsignedInt
  *
  * @see CircularQueueUnsignedInt_FreeQueue
  */
-CircularQueueUnsignedInt* CircularQueueUnsignedInt_CreateQueue(unsigned int max_size);
+extern C_CIRCULAR_QUEUE_DECLSPEC CircularQueueUnsignedInt* C_CIRCULAR_QUEUE_CALL CircularQueueUnsignedInt_CreateQueue(unsigned int max_size);
 
 /**
  * This destroys a CircularQueue instance.
@@ -145,7 +183,7 @@ CircularQueueUnsignedInt* CircularQueueUnsignedInt_CreateQueue(unsigned int max_
  *
  * @see CircularQueueUnsignedInt_CreateQueue
  */
-void CircularQueueUnsignedInt_FreeQueue(CircularQueueUnsignedInt* queue);
+extern C_CIRCULAR_QUEUE_DECLSPEC void C_CIRCULAR_QUEUE_CALL CircularQueueUnsignedInt_FreeQueue(CircularQueueUnsignedInt* queue);
 
 /**
  * This pushes a new value into the back of the queue.
@@ -156,7 +194,7 @@ void CircularQueueUnsignedInt_FreeQueue(CircularQueueUnsignedInt* queue);
  *
  * @return Returns 1 on success, or 0 on failure.
  */
-unsigned int CircularQueueUnsignedInt_PushBack(CircularQueueUnsignedInt* queue, unsigned int value);
+extern C_CIRCULAR_QUEUE_DECLSPEC unsigned int C_CIRCULAR_QUEUE_CALL CircularQueueUnsignedInt_PushBack(CircularQueueUnsignedInt* queue, unsigned int value);
 
 /**
  * This pushes a new value into the front of the queue.
@@ -167,7 +205,7 @@ unsigned int CircularQueueUnsignedInt_PushBack(CircularQueueUnsignedInt* queue, 
  *
  * @return Returns 1 on success, or 0 on failure.
  */
-unsigned int CircularQueueUnsignedInt_PushFront(CircularQueueUnsignedInt* queue, unsigned int value);
+extern C_CIRCULAR_QUEUE_DECLSPEC unsigned int C_CIRCULAR_QUEUE_CALL CircularQueueUnsignedInt_PushFront(CircularQueueUnsignedInt* queue, unsigned int value);
 
 /**
  * This removes the value at the front of the queue.
@@ -181,7 +219,7 @@ unsigned int CircularQueueUnsignedInt_PushFront(CircularQueueUnsignedInt* queue,
  * @return Returns 1 on success, or 0 on failure.
  * @see CircularQueueUnsignedInt_Front
  */
-unsigned int CircularQueueUnsignedInt_PopFront(CircularQueueUnsignedInt* queue);
+extern C_CIRCULAR_QUEUE_DECLSPEC unsigned int C_CIRCULAR_QUEUE_CALL CircularQueueUnsignedInt_PopFront(CircularQueueUnsignedInt* queue);
 
 /**
  * This removes the value at the back of the queue.
@@ -195,7 +233,7 @@ unsigned int CircularQueueUnsignedInt_PopFront(CircularQueueUnsignedInt* queue);
  * @return Returns 1 on success, or 0 on failure.
  * @see CircularQueueUnsignedInt_Back
  */
-unsigned int CircularQueueUnsignedInt_PopBack(CircularQueueUnsignedInt* queue);
+extern C_CIRCULAR_QUEUE_DECLSPEC unsigned int C_CIRCULAR_QUEUE_CALL CircularQueueUnsignedInt_PopBack(CircularQueueUnsignedInt* queue);
 
 /**
  * This gets the value at the front of the queue.
@@ -212,7 +250,7 @@ unsigned int CircularQueueUnsignedInt_PopBack(CircularQueueUnsignedInt* queue);
  *
  * @see CircularQueueUnsignedInt_Size
  */
-unsigned int CircularQueueUnsignedInt_Front(CircularQueueUnsignedInt* queue);
+extern C_CIRCULAR_QUEUE_DECLSPEC unsigned int C_CIRCULAR_QUEUE_CALL CircularQueueUnsignedInt_Front(CircularQueueUnsignedInt* queue);
 
 /**
  * This gets the value at the back of the queue.
@@ -229,7 +267,7 @@ unsigned int CircularQueueUnsignedInt_Front(CircularQueueUnsignedInt* queue);
  *
  * @see CircularQueueUnsignedInt_Size
  */
-unsigned int CircularQueueUnsignedInt_Back(CircularQueueUnsignedInt* queue);
+extern C_CIRCULAR_QUEUE_DECLSPEC unsigned int C_CIRCULAR_QUEUE_CALL CircularQueueUnsignedInt_Back(CircularQueueUnsignedInt* queue);
 
 /**
  * This gets the current number of entries that are in the queue.
@@ -241,7 +279,7 @@ unsigned int CircularQueueUnsignedInt_Back(CircularQueueUnsignedInt* queue);
  * there is an error.
  *
  */
-unsigned int CircularQueueUnsignedInt_Size(CircularQueueUnsignedInt* queue);
+extern C_CIRCULAR_QUEUE_DECLSPEC unsigned int C_CIRCULAR_QUEUE_CALL CircularQueueUnsignedInt_Size(CircularQueueUnsignedInt* queue);
 
 /**
  * This gets the maximum number of entries that are allowed in the queue at
@@ -252,7 +290,7 @@ unsigned int CircularQueueUnsignedInt_Size(CircularQueueUnsignedInt* queue);
  *
  * @return Returns the maximum number of entries allowed in the queue.
  */
-unsigned int CircularQueueUnsignedInt_MaxSize(CircularQueueUnsignedInt* queue);
+extern C_CIRCULAR_QUEUE_DECLSPEC unsigned int C_CIRCULAR_QUEUE_CALL CircularQueueUnsignedInt_MaxSize(CircularQueueUnsignedInt* queue);
 /**
  * This empties the entire queue.
  * This will remove all entries that are in the queue.
@@ -261,7 +299,7 @@ unsigned int CircularQueueUnsignedInt_MaxSize(CircularQueueUnsignedInt* queue);
  *
  * @param queue The pointer to the CircularQueue instance.
  */
-void CircularQueueUnsignedInt_Clear(CircularQueueUnsignedInt* queue);
+extern C_CIRCULAR_QUEUE_DECLSPEC void C_CIRCULAR_QUEUE_CALL CircularQueueUnsignedInt_Clear(CircularQueueUnsignedInt* queue);
 
 /**
  * This is a debugging function that will print all the elements in the 
@@ -272,7 +310,7 @@ void CircularQueueUnsignedInt_Clear(CircularQueueUnsignedInt* queue);
  * 
  * @param queue The pointer to the CircularQueue instance.
  */
-void CircularQueueUnsignedInt_Print(CircularQueueUnsignedInt* queue);
+extern C_CIRCULAR_QUEUE_DECLSPEC void C_CIRCULAR_QUEUE_CALL CircularQueueUnsignedInt_Print(CircularQueueUnsignedInt* queue);
 
 /**
  * This returns the element located at the specified index,
@@ -304,7 +342,7 @@ void CircularQueueUnsignedInt_Print(CircularQueueUnsignedInt* queue);
  * is technically O(1).
  *
  */
-unsigned int CircularQueueUnsignedInt_ValueAtIndex(CircularQueueUnsignedInt* queue, unsigned int the_index);
+extern C_CIRCULAR_QUEUE_DECLSPEC unsigned int C_CIRCULAR_QUEUE_CALL CircularQueueUnsignedInt_ValueAtIndex(CircularQueueUnsignedInt* queue, unsigned int the_index);
 
 
 /* This is a trick I picked up from Lua. Doing the typedef separately 
@@ -347,7 +385,7 @@ struct CircularQueueVoid
  *
  * @see CircularQueueVoid_FreeQueue
  */
-CircularQueueVoid* CircularQueueVoid_CreateQueue(unsigned int max_size);
+extern C_CIRCULAR_QUEUE_DECLSPEC CircularQueueVoid* C_CIRCULAR_QUEUE_CALL CircularQueueVoid_CreateQueue(unsigned int max_size);
 
 /**
  * This destroys a CircularQueue instance.
@@ -359,7 +397,7 @@ CircularQueueVoid* CircularQueueVoid_CreateQueue(unsigned int max_size);
  *
  * @see CircularQueueVoid_CreateQueue
  */
-void CircularQueueVoid_FreeQueue(CircularQueueVoid* queue);
+extern C_CIRCULAR_QUEUE_DECLSPEC void C_CIRCULAR_QUEUE_CALL CircularQueueVoid_FreeQueue(CircularQueueVoid* queue);
 
 /**
  * This pushes a new value into the back of the queue.
@@ -370,7 +408,7 @@ void CircularQueueVoid_FreeQueue(CircularQueueVoid* queue);
  *
  * @return Returns 1 on success, or 0 on failure.
  */
-unsigned int CircularQueueVoid_PushBack(CircularQueueVoid* queue, void* value);
+extern C_CIRCULAR_QUEUE_DECLSPEC unsigned int C_CIRCULAR_QUEUE_CALL CircularQueueVoid_PushBack(CircularQueueVoid* queue, void* value);
 
 /**
  * This pushes a new value into the front of the queue.
@@ -381,7 +419,7 @@ unsigned int CircularQueueVoid_PushBack(CircularQueueVoid* queue, void* value);
  *
  * @return Returns 1 on success, or 0 on failure.
  */
-unsigned int CircularQueueVoid_PushFront(CircularQueueVoid* queue, void* value);
+extern C_CIRCULAR_QUEUE_DECLSPEC unsigned int C_CIRCULAR_QUEUE_CALL CircularQueueVoid_PushFront(CircularQueueVoid* queue, void* value);
 
 /**
  * This removes the value at the front of the queue.
@@ -395,7 +433,7 @@ unsigned int CircularQueueVoid_PushFront(CircularQueueVoid* queue, void* value);
  * @return Returns 1 on success, or 0 on failure.
  * @see CircularQueueVoid_Front
  */
-unsigned int CircularQueueVoid_PopFront(CircularQueueVoid* queue);
+extern C_CIRCULAR_QUEUE_DECLSPEC unsigned int C_CIRCULAR_QUEUE_CALL CircularQueueVoid_PopFront(CircularQueueVoid* queue);
 
 /**
  * This removes the value at the back of the queue.
@@ -409,7 +447,7 @@ unsigned int CircularQueueVoid_PopFront(CircularQueueVoid* queue);
  * @return Returns 1 on success, or 0 on failure.
  * @see CircularQueueVoid_Back
  */
-unsigned int CircularQueueVoid_PopBack(CircularQueueVoid* queue);
+extern C_CIRCULAR_QUEUE_DECLSPEC unsigned int C_CIRCULAR_QUEUE_CALL CircularQueueVoid_PopBack(CircularQueueVoid* queue);
 
 /**
  * This gets the value at the front of the queue.
@@ -426,7 +464,7 @@ unsigned int CircularQueueVoid_PopBack(CircularQueueVoid* queue);
  *
  * @see CircularQueueVoid_Size
  */
-void* CircularQueueVoid_Front(CircularQueueVoid* queue);
+extern C_CIRCULAR_QUEUE_DECLSPEC void* C_CIRCULAR_QUEUE_CALL CircularQueueVoid_Front(CircularQueueVoid* queue);
 
 /**
  * This gets the value at the back of the queue.
@@ -443,7 +481,7 @@ void* CircularQueueVoid_Front(CircularQueueVoid* queue);
  *
  * @see CircularQueueVoid_Size
  */
-void* CircularQueueVoid_Back(CircularQueueVoid* queue);
+extern C_CIRCULAR_QUEUE_DECLSPEC void* C_CIRCULAR_QUEUE_CALL CircularQueueVoid_Back(CircularQueueVoid* queue);
 
 /**
  * This gets the current number of entries that are in the queue.
@@ -455,7 +493,7 @@ void* CircularQueueVoid_Back(CircularQueueVoid* queue);
  * there is an error.
  *
  */
-unsigned int CircularQueueVoid_Size(CircularQueueVoid* queue);
+extern C_CIRCULAR_QUEUE_DECLSPEC unsigned int C_CIRCULAR_QUEUE_CALL CircularQueueVoid_Size(CircularQueueVoid* queue);
 
 /**
  * This gets the maximum number of entries that are allowed in the queue at
@@ -466,7 +504,7 @@ unsigned int CircularQueueVoid_Size(CircularQueueVoid* queue);
  *
  * @return Returns the maximum number of entries allowed in the queue.
  */
-unsigned int CircularQueueVoid_MaxSize(CircularQueueVoid* queue);
+extern C_CIRCULAR_QUEUE_DECLSPEC unsigned int C_CIRCULAR_QUEUE_CALL CircularQueueVoid_MaxSize(CircularQueueVoid* queue);
 /**
  * This empties the entire queue.
  * This will remove all entries that are in the queue.
@@ -475,7 +513,7 @@ unsigned int CircularQueueVoid_MaxSize(CircularQueueVoid* queue);
  *
  * @param queue The pointer to the CircularQueue instance.
  */
-void CircularQueueVoid_Clear(CircularQueueVoid* queue);
+extern C_CIRCULAR_QUEUE_DECLSPEC void C_CIRCULAR_QUEUE_CALL CircularQueueVoid_Clear(CircularQueueVoid* queue);
 
 /**
  * This is a debugging function that will print all the addresses
@@ -486,7 +524,7 @@ void CircularQueueVoid_Clear(CircularQueueVoid* queue);
  * 
  * @param queue The pointer to the CircularQueue instance.
  */
-void CircularQueueVoid_Print(CircularQueueVoid* queue);
+extern C_CIRCULAR_QUEUE_DECLSPEC void C_CIRCULAR_QUEUE_CALL CircularQueueVoid_Print(CircularQueueVoid* queue);
 
 /**
  * This returns the element located at the specified index,
@@ -517,7 +555,7 @@ void CircularQueueVoid_Print(CircularQueueVoid* queue);
  * is technically O(1).
  *
  */
-void* CircularQueueVoid_ValueAtIndex(CircularQueueVoid* queue, unsigned int the_index);
+extern C_CIRCULAR_QUEUE_DECLSPEC void* C_CIRCULAR_QUEUE_CALL CircularQueueVoid_ValueAtIndex(CircularQueueVoid* queue, unsigned int the_index);
 
 
 

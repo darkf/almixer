@@ -30,36 +30,76 @@ The API could use a lot more functions, but I'll add them as I need them.
 extern "C" {
 #endif
 
+
+#ifndef DOXYGEN_SHOULD_IGNORE_THIS
+/** @cond DOXYGEN_SHOULD_IGNORE_THIS */
+
+/* Note: For Doxygen to produce clean output, you should set the 
+ * PREDEFINED option to remove C_LINKED_LIST_DECLSPEC, C_LINKED_LIST_CALL, and
+ * the DOXYGEN_SHOULD_IGNORE_THIS blocks.
+ * PREDEFINED = DOXYGEN_SHOULD_IGNORE_THIS=1 C_LINKED_LIST_DECLSPEC= C_LINKED_LIST_CALL=
+ */
+
+/** Windows needs to know explicitly which functions to export in a DLL. */
+#if defined(_WIN32)
+	#if defined(C_LINKED_LIST_BUILD_LIBRARY)
+		#define C_LINKED_LIST_DECLSPEC __declspec(dllexport)
+	#else
+		#define C_LINKED_LIST_DECLSPEC __declspec(dllimport)
+	#endif
+#else
+	#if defined(C_LINKED_LIST_BUILD_LIBRARY)
+		#if defined (__GNUC__) && __GNUC__ >= 4
+			#define C_LINKED_LIST_DECLSPEC __attribute__((visibility("default")))
+		#else
+			#define C_LINKED_LIST_DECLSPEC
+		#endif
+	#else
+		#define C_LINKED_LIST_DECLSPEC
+	#endif
+#endif
+
+/* For Windows, by default, use the C calling convention */
+#if defined(_WIN32)
+	#define C_LINKED_LIST_CALL __cdecl
+#else
+	#define C_LINKED_LIST_CALL
+#endif
+
+/** @endcond DOXYGEN_SHOULD_IGNORE_THIS */
+#endif /* DOXYGEN_SHOULD_IGNORE_THIS */
+
+	
 #include <stddef.h>
 
 typedef struct LinkedListNode LinkedListNode;
 typedef struct LinkedList LinkedList;
 
-LinkedList* LinkedList_Create();
+extern C_LINKED_LIST_DECLSPEC LinkedList* C_LINKED_LIST_CALL LinkedList_Create(void);
 
-void LinkedList_Free(LinkedList* linked_list);
+extern C_LINKED_LIST_DECLSPEC void C_LINKED_LIST_CALL LinkedList_Free(LinkedList* linked_list);
 
-void* LinkedList_Front(LinkedList* linked_list);
+extern C_LINKED_LIST_DECLSPEC void* C_LINKED_LIST_CALL LinkedList_Front(LinkedList* linked_list);
 
-void* LinkedList_Back(LinkedList* linked_list);
+extern C_LINKED_LIST_DECLSPEC void* C_LINKED_LIST_CALL LinkedList_Back(LinkedList* linked_list);
 
-unsigned int LinkedList_PushFront(LinkedList* linked_list, void* new_item);
+extern C_LINKED_LIST_DECLSPEC unsigned int C_LINKED_LIST_CALL LinkedList_PushFront(LinkedList* linked_list, void* new_item);
 
-unsigned int LinkedList_PushBack(LinkedList* linked_list, void* new_item);
+extern C_LINKED_LIST_DECLSPEC unsigned int C_LINKED_LIST_CALL LinkedList_PushBack(LinkedList* linked_list, void* new_item);
 
-void* LinkedList_PopFront(LinkedList* linked_list);
+extern C_LINKED_LIST_DECLSPEC void* C_LINKED_LIST_CALL LinkedList_PopFront(LinkedList* linked_list);
 
-void* LinkedList_PopBack(LinkedList* linked_list);
+extern C_LINKED_LIST_DECLSPEC void* C_LINKED_LIST_CALL LinkedList_PopBack(LinkedList* linked_list);
 
-size_t LinkedList_Size(LinkedList* linked_list);
+extern C_LINKED_LIST_DECLSPEC size_t C_LINKED_LIST_CALL LinkedList_Size(LinkedList* linked_list);
 
-void LinkedList_Clear(LinkedList* linked_list);
+extern C_LINKED_LIST_DECLSPEC void C_LINKED_LIST_CALL LinkedList_Clear(LinkedList* linked_list);
 
-void* LinkedListNode_GetData(LinkedListNode* list_node);
+extern C_LINKED_LIST_DECLSPEC void* C_LINKED_LIST_CALL LinkedListNode_GetData(LinkedListNode* list_node);
 
-LinkedListNode* LinkedList_Find(LinkedList* linked_list, void* the_data, LinkedListNode* start_node);
+extern C_LINKED_LIST_DECLSPEC LinkedListNode* C_LINKED_LIST_CALL LinkedList_Find(LinkedList* linked_list, void* the_data, LinkedListNode* start_node);
 
-unsigned int LinkedList_Remove(LinkedList* linked_list, LinkedListNode* list_node);
+extern C_LINKED_LIST_DECLSPEC unsigned int C_LINKED_LIST_CALL LinkedList_Remove(LinkedList* linked_list, LinkedListNode* list_node);
 
 /* Ends C function definitions when using C++ */
 #ifdef __cplusplus
