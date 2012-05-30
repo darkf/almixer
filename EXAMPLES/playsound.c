@@ -14,7 +14,7 @@
 		#if defined(_WIN32)
 		Sleep(milliseconds_delay);
 		#else
-		usleep(milliseconds_delay);
+		usleep(milliseconds_delay*1000);
 		#endif
 	}
 #else
