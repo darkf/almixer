@@ -279,7 +279,7 @@ extern "C" {
 		#define TERROR_DECLSPEC __declspec(dllimport)
 	#endif
 #else
-	#if defined(ALMIXER_BUILD_LIBRARY)
+	#if defined(TERROR_BUILD_LIBRARY)
 		#if defined (__GNUC__) && __GNUC__ >= 4
 			#define TERROR_DECLSPEC __attribute__((visibility("default")))
 		#else

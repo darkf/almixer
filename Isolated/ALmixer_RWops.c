@@ -8,7 +8,7 @@
 
 /* (Note this is different than stdio's seek. This returns ftell.)
  */
-static int stdio_seek(ALmixer_RWops* the_context, long offset, int whence)
+static long stdio_seek(ALmixer_RWops* the_context, long offset, int whence)
 {
 	if(0 == fseek(the_context->hidden.stdio.fp, offset, whence))
 	{

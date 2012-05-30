@@ -11,7 +11,30 @@
 extern "C" {
 #endif
 	
+	#if defined(_WIN32)
+		#if defined(SOUND_DECODER_BUILD_LIBRARY)
+			#define SOUND_DECODER_DECLSPEC __declspec(dllexport)
+		#else
+			#define SOUND_DECODER_DECLSPEC __declspec(dllimport)
+		#endif
+	#else
+		#if defined(SOUND_DECODER_BUILD_LIBRARY)
+			#if defined (__GNUC__) && __GNUC__ >= 4
+				#define SOUND_DECODER_DECLSPEC __attribute__((visibility("default")))
+			#else
+				#define SOUND_DECODER_DECLSPEC
+			#endif
+		#else
+			#define SOUND_DECODER_DECLSPEC
+		#endif
+	#endif
 
+	#if defined(_WIN32)
+		#define SOUND_DECODER_CALL __cdecl
+	#else
+		#define SOUND_DECODER_CALL
+	#endif
+	
 #include <stdint.h>
 #include <stddef.h>
 
@@ -132,62 +155,62 @@ typedef struct SoundDecoder_Version Sound_Version;
 
 #define SOUND_VERSION SOUNDDECODER_VERSION
 
-void SoundDecoder_GetLinkedVersion(SoundDecoder_Version *ver);
+extern SOUND_DECODER_DECLSPEC void SOUND_DECODER_CALL SoundDecoder_GetLinkedVersion(SoundDecoder_Version *ver);
 #define Sound_GetLinkedVersion SoundDecoder_GetLinkedVersion
 
-int SoundDecoder_Init(void);
+extern SOUND_DECODER_DECLSPEC int SOUND_DECODER_CALL SoundDecoder_Init(void);
 #define Sound_Init SoundDecoder_Init
 
-void SoundDecoder_Quit(void);
+extern SOUND_DECODER_DECLSPEC void SOUND_DECODER_CALL SoundDecoder_Quit(void);
 #define Sound_Quit SoundDecoder_Quit
 
 
-const SoundDecoder_DecoderInfo** SoundDecoder_AvailableDecoders(void);
+extern SOUND_DECODER_DECLSPEC const SOUND_DECODER_CALL SoundDecoder_DecoderInfo** SoundDecoder_AvailableDecoders(void);
 #define Sound_AvailableDecoders SoundDecoder_AvailableDecoders
 
 
-const char* SoundDecoder_GetError(void);
+extern SOUND_DECODER_DECLSPEC const char* SOUND_DECODER_CALL SoundDecoder_GetError(void);
 #define Sound_GetError SoundDecoder_GetError
 
 
-void SoundDecoder_ClearError(void);
+extern SOUND_DECODER_DECLSPEC void SOUND_DECODER_CALL SoundDecoder_ClearError(void);
 #define Sound_ClearError SoundDecoder_ClearError
 
 
 
-SoundDecoder_Sample* SoundDecoder_NewSample(
+extern SOUND_DECODER_DECLSPEC SoundDecoder_Sample* SOUND_DECODER_CALL SoundDecoder_NewSample(
 	struct ALmixer_RWops* rw_ops,
 	const char* ext,
 	SoundDecoder_AudioInfo* desired,
 	size_t buffer_size);
 #define Sound_NewSample SoundDecoder_NewSample
 
-SoundDecoder_Sample* SoundDecoder_NewSampleFromFile(const char* file_name,
+extern SOUND_DECODER_DECLSPEC SoundDecoder_Sample* SOUND_DECODER_CALL SoundDecoder_NewSampleFromFile(const char* file_name,
 	SoundDecoder_AudioInfo* desired,
 	size_t bufferSize);
 #define Sound_NewSampleFromFile SoundDecoder_NewSampleFromFile
 
 
-void SoundDecoder_FreeSample(SoundDecoder_Sample* sound_sample);
+extern SOUND_DECODER_DECLSPEC void SOUND_DECODER_CALL SoundDecoder_FreeSample(SoundDecoder_Sample* sound_sample);
 #define Sound_FreeSample SoundDecoder_FreeSample
 
 
-ptrdiff_t SoundDecoder_GetDuration(SoundDecoder_Sample* sound_sample);
+extern SOUND_DECODER_DECLSPEC ptrdiff_t SOUND_DECODER_CALL SoundDecoder_GetDuration(SoundDecoder_Sample* sound_sample);
 #define Sound_GetDuration SoundDecoder_GetDuration
 
-int SoundDecoder_SetBufferSize(SoundDecoder_Sample* sound_sample, size_t new_buffer_size);
+extern SOUND_DECODER_DECLSPEC int SOUND_DECODER_CALL SoundDecoder_SetBufferSize(SoundDecoder_Sample* sound_sample, size_t new_buffer_size);
 #define Sound_SetBufferSize SoundDecoder_SetBufferSize
 
-size_t SoundDecoder_Decode(SoundDecoder_Sample* sound_sample);
+extern SOUND_DECODER_DECLSPEC size_t SOUND_DECODER_CALL SoundDecoder_Decode(SoundDecoder_Sample* sound_sample);
 #define Sound_Decode SoundDecoder_Decode
 
-size_t SoundDecoder_DecodeAll(SoundDecoder_Sample* sound_sample);
+extern SOUND_DECODER_DECLSPEC size_t SOUND_DECODER_CALL SoundDecoder_DecodeAll(SoundDecoder_Sample* sound_sample);
 #define Sound_DecodeAll SoundDecoder_DecodeAll
 
-int SoundDecoder_Rewind(SoundDecoder_Sample* sound_sample);
+extern SOUND_DECODER_DECLSPEC int SOUND_DECODER_CALL SoundDecoder_Rewind(SoundDecoder_Sample* sound_sample);
 #define Sound_Rewind SoundDecoder_Rewind
 
-int SoundDecoder_Seek(SoundDecoder_Sample* sound_sample, size_t ms);
+extern SOUND_DECODER_DECLSPEC int SOUND_DECODER_CALL SoundDecoder_Seek(SoundDecoder_Sample* sound_sample, size_t ms);
 #define Sound_Seek SoundDecoder_Seek
 
 

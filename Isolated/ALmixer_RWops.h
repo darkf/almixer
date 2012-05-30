@@ -46,7 +46,7 @@ extern "C" {
 		 *  Returns the final offset in the data source.
 		 *  (Note this is different than stdio's seek. This returns ftell.)
 		 */
-		int (ALMIXER_RWOPS_CALL *seek)(struct ALmixer_RWops* the_context, long offset, int whence);
+		long (ALMIXER_RWOPS_CALL *seek)(struct ALmixer_RWops* the_context, long offset, int whence);
 
 		/** Read up to 'nitems' objects each of size 'size' from the data
 		 *  source to the area pointed at by 'ptr'.
@@ -78,8 +78,8 @@ extern "C" {
 				struct
 				{
 					void *data;
-					int size;
-					int left;
+					size_t size;
+					size_t left;
 				} buffer;
 			} win32io;
 #endif
