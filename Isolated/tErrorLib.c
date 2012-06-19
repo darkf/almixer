@@ -17,7 +17,7 @@
  */
 #define TERROR_ERROR_VALUE 1
 
-#ifdef DONT_USE_VASPRINT
+#ifdef DONT_USE_VASPRINTF
 	#define TERROR_DEFAULT_STRING_LENGTH 128
 	/* Visual Studio doesn't define snprintf but _snprintf */
 	#ifdef _MSC_VER
