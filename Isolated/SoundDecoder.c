@@ -27,20 +27,21 @@ static TErrorPool* s_errorPool = NULL;
 
 static const SoundDecoder_DecoderInfo** s_availableDecoders = NULL;
 
-#ifdef __APPLE__
-//extern const SoundDecoder_DecoderFunctions __SoundDecoder_DecoderFunctions_CoreAudio;
-extern const Sound_DecoderFunctions __Sound_DecoderFunctions_CoreAudio;
+#ifdef __APPLE__ /* I'm making Apple use the Core Audio backend. */
+	//extern const SoundDecoder_DecoderFunctions __SoundDecoder_DecoderFunctions_CoreAudio;
+	extern const Sound_DecoderFunctions __Sound_DecoderFunctions_CoreAudio;
+#else /* Not Apple */
+	#ifdef SOUND_SUPPORTS_WAV
+		extern const Sound_DecoderFunctions __Sound_DecoderFunctions_WAV;
+	#endif
+	#ifdef SOUND_SUPPORTS_MPG123
+		extern const Sound_DecoderFunctions __Sound_DecoderFunctions_MPG123;
+	#endif
 #endif
-#ifdef ANDROID_NDK
-#ifdef SOUND_SUPPORTS_WAV
-extern const Sound_DecoderFunctions __Sound_DecoderFunctions_WAV;
-#endif
-#ifdef SOUND_SUPPORTS_MPG123
-extern const Sound_DecoderFunctions __Sound_DecoderFunctions_MPG123;
-#endif
+
+/* Note: Make sure to compile only Vorbis xor Tremor, not both. */
 #ifdef SOUND_SUPPORTS_OGG
-extern const Sound_DecoderFunctions __Sound_DecoderFunctions_OGG;
-#endif
+	extern const Sound_DecoderFunctions __Sound_DecoderFunctions_OGG;
 #endif
 
 typedef struct
@@ -52,18 +53,18 @@ typedef struct
 static SoundElement s_linkedDecoders[] =
 {
 #if defined(__APPLE__)
-    { 0, &__Sound_DecoderFunctions_CoreAudio },
+		{ 0, &__Sound_DecoderFunctions_CoreAudio },
+#else /* Not Apple */
+	#ifdef SOUND_SUPPORTS_WAV
+		{ 0, &__Sound_DecoderFunctions_WAV },
+	#endif
+	#ifdef SOUND_SUPPORTS_MPG123
+		{ 0, &__Sound_DecoderFunctions_MPG123 },
+	#endif
 #endif
-#if defined(ANDROID_NDK)
-#ifdef SOUND_SUPPORTS_WAV
-    { 0, &__Sound_DecoderFunctions_WAV },
-#endif
-#ifdef SOUND_SUPPORTS_MPG123
-    { 0, &__Sound_DecoderFunctions_MPG123 },
-#endif
+/* Note: Make sure to link only Vorbis xor Tremor, not both. */		
 #ifdef SOUND_SUPPORTS_OGG
     { 0, &__Sound_DecoderFunctions_OGG },
-#endif
 #endif
     { 0, NULL }
 };
