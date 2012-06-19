@@ -59,7 +59,7 @@
 				(HANDLE)mutex
 			);
 		}
-		size_t Internal_PlatformPlatformGetThreadID(void)
+		size_t Internal_PlatformGetThreadID(void)
 		{
 			return((size_t)GetCurrentThreadId());
 		}
