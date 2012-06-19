@@ -51,7 +51,7 @@ int main(int argc, char* argv[])
 	
 	for(i=1; i<argc; i++)
 	{
-		if(!(audio_data[i-1]=ALmixer_LoadStream( argv[i], ALMIXER_DEFAULT_BUFFERSIZE, ALMIXER_DEFAULT_QUEUE_BUFFERS, ALMIXER_DEFAULT_STARTUP_BUFFERS, AL_FALSE) ))
+		if(!(audio_data[i-1]=ALmixer_LoadStream( argv[i], ALMIXER_DEFAULT_BUFFERSIZE, ALMIXER_DEFAULT_QUEUE_BUFFERS, ALMIXER_DEFAULT_STARTUP_BUFFERS, ALMIXER_DEFAULT_BUFFERS_TO_QUEUE_PER_UPDATE_PASS, AL_FALSE) ))
 /*
 		if(!(audio_data[i-1]=ALmixer_LoadStream( argv[i], 4096, 2, 1, AL_FALSE) ))
 		if(!(audio_data[i-1]=ALmixer_LoadStream( argv[i], 4096, 5 * 4, 2, AL_FALSE) ))
