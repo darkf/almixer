@@ -5,6 +5,7 @@
 #define WIN32_LEAN_AND_MEAN
 #include <process.h>
 #include <windows.h>
+#include <stdlib.h>
 
 #if defined(DEBUG)
 #include <stdio.h>
@@ -17,9 +18,8 @@
 struct SimpleThread
 {
 	unsigned threadID;
-	uintptr_t nativeThread;
+	HANDLE nativeThread;
 	unsigned threadStatus;
-//    void* userData;	
 };
 
 typedef struct SimpleThreadArguments
@@ -31,11 +31,11 @@ typedef struct SimpleThreadArguments
 
 
 
-static unsigned Internal_RunThread(void* user_data)
+static unsigned __stdcall Internal_RunThread(void* user_data)
 {
 	int (*user_function)(void*);
 	void* function_user_data;
-	int* status_val;
+	unsigned* status_val;
 
 #if 0
 	/* disable signals */
@@ -72,28 +72,27 @@ static unsigned Internal_RunThread(void* user_data)
 	function_user_data = simple_thread_arguments->userData;
 	status_val = &simple_thread_arguments->simpleThread->threadStatus;
 
-	
+
 	/* I hope this is safe to delete on a different thread than it was created for. */
 	free(simple_thread_arguments);
 
 	*status_val = user_function(function_user_data);
 
     _endthreadex( 0 );
-	
-	return NULL;
+
+	return 0;
 }
 
 
 SimpleThread* SimpleThread_CreateThread(int (*user_function)(void*), void* user_data)
 {
-	int ret_val;
 	SimpleThread* new_thread;
 	SimpleThreadArguments* simple_thread_arguments;
 
 	new_thread = (SimpleThread*)malloc(sizeof(SimpleThread));
 	if(NULL == new_thread)
 	{
-		THRDDBG(("Out of memory.\n"));				
+		THRDDBG(("Out of memory.\n"));
 		return NULL;
 	}
 
@@ -101,7 +100,7 @@ SimpleThread* SimpleThread_CreateThread(int (*user_function)(void*), void* user_
 	if(NULL == simple_thread_arguments)
 	{
 		THRDDBG(("Out of memory.\n"));
-		free(new_thread);		
+		free(new_thread);
 		return NULL;
 	}
 	simple_thread_arguments->userFunction = user_function;
@@ -109,15 +108,15 @@ SimpleThread* SimpleThread_CreateThread(int (*user_function)(void*), void* user_
 	simple_thread_arguments->simpleThread = new_thread;
 
 
-	new_thread->nativeThread = _beginthreadex(NULL, 0, &Internal_RunThread, simple_thread_arguments, 0, &new_thread->threadID);
-	if(0 == ret_val)
+	new_thread->nativeThread = (HANDLE)_beginthreadex(NULL, 0, &Internal_RunThread, simple_thread_arguments, 0, &new_thread->threadID);
+	if(0 == new_thread->nativeThread)
 	{
 		THRDDBG(("_beginthreadex failed with: %d\n", errno));
-		free(simple_thread_arguments);		
-		free(new_thread);		
+		free(simple_thread_arguments);
+		free(new_thread);
 		return NULL;
 	}
-	
+
 	return new_thread;
 }
 
@@ -130,10 +129,9 @@ size_t SimpleThread_GetCurrentThreadID()
 
 void SimpleThread_WaitThread(SimpleThread* simple_thread, int* thread_status)
 {
-	int ret_val;	
 	if(NULL == simple_thread)
 	{
-		THRDDBG(("SimpleThread_WaitThread was passed NULL\n"));	
+		THRDDBG(("SimpleThread_WaitThread was passed NULL\n"));
 		return;
 	}
 
@@ -151,7 +149,7 @@ size_t SimpleThread_GetThreadID(SimpleThread* simple_thread)
 {
 	if(NULL == simple_thread)
 	{
-		THRDDBG(("SimpleThread_GetThreadID was passed NULL\n"));	
+		THRDDBG(("SimpleThread_GetThreadID was passed NULL\n"));
 		return 0;
 	}
 	return (size_t)simple_thread->threadID;
@@ -160,13 +158,11 @@ size_t SimpleThread_GetThreadID(SimpleThread* simple_thread)
 /* TODO: Figure out portable/normalized range for levels */
 int SimpleThread_GetThreadPriority(SimpleThread* simple_thread)
 {
-	struct sched_param schedule_param;
-	int sched_policy;
-	int ret_val;
-	
+	int ret_val = 0;
+
 	if(NULL == simple_thread)
 	{
-		THRDDBG(("SimpleThread_GetThreadPriority was passed NULL\n"));	
+		THRDDBG(("SimpleThread_GetThreadPriority was passed NULL\n"));
 		return THREAD_PRIORITY_ERROR_RETURN; /* Windows ranges seem to go from -15 to +15 */
 	}
 	ret_val = GetThreadPriority(simple_thread->nativeThread);
@@ -181,12 +177,11 @@ int SimpleThread_GetThreadPriority(SimpleThread* simple_thread)
 /* TODO: Figure out portable/normalized range for levels */
 void SimpleThread_SetThreadPriority(SimpleThread* simple_thread, int priority_level)
 {
-	struct sched_param schedule_param;
 	BOOL ret_val;
-	
+
 	if(NULL == simple_thread)
 	{
-		THRDDBG(("SimpleThread_SetThreadPriority was passed NULL\n"));	
+		THRDDBG(("SimpleThread_SetThreadPriority was passed NULL\n"));
 		return;
 	}
 
