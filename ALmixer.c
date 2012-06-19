@@ -307,7 +307,7 @@ ALdouble Internal_alcMacOSXGetMixerOutputRate()
 			if(TRUE == QueryPerformanceFrequency(&hi_res_ticks_per_second))
 			{
 				QueryPerformanceCounter(&s_ticksBaseTime);
-				s_hiResSecondsPerTick = 1.0 / hi_res_ticks_per_second;
+				s_hiResSecondsPerTick = 1.0 / hi_res_ticks_per_second.QuadPart;
 			}
 			else
 			{
