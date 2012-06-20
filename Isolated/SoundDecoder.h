@@ -50,29 +50,43 @@ extern "C" {
 #define AUDIO_U16 AUDIO_U16LSB
 #define AUDIO_S16 AUDIO_S16LSB
 
-#ifdef __ANDROID__
-	#include <endian.h>
-	#if _BYTE_ORDER == _BIG_ENDIAN
-		#define __BIG_ENDIAN__ 1
-	#elif _BYTE_ORDER == _LITTLE_ENDIAN
-		#define __LITTLE_ENDIAN__ 1
-	#else
-		#warning "Android falling back to __LITTLE_ENDIAN__"
-		#define __LITTLE_ENDIAN__ 1
-	#endif
-#endif
+/* Apple defines __BIG_ENDIAN__ and __LITTLE_ENDIAN__ appropriately.
+ * Linux provides <endian.h>
+ */
+#if !defined(__BIG_ENDIAN__) && !defined(__LITTLE_ENDIAN__)
+	#ifdef __linux__
+		#include <endian.h>
+		#if _BYTE_ORDER == _BIG_ENDIAN
+			#define __BIG_ENDIAN__ 1
+		#else
+			#define __LITTLE_ENDIAN__ 1
+		#endif
+	#else /* __linux __ */
+		#if defined(__hppa__) || \
+			defined(__m68k__) || defined(mc68000) || defined(_M_M68K) || \
+			(defined(__MIPS__) && defined(__MISPEB__)) || \
+			defined(__ppc__) || defined(__POWERPC__) || defined(_M_PPC) || \
+			defined(__sparc__)
+		
+			#define __BIG_ENDIAN__ 1
+		#else
+			#define __LITTLE_ENDIAN__ 1
+		#endif
+	#endif /* __linux __ */
+#endif /*  */
+
 
 #if __BIG_ENDIAN__
-#warning "Using __BIG_ENDIAN__"
-#define AUDIO_U16SYS AUDIO_U16MSB
-#define AUDIO_S16SYS AUDIO_S16MSB
+	/* #warning "Using __BIG_ENDIAN__" */
+	#define AUDIO_U16SYS AUDIO_U16MSB
+	#define AUDIO_S16SYS AUDIO_S16MSB
 #elif __LITTLE_ENDIAN__
-#define AUDIO_U16SYS	AUDIO_U16LSB
-#define AUDIO_S16SYS	AUDIO_S16LSB
+	#define AUDIO_U16SYS	AUDIO_U16LSB
+	#define AUDIO_S16SYS	AUDIO_S16LSB
 #else
-#warning "Using __LITTLE_ENDIAN__ as fallback"
-#define AUDIO_U16SYS	AUDIO_U16LSB
-#define AUDIO_S16SYS	AUDIO_S16LSB
+	#warning "Using __LITTLE_ENDIAN__ as fallback"
+	#define AUDIO_U16SYS	AUDIO_U16LSB
+	#define AUDIO_S16SYS	AUDIO_S16LSB
 #endif
 
 struct ALmixer_RWops;
