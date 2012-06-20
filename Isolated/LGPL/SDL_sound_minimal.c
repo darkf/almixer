@@ -18,7 +18,7 @@
  */
 
 /* 
- Attention: This is a stripped down file of SDL_endian for our purposes. 
+ Attention: This was extracted from SDL_sound to go with the wav.c plugin (also from SDL_sound). 
  This code is licensed under the LGPL.
  This means we must not compile this code into anything that we are not willing to
  publicly release source code. 
