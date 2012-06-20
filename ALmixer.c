@@ -62,7 +62,7 @@
  */
 #include "LinkedList.h"
 
-#ifdef ANDROID_NDK
+#ifdef __ANDROID__
 	#undef fprintf
 	#include <android/log.h>
 	#define fprintf(stderr, ...) __android_log_print(ANDROID_LOG_INFO, "ALmixer", __VA_ARGS__)

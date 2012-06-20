@@ -8,7 +8,7 @@
 #include <string.h>
 #include <assert.h>
 
-#ifdef ANDROID_NDK
+#ifdef __ANDROID__
 #include <android/log.h>
 #endif
 
@@ -108,7 +108,7 @@ int SoundDecoder_strcasecmp(const char* str1, const char* str2)
 }
 
 
-#ifdef ANDROID_NDK
+#ifdef __ANDROID__
 #include <stdarg.h>
 #include <android/log.h>
 int SoundDecoder_DebugPrint(const char* format, ...)
@@ -163,7 +163,7 @@ void SoundDecoder_SetError(const char* err_str, ...)
 	// SDL_SetError which I'm emulating has no number parameter.
 	TError_SetErrorv(s_errorPool, 1, err_str, argp);
 	va_end(argp);
-#ifdef ANDROID_NDK
+#ifdef __ANDROID__
 	__android_log_print(ANDROID_LOG_INFO, "SoundDecoder_SetError", TError_GetLastErrorStr(s_errorPool));
 #endif
 }

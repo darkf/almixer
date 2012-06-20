@@ -47,7 +47,7 @@ typedef struct SoundDecoder_SampleInternal Sound_SampleInternal;
 #define ERR_PREVIOUS_SAMPLE_ERROR "Cannot operate on sample due to previous error"
 #define ERR_ALREADY_AT_EOF_ERROR "Cannot operate on sample because already at EOF"
 
-#ifdef ANDROID_NDK
+#ifdef __ANDROID__
 
 /* This macro crashes when a format string is used. 
  * Provide a real function instead.

@@ -50,7 +50,7 @@ extern "C" {
 #define AUDIO_U16 AUDIO_U16LSB
 #define AUDIO_S16 AUDIO_S16LSB
 
-#ifdef ANDROID_NDK
+#ifdef __ANDROID__
 	#include <endian.h>
 	#if _BYTE_ORDER == _BIG_ENDIAN
 		#define __BIG_ENDIAN__ 1
