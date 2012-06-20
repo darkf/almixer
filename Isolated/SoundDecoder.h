@@ -14,8 +14,6 @@ extern "C" {
 	#if defined(_WIN32)
 		#if defined(SOUND_DECODER_BUILD_LIBRARY)
 			#define SOUND_DECODER_DECLSPEC __declspec(dllexport)
-		#else
-			#define SOUND_DECODER_DECLSPEC __declspec(dllimport)
 		#endif
 	#else
 		#if defined(SOUND_DECODER_BUILD_LIBRARY)

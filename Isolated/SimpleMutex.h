@@ -10,8 +10,6 @@ extern "C" {
 	#if defined(_WIN32)
 		#if defined(SIMPLE_MUTEX_BUILD_LIBRARY)
 			#define SIMPLE_MUTEX_DECLSPEC __declspec(dllexport)
-		#else
-			#define SIMPLE_MUTEX_DECLSPEC __declspec(dllimport)
 		#endif
 	#else
 		#if defined(SIMPLE_MUTEX_BUILD_LIBRARY)

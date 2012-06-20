@@ -44,8 +44,6 @@ extern "C" {
 #if defined(_WIN32)
 	#if defined(C_LINKED_LIST_BUILD_LIBRARY)
 		#define C_LINKED_LIST_DECLSPEC __declspec(dllexport)
-	#else
-		#define C_LINKED_LIST_DECLSPEC __declspec(dllimport)
 	#endif
 #else
 	#if defined(C_LINKED_LIST_BUILD_LIBRARY)

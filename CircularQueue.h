@@ -39,8 +39,6 @@ extern "C" {
 #if defined(_WIN32)
 	#if defined(C_CIRCULAR_QUEUE_BUILD_LIBRARY)
 		#define C_CIRCULAR_QUEUE_DECLSPEC __declspec(dllexport)
-	#else
-		#define C_CIRCULAR_QUEUE_DECLSPEC __declspec(dllimport)
 	#endif
 #else
 	#if defined(C_CIRCULAR_QUEUE_BUILD_LIBRARY)

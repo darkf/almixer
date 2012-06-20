@@ -136,8 +136,6 @@
 	#if defined(_WIN32)
 		#if defined(ALMIXER_BUILD_LIBRARY)
 			#define ALMIXER_DECLSPEC __declspec(dllexport)
-		#else
-			#define ALMIXER_DECLSPEC __declspec(dllimport)
 		#endif
 	#else
 		#if defined(ALMIXER_BUILD_LIBRARY)
