@@ -275,6 +275,8 @@ extern "C" {
 #if defined(_WIN32)
 	#if defined(TERROR_BUILD_LIBRARY)
 		#define TERROR_DECLSPEC __declspec(dllexport)
+	#else
+		#define TERROR_DECLSPEC
 	#endif
 #else
 	#if defined(TERROR_BUILD_LIBRARY)

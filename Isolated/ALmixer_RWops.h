@@ -4,6 +4,9 @@
 	#if defined(_WIN32)
 		#if defined(ALMIXER_RWOPS_BUILD_LIBRARY)
 			#define ALMIXER_RWOPS_DECLSPEC __declspec(dllexport)
+		#else
+			#define ALMIXER_RWOPS_DECLSPEC
+		#endif
 	#else
 		#if defined(ALMIXER_RWOPS_BUILD_LIBRARY)
 			#if defined (__GNUC__) && __GNUC__ >= 4

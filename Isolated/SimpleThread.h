@@ -8,6 +8,9 @@ extern "C" {
 	#if defined(_WIN32)
 		#if defined(SIMPLE_THREAD_BUILD_LIBRARY)
 			#define SIMPLE_THREAD_DECLSPEC __declspec(dllexport)
+		#else
+			#define SIMPLE_THREAD_DECLSPEC
+		#endif
 	#else
 		#if defined(SIMPLE_THREAD_BUILD_LIBRARY)
 			#if defined (__GNUC__) && __GNUC__ >= 4
