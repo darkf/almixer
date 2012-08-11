@@ -2942,23 +2942,21 @@ static ALint Internal_PauseChannel(ALint channel)
 				if(ALmixer_Channel_List[channel].fade_enabled)
 				{
 					ALuint current_time = ALmixer_GetTicks();
-					ALuint diff_time;
-					diff_time = current_time - 
+					ALuint used_up_time;
+					used_up_time = current_time - 
 						ALmixer_Channel_List[channel].fade_start_time;
 					/* When we unpause, we will want to reset
 					 * the start time so we can continue
 					 * to base calculations off GetTicks().
-					 * This means we need to subtract the amount
-					 * of time already used up from expire_ticks.
+					 * I originally did this wrong. I computed the amount of time remaining
+					 * and when I resumed, I grabbed the current time as the start and used the time remaining as the end.
+					 * I think this is wrong because the volume curve may not be linear.
+					 * Instead, I will try saving the time remaining, but preserve the original fade duration.
+					 * Then I will adjust the start time for the amount already played.
+					 * So I don't need to create another variable, I will overwrite the start time with the remaining time.
+					 * (Resume needs to know this implementation detail.)
 					 */
-					ALmixer_Channel_List[channel].fade_expire_ticks =
-						ALmixer_Channel_List[channel].fade_expire_ticks -
-						diff_time;
-					/* Don't allow the time to go negative */
-					if(ALmixer_Channel_List[channel].fade_expire_ticks < 0)
-					{
-						ALmixer_Channel_List[channel].fade_expire_ticks = 0;
-					}
+					ALmixer_Channel_List[channel].fade_start_time = used_up_time;
 				} /* End fade check */
 			} /* End if PLAYING */
 		} /* End If in use */
@@ -3025,23 +3023,21 @@ static ALint Internal_PauseChannel(ALint channel)
 					if(ALmixer_Channel_List[i].fade_enabled)
 					{
 						ALuint current_time = ALmixer_GetTicks();
-						ALuint diff_time;
-						diff_time = current_time - 
-							ALmixer_Channel_List[i].fade_start_time;
+						ALuint used_up_time;
+						used_up_time = current_time - 
+								ALmixer_Channel_List[i].fade_start_time;
 						/* When we unpause, we will want to reset
 						 * the start time so we can continue
 						 * to base calculations off GetTicks().
-						 * This means we need to subtract the amount
-						 * of time already used up from expire_ticks.
+						 * I originally did this wrong. I computed the amount of time remaining
+						 * and when I resumed, I grabbed the current time as the start and used the time remaining as the end.
+						 * I think this is wrong because the volume curve may not be linear.
+						 * Instead, I will try saving the time remaining, but preserve the original fade duration.
+						 * Then I will adjust the start time for the amount already played.
+						 * So I don't need to create another variable, I will overwrite the start time with the remaining time.
+						 * (Resume needs to know this implementation detail.)
 						 */
-						ALmixer_Channel_List[i].fade_expire_ticks =
-							ALmixer_Channel_List[i].fade_expire_ticks -
-							diff_time;
-						/* Don't allow the time to go negative */
-						if(ALmixer_Channel_List[i].fade_expire_ticks < 0)
-						{
-							ALmixer_Channel_List[i].fade_expire_ticks = 0;
-						}
+						ALmixer_Channel_List[i].fade_start_time = used_up_time;
 					} /* End fade check */	
 				} /* End if PLAYING */
 			} /* End channel in use */
@@ -3123,8 +3119,20 @@ static ALint Internal_ResumeChannel(ALint channel)
 				/* Do the same as expire time for fading */
 				if(ALmixer_Channel_List[channel].fade_enabled)
 				{
-					ALmixer_Channel_List[channel].fade_start_time = ALmixer_GetTicks();
-				}	
+					/* I originally did this wrong. On pause, I computed the amount of time remaining
+					 * and when I resumed, I grabbed the current time as the start and used the time remaining as the end.
+					 * I think this is wrong because the volume curve may not be linear.
+					 * Instead, I will try saving the time remaining, but preserve the original fade duration.
+					 * Then I will adjust the start time for the amount already played.
+					 * So I don't need to create another variable, I will overwrite the start time with the remaining time
+					 * (Resume needs to know this implementation detail.)
+					 */
+					ALuint current_time = ALmixer_GetTicks();
+					/* Recover the used_up_time from the overloaded fade_start_time variable */
+					ALuint used_up_time = ALmixer_Channel_List[channel].fade_start_time;		
+					/* So the adjusted start time is: */
+					ALmixer_Channel_List[channel].fade_start_time = current_time - used_up_time;
+				}
 
 				alSourcePlay(ALmixer_Channel_List[channel].alsource);
 				if((error = alGetError()) != AL_NO_ERROR)
@@ -3167,7 +3175,19 @@ static ALint Internal_ResumeChannel(ALint channel)
 					/* Do the same as expire time for fading */
 					if(ALmixer_Channel_List[i].fade_enabled)
 					{
-						ALmixer_Channel_List[i].fade_start_time = ALmixer_GetTicks();
+						/* I originally did this wrong. On pause, I computed the amount of time remaining
+						 * and when I resumed, I grabbed the current time as the start and used the time remaining as the end.
+						 * I think this is wrong because the volume curve may not be linear.
+						 * Instead, I will try saving the time remaining, but preserve the original fade duration.
+						 * Then I will adjust the start time for the amount already played.
+						 * So I don't need to create another variable, I will overwrite the start time with the remaining time
+						 * (Resume needs to know this implementation detail.)
+						 */
+						ALuint current_time = ALmixer_GetTicks();
+						/* Recover the used_up_time from the overloaded fade_start_time variable */
+						ALuint used_up_time = ALmixer_Channel_List[i].fade_start_time;		
+						/* So the adjusted start time is: */
+						ALmixer_Channel_List[i].fade_start_time = current_time - used_up_time;
 					}	
 						
 					alSourcePlay(ALmixer_Channel_List[i].alsource);
