@@ -2955,9 +2955,9 @@ static ALint Internal_PauseChannel(ALint channel)
 						ALmixer_Channel_List[channel].fade_expire_ticks -
 						diff_time;
 					/* Don't allow the time to go negative */
-					if(ALmixer_Channel_List[channel].expire_ticks < 0)
+					if(ALmixer_Channel_List[channel].fade_expire_ticks < 0)
 					{
-						ALmixer_Channel_List[channel].expire_ticks = 0;
+						ALmixer_Channel_List[channel].fade_expire_ticks = 0;
 					}
 				} /* End fade check */
 			} /* End if PLAYING */
@@ -3038,9 +3038,9 @@ static ALint Internal_PauseChannel(ALint channel)
 							ALmixer_Channel_List[i].fade_expire_ticks -
 							diff_time;
 						/* Don't allow the time to go negative */
-						if(ALmixer_Channel_List[i].expire_ticks < 0)
+						if(ALmixer_Channel_List[i].fade_expire_ticks < 0)
 						{
-							ALmixer_Channel_List[i].expire_ticks = 0;
+							ALmixer_Channel_List[i].fade_expire_ticks = 0;
 						}
 					} /* End fade check */	
 				} /* End if PLAYING */
