@@ -17,11 +17,11 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
-/* 
- Attention: This is a stripped down file of SDL_endian for our purposes. 
+/*
+ Attention: This is a stripped down file of SDL_endian for our purposes.
  This code is licensed under the LGPL.
  This means we must not compile this code into anything that we are not willing to
- publicly release source code. 
+ publicly release source code.
  You should compile this into a separate dynamic library that is isolated from proprietary code.
  */
 
@@ -46,11 +46,12 @@
 #include <stdlib.h>
 #include <string.h>
 
-//#include "SDL_sound.h"
+/*
+#include "SDL_sound.h"
 
-//#define __SDL_SOUND_INTERNAL__
-//#include "SDL_sound_internal.h"
-
+#define __SDL_SOUND_INTERNAL__
+#include "SDL_sound_internal.h"
+*/
 
 #include "SoundDecoder.h"
 
@@ -121,17 +122,17 @@ static __inline__ int read_uint8_t(ALmixer_RWops *rw, uint8_t *ui8)
 static __inline__ uint16_t SDL_ReadLE16( ALmixer_RWops *rw )
 {
 	uint16_t result = 0;
-	
+
 	int rc = read_le16( rw, &result );
-	
+
 	return result;
 }
 static __inline__ uint32_t SDL_ReadLE32( ALmixer_RWops *rw )
 {
 	uint32_t result = 0;
-	
+
 	int rc = read_le32( rw, &result );
-	
+
 	return result;
 }
 
@@ -177,7 +178,7 @@ typedef struct S_WAV_FMT_T
     uint16_t wBitsPerSample;
 
     uint32_t next_chunk_offset;
-    
+
     uint32_t sample_frame_size;
     uint32_t data_starting_offset;
     uint32_t total_bytes;
@@ -209,7 +210,7 @@ typedef struct S_WAV_FMT_T
 /*
  * Read in a fmt_t from disk. This makes this process safe regardless of
  *  the processor's byte order or how the fmt_t structure is packed.
- * Note that the union "fmt" is not read in here; that is handled as 
+ * Note that the union "fmt" is not read in here; that is handled as
  *  needed in the read_fmt_* functions.
  */
 static int read_fmt_chunk(ALmixer_RWops *rw, fmt_t *fmt)
@@ -217,11 +218,11 @@ static int read_fmt_chunk(ALmixer_RWops *rw, fmt_t *fmt)
     /* skip reading the chunk ID, since it was already read at this point... */
     fmt->chunkID = fmtID;
 
-    BAIL_IF_MACRO(!read_le32(rw, &fmt->chunkSize), NULL, 0);
+    BAIL_IF_MACRO(!read_le32(rw, (uint32_t*)&fmt->chunkSize), NULL, 0);
     BAIL_IF_MACRO(fmt->chunkSize < 16, "WAV: Invalid chunk size", 0);
     fmt->next_chunk_offset = ALmixer_RWtell(rw) + fmt->chunkSize;
-    
-    BAIL_IF_MACRO(!read_le16(rw, &fmt->wFormatTag), NULL, 0);
+
+    BAIL_IF_MACRO(!read_le16(rw, (uint16_t*)&fmt->wFormatTag), NULL, 0);
     BAIL_IF_MACRO(!read_le16(rw, &fmt->wChannels), NULL, 0);
     BAIL_IF_MACRO(!read_le32(rw, &fmt->dwSamplesPerSec), NULL, 0);
     BAIL_IF_MACRO(!read_le32(rw, &fmt->dwAvgBytesPerSec), NULL, 0);
@@ -242,7 +243,12 @@ static int read_fmt_chunk(ALmixer_RWops *rw, fmt_t *fmt)
 typedef struct
 {
     uint32_t chunkID;
-    int32_t chunkSize;
+
+	/* Johnson Lin wanted to clean up compiler warnings on Windows/CodeBlocks. 
+	 * This was originally a signed int32_t. The code usage and intent seems to imply that it should be a uint32_t.
+	 */
+    /* int32_t chunkSize; */
+    uint32_t chunkSize;
     /* Then, (chunkSize) bytes of waveform data... */
 } data_t;
 
@@ -382,10 +388,10 @@ static __inline__ int read_adpcm_block_headers(Sound_Sample *sample)
         BAIL_IF_MACRO(!read_le16(rw, &headers[i].iDelta), NULL, 0);
 
     for (i = 0; i < max; i++)
-        BAIL_IF_MACRO(!read_le16(rw, &headers[i].iSamp1), NULL, 0);
+        BAIL_IF_MACRO(!read_le16(rw, (uint16_t*)&headers[i].iSamp1), NULL, 0);
 
     for (i = 0; i < max; i++)
-        BAIL_IF_MACRO(!read_le16(rw, &headers[i].iSamp2), NULL, 0);
+        BAIL_IF_MACRO(!read_le16(rw, (uint16_t*)&headers[i].iSamp2), NULL, 0);
 
     fmt->fmt.adpcm.samples_left_in_block = fmt->fmt.adpcm.wSamplesPerBlock;
     fmt->fmt.adpcm.nibble_state = 0;
@@ -449,7 +455,7 @@ static __inline__ int decode_adpcm_sample_frame(Sound_Sample *sample)
         int16_t iCoef1 = fmt->fmt.adpcm.aCoef[headers[i].bPredictor].iCoef1;
         int16_t iCoef2 = fmt->fmt.adpcm.aCoef[headers[i].bPredictor].iCoef2;
         int32_t lPredSamp = ((headers[i].iSamp1 * iCoef1) +
-                            (headers[i].iSamp2 * iCoef2)) / 
+                            (headers[i].iSamp2 * iCoef2)) /
                              FIXED_POINT_COEF_BASE;
 
         if (fmt->fmt.adpcm.nibble_state == 0)
@@ -610,7 +616,7 @@ static int seek_sample_fmt_adpcm(Sound_Sample *sample, uint32_t ms)
 
 /*
  * Read in the adpcm-specific info from disk. This makes this process
- *  safe regardless of the processor's byte order or how the fmt_t 
+ *  safe regardless of the processor's byte order or how the fmt_t
  *  structure is packed.
  */
 static int read_fmt_adpcm(ALmixer_RWops *rw, fmt_t *fmt)
@@ -635,8 +641,8 @@ static int read_fmt_adpcm(ALmixer_RWops *rw, fmt_t *fmt)
 
     for (i = 0; i < fmt->fmt.adpcm.wNumCoef; i++)
     {
-        BAIL_IF_MACRO(!read_le16(rw, &fmt->fmt.adpcm.aCoef[i].iCoef1), NULL, 0);
-        BAIL_IF_MACRO(!read_le16(rw, &fmt->fmt.adpcm.aCoef[i].iCoef2), NULL, 0);
+        BAIL_IF_MACRO(!read_le16(rw, (uint16_t*)&fmt->fmt.adpcm.aCoef[i].iCoef1), NULL, 0);
+        BAIL_IF_MACRO(!read_le16(rw, (uint16_t*)&fmt->fmt.adpcm.aCoef[i].iCoef2), NULL, 0);
     } /* for */
 
     i = sizeof (ADPCMBLOCKHEADER) * fmt->wChannels;
@@ -699,7 +705,7 @@ static int read_fmt(ALmixer_RWops *rw, fmt_t *fmt)
  */
 static int find_chunk(ALmixer_RWops *rw, uint32_t id)
 {
-    int32_t siz = 0;
+    uint32_t siz = 0;
     uint32_t _id = 0;
     uint32_t pos = ALmixer_RWtell(rw);
 
