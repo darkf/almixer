@@ -799,7 +799,7 @@ static ALuint Compute_Total_Time(Sound_AudioInfo *info, size_t total_bytes)
 } /* End Compute_Total_Time */
 	
 
-#ifdef ALMIXER_DISABLE_PREDECODED_PRECOMPUTE_BUFFER_SIZE_OPTIMIZATION
+#ifndef ALMIXER_DISABLE_PREDECODED_PRECOMPUTE_BUFFER_SIZE_OPTIMIZATION
 static size_t Compute_Total_Bytes_Decomposed(ALuint bytes_per_sample, ALuint frequency, ALubyte channels, ALuint total_msec)
 {
 	double total_sec;
@@ -8371,7 +8371,7 @@ static ALmixer_Data* DoLoad(Sound_Sample* sample, ALuint buffersize, ALboolean d
 	/* User requested decode all (easy, nothing to figure out) */
 	else if(AL_TRUE == decode_mode_is_predecoded)
 	{
-#ifdef ALMIXER_DISABLE_PREDECODED_PRECOMPUTE_BUFFER_SIZE_OPTIMIZATION
+#ifndef ALMIXER_DISABLE_PREDECODED_PRECOMPUTE_BUFFER_SIZE_OPTIMIZATION
 		/* SDL_sound (behind the scenes) seems to loop on buffer_size chunks 
 		 * until the buffer is filled. It seems like we can 
 		 * do much better and precompute the size of the buffer

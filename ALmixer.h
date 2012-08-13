@@ -510,7 +510,7 @@ extern ALMIXER_DECLSPEC ALint ALMIXER_CALL ALmixer_Update(void);
 	 * However, if my attempts fail for some reason, this buffer size becomes a fallback.
 	 * Having too small of a buffer might cause performance bottlenecks.
 	 */
-	#define ALMIXER_DEFAULT_PREDECODED_BUFFERSIZE 1024
+	#define ALMIXER_DEFAULT_PREDECODED_BUFFERSIZE 4096
 #endif
 
 /**
