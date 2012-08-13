@@ -311,7 +311,7 @@ ALdouble Internal_alcMacOSXGetMixerOutputRate()
 			}
 			else
 			{
-				ALMixer_SetError("Windows error: High resolution clock failed.");
+				ALmixer_SetError("Windows error: High resolution clock failed.");
 				fprintf(stderr, "Windows error: High resolution clock failed. Audio will not work correctly.\n");
 			}
 		#else
