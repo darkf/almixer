@@ -217,7 +217,7 @@ static int OGG_open(Sound_Sample *sample, const char *ext)
     if (OV_EINVAL == total_time)
       internal->total_time = -1;
     else
-      internal->total_time = (int32_t)(total_time * 1000.0 + 0.5);
+      internal->total_time = (int32_t)(total_time);
 
 
     /*
