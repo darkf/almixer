@@ -7547,6 +7547,12 @@ void ALmixer_BeginInterruption()
 
 	ALmixer_SuspendUpdates();
 
+	/* App Portable introduced alcSuspend() and alcResume() for Android in their OpenAL Soft fork. */
+#if defined(__ANDROID__) && defined(ALMIXER_USE_APPORTABLE_OPENAL_EXTENSIONS)
+	alcSuspend();
+#endif
+
+
 	s_interruptionContext = alcGetCurrentContext();
 	if(NULL != s_interruptionContext)
 	{
@@ -7586,6 +7592,13 @@ void ALmixer_EndInterruption()
 		alcProcessContext(s_interruptionContext);
 		s_interruptionContext = NULL;
 	}
+
+
+	/* App Portable introduced alcSuspend() and alcResume() for Android in their OpenAL Soft fork. */
+#if defined(__ANDROID__) && defined(ALMIXER_USE_APPORTABLE_OPENAL_EXTENSIONS)
+	alcResume();
+#endif
+
 
 	ALmixer_ResumeUpdates();
 	g_inInterruption = AL_FALSE;
