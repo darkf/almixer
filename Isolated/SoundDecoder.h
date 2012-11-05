@@ -179,7 +179,7 @@ extern SOUND_DECODER_DECLSPEC void SOUND_DECODER_CALL SoundDecoder_Quit(void);
 #define Sound_Quit SoundDecoder_Quit
 
 
-extern SOUND_DECODER_DECLSPEC const SOUND_DECODER_CALL SoundDecoder_DecoderInfo** SoundDecoder_AvailableDecoders(void);
+extern SOUND_DECODER_DECLSPEC const SoundDecoder_DecoderInfo** SOUND_DECODER_CALL SoundDecoder_AvailableDecoders(void);
 #define Sound_AvailableDecoders SoundDecoder_AvailableDecoders
 
 

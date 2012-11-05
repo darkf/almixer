@@ -153,12 +153,12 @@ void SoundDecoder_ClearError()
 
 void SoundDecoder_SetError(const char* err_str, ...)
 {
+	va_list argp;
 	if(NULL == s_errorPool)
 	{
 		fprintf(stderr, "Error: You should not call SoundDecoder_SetError while Sound is not initialized\n");
 		return;
 	}
-	va_list argp;
 	va_start(argp, err_str);
 	// SDL_SetError which I'm emulating has no number parameter.
 	TError_SetErrorv(s_errorPool, 1, err_str, argp);
@@ -204,7 +204,7 @@ int SoundDecoder_Init()
 	}
 
 	total_number_of_decoders = sizeof(s_linkedDecoders) / sizeof(s_linkedDecoders[0]);
-	s_availableDecoders = (const SoundDecoder_DecoderInfo **)malloc((total_number_of_decoders) * sizeof(SoundDecoder_DecoderInfo*));
+	s_availableDecoders = (SoundDecoder_DecoderInfo **)malloc((total_number_of_decoders) * sizeof(SoundDecoder_DecoderInfo*));
 	if(NULL == s_availableDecoders)
 	{
 		SoundDecoder_SetError(ERR_OUT_OF_MEMORY);
@@ -285,6 +285,7 @@ void SoundDecoder_Quit()
 void SoundDecoder_FreeSample(SoundDecoder_Sample* sound_sample)
 {
 	SoundDecoder_SampleInternal* sample_internal;
+	LinkedListNode* the_node;
 
 	/* Quit unloads all samples, so it is not possible to free a sample
 	 * when not initialized.
@@ -302,7 +303,7 @@ void SoundDecoder_FreeSample(SoundDecoder_Sample* sound_sample)
 	/* SDL_sound keeps a linked list of all the loaded samples.
 	 * We want to remove the current sample from that list.
 	 */
-	LinkedListNode* the_node = LinkedList_Find(s_listOfLoadedSamples, sound_sample, NULL);
+	the_node = LinkedList_Find(s_listOfLoadedSamples, sound_sample, NULL);
 	if(NULL == the_node)
 	{
 		SoundDecoder_SetError("SoundDecoder_FreeSample: Internal Error, sample does not exist in linked list.");

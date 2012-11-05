@@ -7824,12 +7824,12 @@ const char* ALmixer_GetError()
 
 void ALmixer_SetError(const char* err_str, ...)
 {
+	va_list argp;
 	if(NULL == s_ALmixerErrorPool)
 	{
 		fprintf(stderr, "Error: You should not call ALmixer_SetError while ALmixer is not initialized\n");
 		return;
 	}
-	va_list argp;
 	va_start(argp, err_str);
 	/* SDL_SetError which I'm emulating has no number parameter. */
 	TError_SetErrorv(s_ALmixerErrorPool, 1, err_str, argp);
