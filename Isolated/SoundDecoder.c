@@ -406,7 +406,7 @@ SoundDecoder_Sample* SoundDecoder_NewSampleFromFile(const char* file_name,
     const char* file_extension;
     ALmixer_RWops* rw_ops;
 	SoundDecoder_Sample* new_sample;
-    FILE* file_pointer = NULL;
+	FILE* file_pointer = NULL;
 
 	if(0 == s_isInitialized)
 	{
@@ -419,10 +419,10 @@ SoundDecoder_Sample* SoundDecoder_NewSampleFromFile(const char* file_name,
 		return NULL;
 	}
 
-    file_extension = strrchr(file_name, '.');
+	file_extension = strrchr(file_name, '.');
 	if(NULL != file_extension)
 	{
-        file_extension++;
+		file_extension++;
 	}
 
 	/* Use ALmixer_RWFromFP instead of ALmixer_RWFromFile so we can get access to the FILE* needed for Android OpenSL ES */
@@ -431,7 +431,7 @@ SoundDecoder_Sample* SoundDecoder_NewSampleFromFile(const char* file_name,
 	{
 		SoundDecoder_SetError("fopen failed");
 		return NULL;
-    }	
+	}	
 	rw_ops = ALmixer_RWFromFP(file_pointer, 1);
 
 	new_sample = SoundDecoder_NewSample(rw_ops, file_extension, desired_format, buffer_size);
