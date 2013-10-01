@@ -44,11 +44,11 @@ typedef struct OpenSLESFileContainer
 
 static int OpenSLES_init(void);
 static void OpenSLES_quit(void);
-static int OpenSLES_open(Sound_Sample *sample, const char *ext);
-static void OpenSLES_close(Sound_Sample *sample);
-static size_t OpenSLES_read(Sound_Sample *sample);
-static int OpenSLES_rewind(Sound_Sample *sample);
-static int OpenSLES_seek(Sound_Sample *sample, size_t ms);
+static int OpenSLES_open(Sound_Sample* sound_sample, const char* file_ext);
+static void OpenSLES_close(Sound_Sample* sound_sample);
+static size_t OpenSLES_read(Sound_Sample* sound_sample);
+static int OpenSLES_rewind(Sound_Sample* sound_sample);
+static int OpenSLES_seek(Sound_Sample* sound_sample, size_t ms);
 
 static const char *extensions_opensles[] = 
 {
@@ -84,7 +84,7 @@ static const char *extensions_opensles[] =
 const Sound_DecoderFunctions __Sound_DecoderFunctions_OpenSLES =
 {
     {
-        extensions_coreaudio,
+        extensions_opensles,
         "Decode audio through Core Audio through",
         "Eric Wing <ewing . public @ playcontrol.net>",
         "http://playcontrol.net"
@@ -133,7 +133,7 @@ static void OpenSLES_quit(void)
 
 static int OpenSLES_open(Sound_Sample* sound_sample, const char* file_ext)
 {
-	Sound_SampleInternal* internal_sample = (Sound_SampleInternal *) sound_sample->opaque;
+	Sound_SampleInternal* internal_sample = (Sound_SampleInternal*) sound_sample->opaque;
 
 	return(1);
 } /* OpenSLES_open */
@@ -141,14 +141,20 @@ static int OpenSLES_open(Sound_Sample* sound_sample, const char* file_ext)
 
 static void OpenSLES_close(Sound_Sample* sound_sample)
 {
-	Sound_SampleInternal* internal_sample = (Sound_SampleInternal *) sound_sample->opaque;
+	Sound_SampleInternal* internal_sample = (Sound_SampleInternal*) sound_sample->opaque;
 
 } /* OpenSLES_close */
 
-
 static size_t OpenSLES_read(Sound_Sample* sound_sample)
 {
-	Sound_SampleInternal* internal_sample = (Sound_SampleInternal *) sound_sample->opaque;
+	Sound_SampleInternal* internal_sample = (Sound_SampleInternal*) sound_sample->opaque;
+	
+	return(1);
+} /* OpenSLES_read */
+
+static int OpenSLES_rewind(Sound_Sample* sound_sample)
+{
+	Sound_SampleInternal* internal_sample = (Sound_SampleInternal*) sound_sample->opaque;
 	
 	return(1);
 } /* OpenSLES_rewind */
@@ -158,9 +164,9 @@ static size_t OpenSLES_read(Sound_Sample* sound_sample)
  I don't know if this applies to us. So far, I haven't noticed the problem,
  so I haven't applied any of the techniques.
  */
-static int OpenSLES_seek(Sound_Sample *sample, size_t ms)
+static int OpenSLES_seek(Sound_Sample* sound_sample, size_t ms)
 {
-	Sound_SampleInternal* internal_sample = (Sound_SampleInternal *) sound_sample->opaque;
+	Sound_SampleInternal* internal_sample = (Sound_SampleInternal*) sound_sample->opaque;
 
 	return(1);
 } /* OpenSLES_seek */

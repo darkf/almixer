@@ -134,7 +134,7 @@ ELSE()
 		ADD_DEFINITIONS(-DDONT_USE_VASPRINTF)
 	ENDIF()
 		# Temporary. Should only define if no native decoder exists.
-		ADD_DEFINITIONS(-DSOUND_SUPPORTS_WAV)
+		#ADD_DEFINITIONS(-DSOUND_SUPPORTS_WAV)
 
 ENDIF()
 
