@@ -403,10 +403,10 @@ SoundDecoder_Sample* SoundDecoder_NewSampleFromFile(const char* file_name,
                                       SoundDecoder_AudioInfo* desired_format,
                                       size_t buffer_size)
 {
-	
     const char* file_extension;
     ALmixer_RWops* rw_ops;
-
+	SoundDecoder_Sample* new_sample;
+	FILE* file_pointer = NULL;
 
 	if(0 == s_isInitialized)
 	{
@@ -419,15 +419,25 @@ SoundDecoder_Sample* SoundDecoder_NewSampleFromFile(const char* file_name,
 		return NULL;
 	}
 
-    file_extension = strrchr(file_name, '.');
+	file_extension = strrchr(file_name, '.');
 	if(NULL != file_extension)
 	{
-        file_extension++;
+		file_extension++;
 	}
 
-    rw_ops = ALmixer_RWFromFile(file_name, "rb");
+	/* Use ALmixer_RWFromFP instead of ALmixer_RWFromFile so we can get access to the FILE* needed for Android OpenSL ES */
+	file_pointer = fopen(file_name, "rb");
+	if(NULL == file_pointer)
+	{
+		SoundDecoder_SetError("fopen failed");
+		return NULL;
+	}	
+	rw_ops = ALmixer_RWFromFP(file_pointer, 1);
 
-     return SoundDecoder_NewSample(rw_ops, file_extension, desired_format, buffer_size);
+	new_sample = SoundDecoder_NewSample(rw_ops, file_extension, desired_format, buffer_size);
+	SoundDecoderInternal_SetOptionalFileHandle(new_sample->opaque, file_pointer);
+	SoundDecoderInternal_SetOptionalFileName(new_sample->opaque, file_name);
+	return new_sample;
 }
 
 
@@ -709,5 +719,28 @@ ptrdiff_t SoundDecoder_GetDuration(SoundDecoder_Sample* sound_sample)
     internal_sample = (SoundDecoder_SampleInternal*)sound_sample->opaque;
     return internal_sample->total_time;
 }
+
+
+/* Helper APIs for Android OpenSL ES decoder backends. */
+FILE* SoundDecoderInternal_GetOptionalFileHandle(SoundDecoder_SampleInternal* sample_internal)
+{
+	return sample_internal->optional_file_handle; 
+}
+
+void SoundDecoderInternal_SetOptionalFileHandle(SoundDecoder_SampleInternal* sample_internal, FILE* file_handle)
+{
+	sample_internal->optional_file_handle = file_handle;
+}
+
+const char* SoundDecoderInternal_GetOptionalFileName(SoundDecoder_SampleInternal* sample_internal)
+{
+	return sample_internal->optional_file_name; 
+}
+
+void SoundDecoderInternal_SetOptionalFileName(SoundDecoder_SampleInternal* sample_internal, const char* file_name)
+{
+	sample_internal->optional_file_name = file_name;	
+}
+
 
 #endif

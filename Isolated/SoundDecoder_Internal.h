@@ -34,6 +34,9 @@ typedef struct SoundDecoder_SampleInternal
     size_t buffer_size;
     void *decoder_private;
     ptrdiff_t total_time;
+	FILE* optional_file_handle; /* needed for Android OpenSL ES decoder backend */
+	const char* optional_file_name;  /* needed for Android OpenSL ES decoder backend */
+
 } SoundDecoder_SampleInternal;
 
 typedef struct SoundDecoder_SampleInternal Sound_SampleInternal;
@@ -46,6 +49,14 @@ typedef struct SoundDecoder_SampleInternal Sound_SampleInternal;
 #define ERR_NULL_SAMPLE "Sound sample is NULL"
 #define ERR_PREVIOUS_SAMPLE_ERROR "Cannot operate on sample due to previous error"
 #define ERR_ALREADY_AT_EOF_ERROR "Cannot operate on sample because already at EOF"
+
+/* Helper APIs for Android OpenSL ES decoder backends. */
+FILE* SoundDecoderInternal_GetOptionalFileHandle(SoundDecoder_SampleInternal* sample_internal);
+void SoundDecoderInternal_SetOptionalFileHandle(SoundDecoder_SampleInternal* sample_internal, FILE* file_handle);
+const char* SoundDecoderInternal_GetOptionalFileName(SoundDecoder_SampleInternal* sample_internal);
+void SoundDecoderInternal_SetOptionalFileName(SoundDecoder_SampleInternal* sample_internal, const char* file_name);
+
+
 
 #ifdef __ANDROID__
 
