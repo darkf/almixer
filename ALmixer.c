@@ -231,7 +231,7 @@ static ALuint Is_Playing_global = 0;
  * but just sufficient to minimize/avoid threading issues
  */
 static ALboolean g_StreamThreadEnabled = AL_FALSE;
-static SDL_mutex* s_simpleLock;
+static SDL_mutex* s_simpleLock = NULL;
 static SDL_Thread* Stream_Thread_global = NULL;
 #endif /* ENABLE_ALMIXER_THREADS */
 
@@ -4872,7 +4872,7 @@ static void Internal_FreeData(ALmixer_Data* data)
 	{
 		return;
 	}
-	
+
 	if(data->decoded_all)
 	{
 		/* If access_data was enabled, then the Sound_Sample*
@@ -6546,7 +6546,6 @@ ALboolean ALmixer_Init(ALuint frequency, ALuint num_sources, ALuint refresh)
 */
 #endif
 
-
 	/* Set the defaults */
 /*
 	attrlist[0] = ALC_FREQUENCY;
@@ -7728,6 +7727,7 @@ void ALmixer_Quit()
 	Stream_Thread_global = NULL;
 
 	SDL_DestroyMutex(s_simpleLock);
+	s_simpleLock = NULL;
 #endif
 	g_inInterruption = AL_FALSE;
 	
@@ -8610,7 +8610,7 @@ ALmixer_Data* ALmixer_LoadSample(const char* filename, ALuint buffersize, ALbool
 {
 	Sound_Sample* sample = NULL;
 	Sound_AudioInfo target;
-	
+
 	if( (AL_FALSE == ALmixer_Initialized) || (AL_TRUE == g_inInterruption) )
 	{
 		return NULL;
@@ -8912,12 +8912,20 @@ ALint ALmixer_Update()
 void ALmixer_SetPlaybackFinishedCallback(void (*playback_finished_callback)(ALint which_channel, ALuint al_source, ALmixer_Data* almixer_data, ALboolean finished_naturally, void* user_data), void* user_data)
 {
 #ifdef ENABLE_ALMIXER_THREADS
-	SDL_LockMutex(s_simpleLock);
+	/* Allow for no lock in case the user wants to setup the callback function pointer before calling Init() */
+	if(NULL != s_simpleLock)
+	{
+		SDL_LockMutex(s_simpleLock);
+	}
 #endif
 	Channel_Done_Callback = playback_finished_callback;
 	Channel_Done_Callback_Userdata = user_data;
 #ifdef ENABLE_ALMIXER_THREADS
-	SDL_UnlockMutex(s_simpleLock);
+	/* Allow for no lock in case the user wants to setup the callback function pointer before calling Init() */
+	if(NULL != s_simpleLock)
+	{
+		SDL_UnlockMutex(s_simpleLock);
+	}
 #endif
 }
 
@@ -8925,12 +8933,20 @@ void ALmixer_SetPlaybackFinishedCallback(void (*playback_finished_callback)(ALin
 void ALmixer_SetPlaybackDataCallback(void (*playback_data_callback)(ALint which_chan, ALuint al_source, ALbyte* data, ALuint num_bytes, ALuint frequency, ALubyte channels, ALubyte bit_depth, ALboolean is_unsigned, ALboolean decode_mode_is_predecoded, ALuint length_in_msec, void* user_data), void* user_data)
 {
 #ifdef ENABLE_ALMIXER_THREADS
-	SDL_LockMutex(s_simpleLock);
+	/* Allow for no lock in case the user wants to setup the callback function pointer before calling Init() */
+	if(NULL != s_simpleLock)
+	{
+		SDL_LockMutex(s_simpleLock);
+	}
 #endif
 	Channel_Data_Callback = playback_data_callback;
 	Channel_Data_Callback_Userdata = user_data;
 #ifdef ENABLE_ALMIXER_THREADS
-	SDL_UnlockMutex(s_simpleLock);
+	/* Allow for no lock in case the user wants to setup the callback function pointer before calling Init() */
+	if(NULL != s_simpleLock)
+	{
+		SDL_UnlockMutex(s_simpleLock);
+	}
 #endif
 }
 

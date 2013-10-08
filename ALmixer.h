@@ -632,7 +632,7 @@ ALmixer_Data* ALmixer_LoadStream_RW(ALmixer_RWops* rw_ops, const char* file_ext,
  */
 ALmixer_Data* ALmixer_LoadAll_RW(ALmixer_RWops* rw_ops, const char* file_ext, ALuint access_data);
 #else
-#define ALmixer_LoadAll_RW(rw_ops, file_ext, access_data) ALmixer_LoadSample_RW(rw_ops, fileext, ALMIXER_DEFAULT_PREDECODED_BUFFERSIZE, AL_TRUE, 0, 0, 0, access_data)
+#define ALmixer_LoadAll_RW(rw_ops, file_ext, access_data) ALmixer_LoadSample_RW(rw_ops, file_ext, ALMIXER_DEFAULT_PREDECODED_BUFFERSIZE, AL_TRUE, 0, 0, 0, access_data)
 #endif
 
 /**
@@ -1083,7 +1083,7 @@ extern ALMIXER_DECLSPEC ALuint ALMIXER_CALL ALmixer_PlaySourceTimed(ALuint al_so
  * The same as ALmixer_PlaySourceTimed, but the sound is played without time limits.
  * @see ALmixer_PlaySourceTimed.
  */ 
-ALint ALmixer_PlayChannelTimed(ALuint al_source, ALmixer_Data* almixer_data, ALint number_of_loops);
+ALint ALmixer_PlaySource(ALuint al_source, ALmixer_Data* almixer_data, ALint number_of_loops);
 #else
 #define ALmixer_PlaySource(al_source, almixer_data, number_of_loops) ALmixer_PlaySourceTimed(al_source, almixer_data, number_of_loops, -1)
 #endif
