@@ -877,23 +877,29 @@ extern ALMIXER_DECLSPEC ALboolean ALMIXER_CALL ALmixer_IsPredecoded(ALmixer_Data
  * the OpenAL source id associated with the channel, the ALmixer_Data* that was played,
  * a boolean telling you whether a sound finished playing because it ended normally or because
  * something interrupted the playback (such as the user calling ALmixer_Halt*), and the
- * user_data supplied as the second parameter to this function.
+ * user_data supplied as the second parameter to this function. 
+ * Passing NULL (which is the default) disables the callback.
  * @param which_chan The ALmixer channel that the data is currently playing on.
  * @param al_source The OpenAL source that the data is currently playing on.
  * @param almixer_data The ALmixer_Data that was played.
  * @param finished_naturally AL_TRUE if the sound finished playing because it ended normally 
  * or AL_FALSE because something interrupted playback (such as the user calling ALmixer_Halt*).
- * @param user_data This will be passed back to you in the callback.
+ * @param user_data This will be passed back to you in the callback. NULL is allowed.
  *
+ * @note You may call this function before initializing ALmixer. 
+ * This was done to facilite wrapper libraries around ALmixer where you needed to intercept all callbacks
+ * to monitor state (for things likes channel resources available or ALmixer_Data* that is in use).
+ * But as a consequence, the things you set in this function will persist across Init/Quit calls.
+ * If you need to clear or change the values, you must call this function again with the new values.
+ * 
  * @warning You should not call other ALmixer functions in this callback. 
  * Particularly in the case of when compiled with threads, recursive locking
  * will occur which will lead to deadlocks. Also be aware that particularly in the 
  * threaded case, the callbacks may (and currently do) occur on a background thread.
  * One typical thread safe strategy is to set flags or schedule events to occur on the
  * main thread.
- * One possible exception to the no-calling ALmixer functions rule is ALmixer_Free. ALmixer_Free
- * currently does not lock so it might okay to call this to free your data. However, this is not
- * tested and not the expected pattern to be used.
+ * One possible exception to the no-calling ALmixer functions rule is ALmixer_FreeData. ALmixer_FreeData
+ * currently does not lock so it might okay to call this to free your data. However, this has only had limited testing.
  */
 extern ALMIXER_DECLSPEC void ALMIXER_CALL ALmixer_SetPlaybackFinishedCallback(void (*playback_finished_callback)(ALint which_channel, ALuint al_source, ALmixer_Data* almixer_data, ALboolean finished_naturally, void* user_data), void* user_data);
 
@@ -915,6 +921,12 @@ extern ALMIXER_DECLSPEC void ALMIXER_CALL ALmixer_SetPlaybackFinishedCallback(vo
  * issues if you want to display the data during playback in something like an
  * oscilloscope.
  *
+ * @note You may call this function before initializing ALmixer. 
+ * This was done to facilite wrapper libraries around ALmixer where you needed to intercept all callbacks
+ * to monitor state (for things likes channel resources available or ALmixer_Data* that is in use).
+ * But as a consequence, the things you set in this function will persist across Init/Quit calls.
+ * If you need to clear or change the values, you must call this function again with the new values.
+ * 
  * @warning You should not call other ALmixer functions in this callback. 
  * Particularly in the case of when compiled with threads, recursive locking
  * will occur which will lead to deadlocks. Also be aware that particularly in the 
@@ -923,6 +935,8 @@ extern ALMIXER_DECLSPEC void ALMIXER_CALL ALmixer_SetPlaybackFinishedCallback(vo
  * main thread.
  * 
  * @param playback_data_callback The function you want called back.
+ * Passing NULL (which is the default) disables the callback.
+ * 
  * @param which_channel The ALmixer channel that the data is currently playing on.
  * @param al_source The OpenAL source that the data is currently playing on.
  * @param pcm_data This is a pointer to the data buffer containing ALmixer's 
@@ -974,7 +988,7 @@ extern ALMIXER_DECLSPEC void ALMIXER_CALL ALmixer_SetPlaybackFinishedCallback(vo
  * buffer in milliseconds. This could be computed yourself, but is provided
  * as a convenince.
  *
- * @param user_data The user data you pass in will be passed back to you in the callback. 
+ * @param user_data The user data you pass in will be passed back to you in the callback. NULL is allowed.
  */
 extern ALMIXER_DECLSPEC void ALMIXER_CALL ALmixer_SetPlaybackDataCallback(void (*playback_data_callback)(ALint which_channel, ALuint al_source, ALbyte* pcm_data, ALuint num_bytes, ALuint frequency, ALubyte num_channels_in_sample, ALubyte bit_depth, ALboolean is_unsigned, ALboolean decode_mode_is_predecoded, ALuint length_in_msec, void* user_data), void* user_data);
 

@@ -6820,11 +6820,15 @@ ALboolean ALmixer_Init(ALuint frequency, ALuint num_sources, ALuint refresh)
 	}
 	Number_of_Reserve_Channels_global = 0;
 	Is_Playing_global = 0;
-	/* Set to Null in case system quit and was reinitialized */
+	/* I no longer set to Null in case system quit and was reinitialized.
+	 * This allows the callbacks to be setup before Init which is useful for wrapper libraries around ALmixer.
+	 */
+	/*
 	Channel_Done_Callback = NULL;
 	Channel_Done_Callback_Userdata = NULL;
 	Channel_Data_Callback = NULL;
 	Channel_Data_Callback_Userdata = NULL;
+	*/
 
 	/* Allocate memory for linked list of ALmixerData. */
 	s_listOfALmixerData = LinkedList_Create();
@@ -7399,11 +7403,15 @@ ALboolean ALmixer_InitMixer(ALuint num_sources)
 	}
 	Number_of_Reserve_Channels_global = 0;
 	Is_Playing_global = 0;
-	/* Set to Null in case system quit and was reinitialized */
+	/* I no longer set to Null in case system quit and was reinitialized.
+	 * This allows the callbacks to be setup before Init which is useful for wrapper libraries around ALmixer.
+	 */
+	/*
 	Channel_Done_Callback = NULL;
 	Channel_Done_Callback_Userdata = NULL;
 	Channel_Data_Callback = NULL;
 	Channel_Data_Callback_Userdata = NULL;
+	*/
 
 	/* Allocate memory for linked list of ALmixerData. */
 	s_listOfALmixerData = LinkedList_Create();
