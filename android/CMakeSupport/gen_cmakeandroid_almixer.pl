@@ -81,7 +81,10 @@ main();
 
 sub main()
 {
-	my ($targetdir, $standalone, $compilerversion, $should_build, $cmake, $toolchain, $libsdir, $buildtype, $sourcedir, @remaining_options) = extract_parameters();
+	my ($targetdir, $standalone, $compilerversion, $should_build, $cmake, $toolchain, $libsdir, $buildtype, $sourcedir, $openalbasedir, @remaining_options) = extract_parameters();
+
+	my $openal_include_dir = $openalbasedir . "/jni/OpenAL/include/AL";
+	my $openal_include_dir_option = "-DOPENAL_INCLUDE_DIR=" . $openal_include_dir;
 
 	# Save in case we need to return to the original current working directory.
 #	my $original_current_working_directory = Cwd::cwd();
@@ -147,9 +150,13 @@ sub main()
 		my $android_standalone_toolchain = "-DANDROID_STANDALONE_TOOLCHAIN=$found_compiler";
 #		print("arch_flag: $arch_flag\n");
 		print("Generating $arch\n");
+
+		my $openal_lib_dir = $openalbasedir . "/libs/" . $arch . "/libopenal.so";
+		my $openal_lib_dir_option = "-DOPENAL_LIBRARY=" . $openal_lib_dir;
+
 		
-		print("Executing: $cmake $toolchain $android_standalone_toolchain $arch_flag $libsdir $buildtype @remaining_options $sourcedir\n");
-		my $error_status = system($cmake, $toolchain, $android_standalone_toolchain, $arch_flag, $libsdir, $buildtype, @remaining_options, $sourcedir);
+		print("Executing: $cmake $toolchain $android_standalone_toolchain $arch_flag $libsdir $buildtype, $openal_include_dir_option $openal_lib_dir_option @remaining_options $sourcedir\n");
+		my $error_status = system($cmake, $toolchain, $android_standalone_toolchain, $arch_flag, $libsdir, $buildtype, $openal_include_dir_option, $openal_lib_dir_option, @remaining_options, $sourcedir);
 		if($error_status != 0)
 		{
 			die "Invoking CMake failed: $?\n";
@@ -187,6 +194,7 @@ sub helpmenu()
 	print "  -h or -help                              Brings up this help display.\n";
 	print "  --sourcedir=<path to source>             Path to the source code directory.\n";
 	print "  --targetdir=<path to build directory>    Path to where the CMake projects will be generated. Will be created if doesn't exist.\n";
+	print "  --openalbasedir=<path to OpenAL dir>     Path to where the OpenAL base directory is.\n";
 	print "  --toolchain=<toolchain file>             Path to and file of the CMake toolchain to use.\n";
 	print "  --libsdir=<path where libs are copied>   (Optional) Path where the built libs are placed. Default is same as the targetdir.\n";
 	print "  --standalone=<standalone root directory> (Optional) Allows you to specify the path to the standalone directory containing your compilers. Default looks in \$ANDROID_NDK_ROOT/standalone.\n";
@@ -229,6 +237,7 @@ sub extract_parameters()
 		h => \(my $hflag = 0),
 		help => \(my $helpflag = 0),
 		sourcedir => \(my $sourcedir),
+		openalbasedir => \(my $openalbasedir),
 		targetdir => \(my $targetdir),
 		libsdir => \(my $libsdir),
 		toolchain => \(my $toolchain),
@@ -244,6 +253,7 @@ sub extract_parameters()
 	# These parameters will be removed from @ARGV
 	my $errorval = &GetOptions(\%params, "h", "help",
 					"sourcedir=s",
+					"openalbasedir=s",
 					"targetdir=s",
 					"libsdir=s",
 					"toolchain=s",
@@ -332,6 +342,12 @@ sub extract_parameters()
 	$targetdir = absolute_path($targetdir);
 	$standalone = absolute_path($standalone);
 
+	if(not defined($openalbasedir))
+	{
+		$openalbasedir = "./openal-soft";
+	}
+	$openalbasedir = absolute_path($openalbasedir);
+
 	# Change the strings to be in the form we need to pass to CMake.
 	$toolchain = "-DCMAKE_TOOLCHAIN_FILE=" . absolute_path($toolchain);
 	$libsdir = "-DLIBRARY_OUTPUT_PATH_ROOT=" . absolute_path($libsdir);
@@ -343,7 +359,7 @@ sub extract_parameters()
 	# GetOptions has removed all found options so anything left in @ARGV is "remaining".
 	my @remaining_options = @ARGV;
 
-	my @sorted_options = ($targetdir, $standalone, $compilerversion, $should_build, $cmake, $toolchain, $libsdir, $buildtype, $sourcedir, @remaining_options);
+	my @sorted_options = ($targetdir, $standalone, $compilerversion, $should_build, $cmake, $toolchain, $libsdir, $buildtype, $sourcedir, $openalbasedir, @remaining_options);
 	
 	return @sorted_options;
 }
