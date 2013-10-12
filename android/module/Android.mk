@@ -30,31 +30,31 @@ include $(CLEAR_VARS)
 # This is the name of module the caller will use in LOCAL_SHARED_LIBRARIES
 LOCAL_MODULE := ALmixer_shared
 LOCAL_SRC_FILES := libs/$(TARGET_ARCH_ABI)/libALmixer.so
-LOCAL_EXPORT_C_INCLUDES := $(LOCAL_PATH)/include/ALmixer
+LOCAL_EXPORT_C_INCLUDES := $(LOCAL_PATH)/include
 # Use LOCAL_EXPORT_CFLAGS to automatically export the correct flags (as necessary) to the calling module so the caller doesn't need to know the details.
-#LOCAL_EXPORT_CFLAGS := -DFOO=1 -DCP_USE_DOUBLES=1 -DCP_USE_CGPOINTS=0
+LOCAL_EXPORT_CFLAGS := -DALMIXER_COMPILE_WITHOUT_SDL -DENABLE_ALMIXER_THREADS
 # The .so is already linked so we don't really need to export this.
 #LOCAL_EXPORT_LDLIBS := -lm
 include $(PREBUILT_SHARED_LIBRARY)
 
-# For the static library
-include $(CLEAR_VARS)
-# This is the name of module the caller will use in LOCAL_STATIC_LIBRARIES
-LOCAL_MODULE := ALmixer_static
-LOCAL_SRC_FILES := libs/$(TARGET_ARCH_ABI)/libALmixer.a
-# Use LOCAL_EXPORT_CFLAGS to automatically export the correct flags (as necessary) to the calling module so the caller doesn't need to know the details.
-#LOCAL_EXPORT_CFLAGS := -DFOO=1 -DCP_USE_DOUBLES=1 -DCP_USE_CGPOINTS=0
-# Since the .a isn't linked, it's link dependencies must be passed on to the calling project.
-LOCAL_EXPORT_LDLIBS := -lm
-LOCAL_EXPORT_C_INCLUDES := $(LOCAL_PATH)/include/ALmixer
-include $(PREBUILT_STATIC_LIBRARY)
+## For the static library
+#include $(CLEAR_VARS)
+## This is the name of module the caller will use in LOCAL_STATIC_LIBRARIES
+#LOCAL_MODULE := ALmixer_static
+#LOCAL_SRC_FILES := libs/$(TARGET_ARCH_ABI)/libALmixer.a
+## Use LOCAL_EXPORT_CFLAGS to automatically export the correct flags (as necessary) to the calling module so the caller doesn't need to know the details.
+#LOCAL_EXPORT_CFLAGS := -DALMIXER_COMPILE_WITHOUT_SDL -DENABLE_ALMIXER_THREADS
+## Since the .a isn't linked, it's link dependencies must be passed on to the calling project.
+#LOCAL_EXPORT_LDLIBS := -lm
+#LOCAL_EXPORT_C_INCLUDES := $(LOCAL_PATH)/include/ALmixer
+#include $(PREBUILT_STATIC_LIBRARY)
 
 
 
 # Two other pieces are needed to make this work which fall outside the scope of this file.
 # First, you must have a directory convention for the calling makefile.
-# So let's say we put all the above in a directory called ALmixer2D. The layout looks like this:
-# ALmixer2D/
+# So let's say we put all the above in a directory called ALmixer. The layout looks like this:
+# ALmixer/
 # 	Android.mk (this file)
 # 		libs/armeabi/libALmixer.a
 # 		libs/armeabi/libALmixer.a
@@ -63,7 +63,7 @@ include $(PREBUILT_STATIC_LIBRARY)
 # 		libs/x86/libALmixer.a
 # 		libs/x86/libALmixer.a
 # 
-# 		include/ALmixer/ALmixer.h
+# 		include/ALmixer.h
 # 		... (the other header files here)
 
 # So the calling makefile looks something like:
@@ -75,12 +75,12 @@ include $(PREBUILT_STATIC_LIBRARY)
 # #LOCAL_SHARED_LIBRARIES := ALmixer_shared
 # LOCAL_STATIC_LIBRARIES := ALmixer_static
 # include $(BUILD_SHARED_LIBRARY)
-# Android build system will look for folder `ALmixer2D` in all import paths:
-# $(call import-module,ALmixer2D) 
+# Android build system will look for folder `ALmixer` in all import paths:
+# $(call import-module,ALmixer) 
 # ------     end      -----
 
-# Second, you need to set the environmental variable NDK_MODULE_PATH to list the directory containing ALmixer2D.
-# So if ALmixer2D is in /Library/Frameworks/Android/PrebuiltModules
+# Second, you need to set the environmental variable NDK_MODULE_PATH to list the directory containing ALmixer.
+# So if ALmixer is in /Library/Frameworks/Android/PrebuiltModules
 # export NDK_MODULE_PATH=/Library/Frameworks/Android/PrebuiltModules
 # Note that NDK_MODULE_PATH may contain multiple directories like the PATH environmental variable.
 
