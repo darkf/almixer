@@ -229,6 +229,9 @@ ELSEIF(WANTS_BUILD_SHARED_LIBRARY)
 		ENDIF(CMAKE_DYLIB_INSTALL_NAME_DIR)
 
 
+	ELSEIF(ANDROID)
+		# Setting versions on Android breaks things because the Java System.loadLibrary can't handle the symlink/version convention.
+		# Avoid setting version stuff.
 
 	ELSEIF(UNIX)
 		SET_TARGET_PROPERTIES(ALmixer PROPERTIES
