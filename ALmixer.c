@@ -7643,7 +7643,7 @@ ALboolean ALmixer_IsPlayingStateSuspended()
 	ALboolean retval;
 	if(AL_FALSE == ALmixer_Initialized)
 	{
-		return FALSE;
+		return AL_FALSE;
 	}
 #ifdef ENABLE_ALMIXER_THREADS
 	SDL_LockMutex(s_simpleLock);
