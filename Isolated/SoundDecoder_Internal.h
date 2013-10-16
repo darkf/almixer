@@ -59,16 +59,7 @@ void SoundDecoderInternal_SetOptionalFileName(SoundDecoder_SampleInternal* sampl
 
 
 #ifdef __ANDROID__
-
-/* This macro crashes when a format string is used. 
- * Provide a real function instead.
-#include <android/log.h>
-#define SNDDBG(x) __android_log_print(ANDROID_LOG_INFO, "Corona", x);
-*/
-/* Android doesn't seem to understand the 'restrict' qualifier. */
-int SoundDecoder_DebugPrint(const char* format, ...);
-#define SNDDBG(x) SoundDecoder_DebugPrint x
-
+#define SNDDBG(...) ((void)__android_log_print(ANDROID_LOG_DEBUG,  "ALmixer", __VA_ARGS__))
 #else
 
 #if (defined DEBUG_CHATTER)

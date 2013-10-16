@@ -65,6 +65,8 @@ extern "C" {
 
 		/* type Needs to be a 32-bit to be compatible with SDL */
 		uint32_t type;
+		/* placeholder for saving file name */
+		const char *file_name;
 		union 
 		{
 #if defined(__WIN32__) && !defined(__SYMBIAN32__)
@@ -103,6 +105,7 @@ extern "C" {
 
 	extern ALMIXER_RWOPS_DECLSPEC ALmixer_RWops* ALMIXER_RWOPS_CALL ALmixer_RWFromFile(const char* file_name, const char* file_mode);
 	extern ALMIXER_RWOPS_DECLSPEC ALmixer_RWops* ALMIXER_RWOPS_CALL ALmixer_RWFromFP(FILE* file_pointer, char autoclose_flag);
+	extern ALMIXER_RWOPS_DECLSPEC ALmixer_RWops* ALMIXER_RWOPS_CALL ALmixer_RW_NOOP(const char* file_name);
 
 #define ALmixer_RWseek(rwops, offset, whence) (rwops)->seek(rwops, offset, whence)
 #define ALmixer_RWtell(rwops) (rwops)->seek(rwops, 0, SEEK_CUR)

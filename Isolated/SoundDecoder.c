@@ -8,10 +8,6 @@
 #include <string.h>
 #include <assert.h>
 
-#ifdef __ANDROID__
-#include <android/log.h>
-#endif
-
 /* A partial shim reimplementation of SDL_sound to work around the LGPL issues.
  * This implementation is more limited than SDL_sound. 
  * For example, there is no generic software conversion routines.
@@ -30,13 +26,17 @@ static const SoundDecoder_DecoderInfo** s_availableDecoders = NULL;
 #ifdef __APPLE__ /* I'm making Apple use the Core Audio backend. */
 	//extern const SoundDecoder_DecoderFunctions __SoundDecoder_DecoderFunctions_CoreAudio;
 	extern const Sound_DecoderFunctions __Sound_DecoderFunctions_CoreAudio;
-#else /* Not Apple */
-	#ifdef SOUND_SUPPORTS_WAV
-		extern const Sound_DecoderFunctions __Sound_DecoderFunctions_WAV;
-	#endif
-	#ifdef SOUND_SUPPORTS_MPG123
-		extern const Sound_DecoderFunctions __Sound_DecoderFunctions_MPG123;
-	#endif
+#elif defined(__ANDROID__)
+	extern const Sound_DecoderFunctions __Sound_DecoderFunctions_OpenSLES;
+#endif
+#ifdef SOUND_SUPPORTS_AAC
+	extern const Sound_DecoderFunctions __Sound_DecoderFunctions_AAC;
+#endif
+#ifdef SOUND_SUPPORTS_WAV
+	extern const Sound_DecoderFunctions __Sound_DecoderFunctions_WAV;
+#endif
+#ifdef SOUND_SUPPORTS_MPG123
+	extern const Sound_DecoderFunctions __Sound_DecoderFunctions_MPG123;
 #endif
 
 /* Note: Make sure to compile only Vorbis xor Tremor, not both. */
@@ -54,14 +54,19 @@ static SoundElement s_linkedDecoders[] =
 {
 #if defined(__APPLE__)
 		{ 0, &__Sound_DecoderFunctions_CoreAudio },
-#else /* Not Apple */
-	#ifdef SOUND_SUPPORTS_WAV
-		{ 0, &__Sound_DecoderFunctions_WAV },
-	#endif
-	#ifdef SOUND_SUPPORTS_MPG123
-		{ 0, &__Sound_DecoderFunctions_MPG123 },
-	#endif
+#elif defined(__ANDROID__)
+		{ 0, &__Sound_DecoderFunctions_OpenSLES },
 #endif
+#ifdef SOUND_SUPPORTS_AAC
+	{ 0, &__Sound_DecoderFunctions_AAC },
+#endif
+#ifdef SOUND_SUPPORTS_WAV
+	{ 0, &__Sound_DecoderFunctions_WAV },
+#endif
+#ifdef SOUND_SUPPORTS_MPG123
+	{ 0, &__Sound_DecoderFunctions_MPG123 },
+#endif
+
 /* Note: Make sure to link only Vorbis xor Tremor, not both. */		
 #ifdef SOUND_SUPPORTS_OGG
     { 0, &__Sound_DecoderFunctions_OGG },
@@ -406,8 +411,6 @@ SoundDecoder_Sample* SoundDecoder_NewSampleFromFile(const char* file_name,
     const char* file_extension;
     ALmixer_RWops* rw_ops;
 	SoundDecoder_Sample* new_sample;
-	FILE* file_pointer = NULL;
-
 	if(0 == s_isInitialized)
 	{
 		SoundDecoder_SetError(ERR_NOT_INITIALIZED);
@@ -425,20 +428,20 @@ SoundDecoder_Sample* SoundDecoder_NewSampleFromFile(const char* file_name,
 		file_extension++;
 	}
 
-	/* Use ALmixer_RWFromFP instead of ALmixer_RWFromFile so we can get access to the FILE* needed for Android OpenSL ES */
-	file_pointer = fopen(file_name, "rb");
-	if(NULL == file_pointer)
-	{
-		SoundDecoder_SetError("fopen failed");
-		return NULL;
-	}	
-	rw_ops = ALmixer_RWFromFP(file_pointer, 1);
+#ifdef __ANDROID__
+	/* 
+	 * On Android & OpenSL ES, ALmixer_RWops doesn't have file pointer
+	 * because all file pointers are handled internally by Android framework.
+	 * It just holds file name for convenience.
+	 */
+	rw_ops = ALmixer_RW_NOOP(file_name);
+#else
+	rw_ops = ALmixer_RWFromFile(file_name, "rb");
+#endif
 
 	new_sample = SoundDecoder_NewSample(rw_ops, file_extension, desired_format, buffer_size);
-	SoundDecoderInternal_SetOptionalFileHandle(new_sample->opaque, file_pointer);
-	SoundDecoderInternal_SetOptionalFileName(new_sample->opaque, file_name);
 	return new_sample;
-}
+ }
 
 
 SoundDecoder_Sample* SoundDecoder_NewSample(ALmixer_RWops* rw_ops, const char* file_extension, SoundDecoder_AudioInfo* desired_format, size_t buffer_size)
@@ -490,6 +493,9 @@ SoundDecoder_Sample* SoundDecoder_NewSample(ALmixer_RWops* rw_ops, const char* f
 	internal_sample->rw = rw_ops;
 	new_sample->opaque = internal_sample;
 
+	if (rw_ops->file_name != NULL) {
+		SoundDecoderInternal_SetOptionalFileName(new_sample->opaque, rw_ops->file_name);
+	}
 
     if(NULL != file_extension)
     {
@@ -718,18 +724,6 @@ ptrdiff_t SoundDecoder_GetDuration(SoundDecoder_Sample* sound_sample)
 	BAIL_IF_MACRO(NULL == sound_sample, ERR_NULL_SAMPLE, 0);	
     internal_sample = (SoundDecoder_SampleInternal*)sound_sample->opaque;
     return internal_sample->total_time;
-}
-
-
-/* Helper APIs for Android OpenSL ES decoder backends. */
-FILE* SoundDecoderInternal_GetOptionalFileHandle(SoundDecoder_SampleInternal* sample_internal)
-{
-	return sample_internal->optional_file_handle; 
-}
-
-void SoundDecoderInternal_SetOptionalFileHandle(SoundDecoder_SampleInternal* sample_internal, FILE* file_handle)
-{
-	sample_internal->optional_file_handle = file_handle;
 }
 
 const char* SoundDecoderInternal_GetOptionalFileName(SoundDecoder_SampleInternal* sample_internal)
