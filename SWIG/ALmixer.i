@@ -49,7 +49,7 @@
 %fragment("SWIG_JSCGetNumberProperty", "header", fragment=SWIG_AsVal_frag(double)) {}
 
 %typemap(in, fragment="SWIG_JSCGetIntProperty")  ALmixer_AudioInfo* desired_format
-    (int length = 0, v8::Local<v8::Array> array, v8::Local<v8::Value> jsvalue0, v8::Local<v8::Value> jsvalue1, v8::Local<v8::Value> jsvalue2, int i = 0, int res) {
+    (int length = 0, v8::Local<v8::Array> array, v8::Local<v8::Value> jsvalue0, v8::Local<v8::Value> jsvalue1, v8::Local<v8::Value> jsvalue2, int i = 0, int res, int temp) {
   if ($input->IsArray()) {
     // Convert into Array
     array = v8::Local<v8::Array>::Cast($input);
@@ -62,9 +62,12 @@
         jsvalue1 = array->Get(1);
         jsvalue2 = array->Get(2);
 
-        res = SWIG_AsVal(int)(jsvalue0, &$1->format);
-        res = SWIG_AsVal(int)(jsvalue1, &$1->channels);
-        res = SWIG_AsVal(int)(jsvalue2, &$1->rate);
+        res = SWIG_AsVal(int)(jsvalue0, &temp);
+        $1->format = temp;
+        res = SWIG_AsVal(int)(jsvalue1, &temp);
+        $1->channels = temp;
+        res = SWIG_AsVal(int)(jsvalue2, &temp);
+        $1->rate = temp;
     } else {
       SWIG_exception_fail(SWIG_ERROR, "$input.length should be >= 3");
     }
@@ -540,12 +543,6 @@ extern ALMIXER_DECLSPEC ALboolean ALMIXER_CALL ALmixer_Init(ALuint playback_freq
 extern ALMIXER_DECLSPEC ALboolean ALMIXER_CALL ALmixer_InitContext(ALuint playback_frequency=0, ALuint refresh_rate=0);
 
 extern ALMIXER_DECLSPEC ALboolean ALMIXER_CALL ALmixer_InitMixer(ALuint num_sources=0);
-
-extern ALMIXER_DECLSPEC void ALMIXER_CALL ALmixer_SuspendPlayingState(void);
-
-extern ALMIXER_DECLSPEC void ALMIXER_CALL ALmixer_ResumePlayingState(void);
-
-extern ALMIXER_DECLSPEC ALboolean ALmixer_IsPlayingStateSuspended(void);
 
 extern ALMIXER_DECLSPEC void ALMIXER_CALL ALmixer_BeginInterruption(void);
 
