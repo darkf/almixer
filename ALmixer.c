@@ -241,6 +241,7 @@ static LinkedList* s_listOfALmixerData = NULL;
 ALboolean g_inInterruption = AL_FALSE;
 static ALCcontext* s_interruptionContext = NULL;
 
+static ALboolean* s_savedIsPlayingStateForInterruption = NULL;
 
 #ifdef __APPLE__
 static ALvoid Internal_alcMacOSXMixerOutputRate(const ALdouble sample_rate)
@@ -7545,6 +7546,115 @@ ALboolean ALmixer_InitMixer(ALuint num_sources)
 	return AL_TRUE;
 }
 
+
+void Internal_SuspendPlayingState()
+{
+	ALint total_number_of_channels;
+	ALint current_channel;
+	/* If this is allocated, that is interpreted as already in a suspend state so we want to skip. */
+	if(NULL != s_savedIsPlayingStateForInterruption)
+	{
+		return;
+	}
+	total_number_of_channels = Internal_AllocateChannels(-1);
+	s_savedIsPlayingStateForInterruption = (ALboolean*)calloc(total_number_of_channels, sizeof(ALboolean));
+	if(NULL == s_savedIsPlayingStateForInterruption)
+	{
+		ALmixer_SetError("Out of memory");
+		return;
+	}
+	for(current_channel=0; current_channel<total_number_of_channels; current_channel++)
+	{
+		if(Internal_PlayingChannel(current_channel) > 0)
+		{
+			s_savedIsPlayingStateForInterruption[current_channel] = AL_TRUE;
+			Internal_PauseChannel(current_channel);
+		}
+	}
+}
+
+void ALmixer_SuspendPlayingState()
+{
+	if(AL_FALSE == ALmixer_Initialized)
+	{
+		return;
+	}
+#ifdef ENABLE_ALMIXER_THREADS
+	SDL_LockMutex(s_simpleLock);
+#endif
+	Internal_SuspendPlayingState();
+#ifdef ENABLE_ALMIXER_THREADS
+	SDL_UnlockMutex(s_simpleLock);
+#endif	
+}
+
+void Internal_ResumePlayingState()
+{
+	ALint total_number_of_channels;
+	ALint current_channel;
+	/* If this is not allocated, that is interpreted as SuspendPlayingState was never called. */
+	if(NULL == s_savedIsPlayingStateForInterruption)
+	{
+		return;
+	}
+	total_number_of_channels = Internal_AllocateChannels(-1);
+	for(current_channel=0; current_channel<total_number_of_channels; current_channel++)
+	{
+		if(AL_TRUE == s_savedIsPlayingStateForInterruption[current_channel])
+		{
+			s_savedIsPlayingStateForInterruption[current_channel] = AL_TRUE;
+			Internal_ResumeChannel(current_channel);
+		}
+	}
+
+	free(s_savedIsPlayingStateForInterruption);
+	s_savedIsPlayingStateForInterruption = NULL;
+}
+
+void ALmixer_ResumePlayingState()
+{
+	if(AL_FALSE == ALmixer_Initialized)
+	{
+		return;
+	}
+#ifdef ENABLE_ALMIXER_THREADS
+	SDL_LockMutex(s_simpleLock);
+#endif
+	Internal_ResumePlayingState();
+#ifdef ENABLE_ALMIXER_THREADS
+	SDL_UnlockMutex(s_simpleLock);
+#endif
+}
+
+ALboolean Internal_IsPlayingStateSuspended()
+{
+	if(NULL != s_savedIsPlayingStateForInterruption)
+	{
+		return AL_TRUE;
+	}
+	else
+	{
+		return AL_FALSE;
+	}
+}
+
+ALboolean ALmixer_IsPlayingStateSuspended()
+{
+	ALboolean retval;
+	if(AL_FALSE == ALmixer_Initialized)
+	{
+		return FALSE;
+	}
+#ifdef ENABLE_ALMIXER_THREADS
+	SDL_LockMutex(s_simpleLock);
+#endif
+	retval = Internal_IsPlayingStateSuspended();
+#ifdef ENABLE_ALMIXER_THREADS
+	SDL_UnlockMutex(s_simpleLock);
+#endif
+	return retval;
+}
+
 void ALmixer_BeginInterruption()
 {
 	if((AL_TRUE == g_inInterruption) || (AL_FALSE == ALmixer_Initialized))
@@ -7552,6 +7662,7 @@ void ALmixer_BeginInterruption()
 		return;
 	}
 
+	Internal_SuspendPlayingState();
 	ALmixer_SuspendUpdates();
 
 	/* App Portable introduced alcSuspend() and alcResume() for Android in their OpenAL Soft fork. */
@@ -7609,6 +7720,9 @@ void ALmixer_EndInterruption()
 
 	ALmixer_ResumeUpdates();
 	g_inInterruption = AL_FALSE;
+	/* This is intentionally after the g_inInterruption flag is set false in case 
+	 * ResumePlayingState needs to call APIs that only work when not in an interruption. */
+	Internal_ResumePlayingState();	
 }
 
 
@@ -7676,6 +7790,7 @@ ALboolean ALmixer_AreUpdatesSuspended()
 	return AL_FALSE;
 #endif
 }
+
 
 /* Keep the return value void to allow easy use with
  * atexit()
@@ -7969,7 +8084,12 @@ void ALmixer_OutputOpenALInfo()
 ALint ALmixer_AllocateChannels(ALint numchans)
 {
 	ALint retval;
-	if( (AL_FALSE == ALmixer_Initialized) || (AL_TRUE == g_inInterruption) )
+	/* A common pattern is to get the count of channels to pause/resume during Interruptions.
+	 * These basic getter functions need to work during interruption events.
+	 * Practically speaking, I think the only safe version of this is passing -1,
+	 * but I think the implementation may actually work for other values.
+	 */
+	if(AL_FALSE == ALmixer_Initialized)
 	{
 		return -1;
 	}
@@ -7988,7 +8108,10 @@ ALint ALmixer_AllocateChannels(ALint numchans)
 ALint ALmixer_ReserveChannels(ALint num)
 {
 	ALint retval;
-	if( (AL_FALSE == ALmixer_Initialized) || (AL_TRUE == g_inInterruption) )
+	/* A common pattern is to get the count of channels to pause/resume during Interruptions.
+	 * These basic getter functions need to work during interruption events.
+	 */
+	if(AL_FALSE == ALmixer_Initialized)
 	{
 		return -1;
 	}
@@ -9714,7 +9837,10 @@ ALint ALmixer_IsPausedSource(ALuint source)
 ALuint ALmixer_CountAllFreeChannels()
 {
 	ALuint retval;
-	if( (AL_FALSE == ALmixer_Initialized) || (AL_TRUE == g_inInterruption) )
+	/* A common pattern is to get the count of channels to pause/resume during Interruptions.
+	 * These basic getter functions need to work during interruption events.
+	 */
+	if(AL_FALSE == ALmixer_Initialized)
 	{
 		return 0;
 	}
@@ -9731,7 +9857,10 @@ ALuint ALmixer_CountAllFreeChannels()
 ALuint ALmixer_CountUnreservedFreeChannels()
 {
 	ALuint retval;
-	if( (AL_FALSE == ALmixer_Initialized) || (AL_TRUE == g_inInterruption) )
+	/* A common pattern is to get the count of channels to pause/resume during Interruptions.
+	 * These basic getter functions need to work during interruption events.
+	 */
+	if(AL_FALSE == ALmixer_Initialized)
 	{
 		return 0;
 	}
@@ -9748,7 +9877,10 @@ ALuint ALmixer_CountUnreservedFreeChannels()
 ALuint ALmixer_CountAllUsedChannels()
 {
 	ALuint retval;
-	if( (AL_FALSE == ALmixer_Initialized) || (AL_TRUE == g_inInterruption) )
+	/* A common pattern is to get the count of channels to pause/resume during Interruptions.
+	 * These basic getter functions need to work during interruption events.
+	 */
+	if(AL_FALSE == ALmixer_Initialized)
 	{
 		return 0;
 	}
@@ -9765,7 +9897,10 @@ ALuint ALmixer_CountAllUsedChannels()
 ALuint ALmixer_CountUnreservedUsedChannels()
 {
 	ALuint retval;
-	if( (AL_FALSE == ALmixer_Initialized) || (AL_TRUE == g_inInterruption) )
+	/* A common pattern is to get the count of channels to pause/resume during Interruptions.
+	 * These basic getter functions need to work during interruption events.
+	 */
+	if(AL_FALSE == ALmixer_Initialized)
 	{
 		return 0;
 	}

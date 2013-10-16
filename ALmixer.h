@@ -408,6 +408,34 @@ extern ALMIXER_DECLSPEC void ALMIXER_CALL ALmixer_ResumeUpdates(void);
  */
 extern ALMIXER_DECLSPEC ALboolean ALmixer_AreUpdatesSuspended(void);
 
+
+/**
+ * (EXPERIMENTAL) Pauses all currently playing channels with the intent that you will want to resume them later with ALmixer_ResumePlayingState().
+ * (EXPERIMENTAL) This will traverse through all currently playing channels, privately mark them as playing, and pause them. 
+ * The primary motivation for this function was to better handle BeginInterruption by saving the playing state so it could be restored on EndInterruption.
+ * You don't necessarily want to resume all channels, because some channels may be paused already and you don't want those to automatically resume.
+ * This function does those extra checks and book keeping. 
+ * If you call BeginInterruption, you don't need to call this because it calls this on your behalf.
+ * @see ALmixer_ResumePlayingState, ALmixer_IsPlayingStateSuspended.
+ */
+extern ALMIXER_DECLSPEC void ALMIXER_CALL ALmixer_SuspendPlayingState(void);
+
+/**
+ * (EXPERIMENTAL) Resumes all paused channels triggered by ALmixer_SuspendPlayingState.
+ * (EXPERIMENTAL) This will resume all channels that were playing at the time of the call to ALmixer_SuspendPlayingState.
+ * The primary motivation for this function was to better handle BeginInterruption by saving the playing state so it could be restored on EndInterruption.
+ * You don't necessarily want to resume all channels, because some channels may be paused already and you don't want those to automatically resume.
+ * This function does those extra checks and book keeping. 
+ * If you call EndInterruption, you don't need to call this because it calls this on your behalf.
+ * @see ALmixer_SuspendPlayingState, ALmixer_IsPlayingStateSuspended.
+ */
+extern ALMIXER_DECLSPEC void ALMIXER_CALL ALmixer_ResumePlayingState(void);
+
+/**
+ * (EXPERIMENTAL) Call to determine if in ALmixer_SuspendPlayingState().
+ */
+extern ALMIXER_DECLSPEC ALboolean ALmixer_IsPlayingStateSuspended(void);
+
 	
 /**
  * This shuts down ALmixer. Please remember to free your ALmixer_Data* instances
