@@ -541,6 +541,12 @@ extern ALMIXER_DECLSPEC ALboolean ALMIXER_CALL ALmixer_InitContext(ALuint playba
 
 extern ALMIXER_DECLSPEC ALboolean ALMIXER_CALL ALmixer_InitMixer(ALuint num_sources=0);
 
+extern ALMIXER_DECLSPEC void ALMIXER_CALL ALmixer_SuspendPlayingState(void);
+
+extern ALMIXER_DECLSPEC void ALMIXER_CALL ALmixer_ResumePlayingState(void);
+
+extern ALMIXER_DECLSPEC ALboolean ALmixer_IsPlayingStateSuspended(void);
+
 extern ALMIXER_DECLSPEC void ALMIXER_CALL ALmixer_BeginInterruption(void);
 
 extern ALMIXER_DECLSPEC void ALMIXER_CALL ALmixer_EndInterruption(void);
