@@ -10,7 +10,7 @@
  */
 static long stdio_seek(ALmixer_RWops* the_context, long offset, int whence)
 {
-	if(0 == fseek(the_context->hidden.stdio.fp, offset, whence))
+	if(the_context->hidden.stdio.fp != NULL && 0 == fseek(the_context->hidden.stdio.fp, offset, whence))
 	{
 		return(ftell(the_context->hidden.stdio.fp));
 	}
@@ -25,6 +25,9 @@ static size_t stdio_read(ALmixer_RWops* the_context, void* ptr, size_t size, siz
 {
 	size_t bytes_read;
 
+	if (the_context->hidden.stdio.fp != NULL) {
+		return 0;
+	}
 	bytes_read = fread(ptr, size, nitems, the_context->hidden.stdio.fp);
 	if(0 == bytes_read && ferror(the_context->hidden.stdio.fp))
 	{
@@ -37,6 +40,10 @@ static size_t stdio_read(ALmixer_RWops* the_context, void* ptr, size_t size, siz
 static size_t stdio_write(ALmixer_RWops* the_context, const void* ptr, size_t size, size_t nitems)
 {
 	size_t bytes_written;
+
+	if (the_context->hidden.stdio.fp != NULL) {
+		return 0;
+	}
 
 	bytes_written = fwrite(ptr, size, nitems, the_context->hidden.stdio.fp);
 	if(0 == bytes_written && ferror(the_context->hidden.stdio.fp))
@@ -53,7 +60,7 @@ static int stdio_close(ALmixer_RWops* the_context)
 	{
 		if(0 != the_context->hidden.stdio.autoclose)
 		{
-			if(0 != fclose(the_context->hidden.stdio.fp))
+			if(the_context->hidden.stdio.fp != NULL && 0 != fclose(the_context->hidden.stdio.fp))
 			{
 /*				ALmixer_SetError("ALmixer_RWops close failed: %s", strerror(errno)); */
 				return_status = -1;
@@ -101,8 +108,18 @@ ALmixer_RWops* ALmixer_RWFromFile(const char* file_name, const char* file_mode)
     }
 
 	rw_ops = ALmixer_RWFromFP(file_pointer, 1);
+	rw_ops->file_name = file_name;
     return rw_ops;
 }
 
+ALmixer_RWops* ALmixer_RW_NOOP(const char* file_name)
+{
+	ALmixer_RWops* rw_ops = NULL;
+
+	rw_ops = ALmixer_RWFromFP(NULL, 0);
+	rw_ops->file_name = file_name;
+
+	return rw_ops;
+}
 
 #endif /* ALMIXER_COMPILED_WITH_SDL */
