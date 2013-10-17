@@ -1,4 +1,4 @@
-
+/*
 //	Ti.API.info("In Module_Initialize.js");
 
 var s_JSALmixerIsInitialized;
@@ -270,6 +270,8 @@ function JSALmixer_Initialize()
 	*/
 //	  Ti.API.info("In Module_Initialize.js, end ");
 
+/*
 }
 
 JSALmixer_Initialize();
+*/
