@@ -508,6 +508,7 @@ static int OpenSLES_open(Sound_Sample *sample, const char *ext) {
     OpenSLESFileContainer *file_container = (OpenSLESFileContainer *)malloc(sizeof(OpenSLESFileContainer));
     file_container->player = player;
     file_container->playItf = playItf;
+    file_container->seekItf = seekItf;
     file_container->decBuffQueueItf = decBuffQueueItf;
     file_container->available = SL_BOOLEAN_FALSE;
     file_container->eos       = SL_BOOLEAN_FALSE;
