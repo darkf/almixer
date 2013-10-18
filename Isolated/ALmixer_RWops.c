@@ -25,7 +25,7 @@ static size_t stdio_read(ALmixer_RWops* the_context, void* ptr, size_t size, siz
 {
 	size_t bytes_read;
 
-	if (the_context->hidden.stdio.fp != NULL) {
+	if (the_context->hidden.stdio.fp == NULL) {
 		return 0;
 	}
 	bytes_read = fread(ptr, size, nitems, the_context->hidden.stdio.fp);
@@ -41,7 +41,7 @@ static size_t stdio_write(ALmixer_RWops* the_context, const void* ptr, size_t si
 {
 	size_t bytes_written;
 
-	if (the_context->hidden.stdio.fp != NULL) {
+	if (the_context->hidden.stdio.fp == NULL) {
 		return 0;
 	}
 
