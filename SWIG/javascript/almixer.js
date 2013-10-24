@@ -1,5 +1,4 @@
-/*
-//	Ti.API.info("In Module_Initialize.js");
+Ti.API.info("In Module_Initialize.js");
 
 var s_JSALmixerIsInitialized;
 var s_JSALmixerDataChannelTable;
@@ -10,11 +9,11 @@ function JSALmixer_Initialize()
 {
 	if(s_JSALmixerIsInitialized)
 	{
-//	Ti.API.info("s_JSALmixerIsInitialized is true");
+	Ti.API.info("s_JSALmixerIsInitialized is true");
 		
 		return;
 	}
-//	Ti.API.info("s_JSALmixerIsInitialized is false");
+	Ti.API.info("s_JSALmixerIsInitialized is false");
 	s_JSALmixerIsInitialized = true;
 
 	var almixer_ti_proxy = require('co.lanica.almixer');
@@ -26,22 +25,22 @@ function JSALmixer_Initialize()
 	ALmixer.util = {};
 
 	s_JSALmixerDataChannelTable = {}
-//	Ti.API.info("In Module_Initialize.js, past require " + almixer_ti_proxy);
+	Ti.API.info("In Module_Initialize.js, past require " + almixer_ti_proxy);
 
 
 	almixer_ti_proxy.addEventListener('ALmixerSoundPlaybackFinished', 
 		function(e)
 		{
 			
-//	  Ti.API.info("addEventListener name is "+e.name);
+	  Ti.API.info("addEventListener name is "+e.name);
 	////  Ti.API.info("handle is "+e.handle);
-//	  Ti.API.info("addEventListener channel is "+e.channel);
-//	  Ti.API.info("addEventListener source is "+e.alsource);
-//	  Ti.API.info("addEventListener completed is "+e.completed);
+	  Ti.API.info("addEventListener channel is "+e.channel);
+	  Ti.API.info("addEventListener source is "+e.alsource);
+	  Ti.API.info("addEventListener completed is "+e.completed);
 
 		var which_channel = e.channel;
 		var saved_table = s_JSALmixerDataChannelTable[which_channel];
-//		  Ti.API.info("addEventListener saved_table is "+saved_table);
+		Ti.API.info("addEventListener saved_table is "+saved_table);
 
 		var callback_function = saved_table.onComplete;
 		var sound_handle = saved_table.soundHandle;
@@ -61,7 +60,7 @@ function JSALmixer_Initialize()
 		// Invoke user callback
 		if(null != callback_function)
 		{
-//		  Ti.API.info("callback_function "+callback_function);
+		  Ti.API.info("callback_function "+callback_function);
 			callback_function(event_table);
 			event_table = null;
 			callback_function = null;
@@ -268,10 +267,8 @@ function JSALmixer_Initialize()
 
 		var playing_channel = ALmixer.PlayChannelTimed(-1, sound_handle_pew, 0, -1);
 	*/
-//	  Ti.API.info("In Module_Initialize.js, end ");
+	  Ti.API.info("In Module_Initialize.js, end ");
 
-/*
 }
 
 JSALmixer_Initialize();
-*/
