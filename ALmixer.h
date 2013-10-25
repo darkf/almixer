@@ -931,6 +931,9 @@ extern ALMIXER_DECLSPEC ALboolean ALMIXER_CALL ALmixer_IsPredecoded(ALmixer_Data
  */
 extern ALMIXER_DECLSPEC void ALMIXER_CALL ALmixer_SetPlaybackFinishedCallback(void (*playback_finished_callback)(ALint which_channel, ALuint al_source, ALmixer_Data* almixer_data, ALboolean finished_naturally, void* user_data), void* user_data);
 
+typedef void (*playback_finished_callback)(ALint which_channel, ALuint al_source, ALmixer_Data* almixer_data, ALboolean finished_naturally, void* ALmixer_SetPlaybackFinishedCallbackContainer);
+
+
 /**
  * Allows you to set a callback for getting audio data.
  * This is a callback function pointer that when set, will trigger a function

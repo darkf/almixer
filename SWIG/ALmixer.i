@@ -34,6 +34,8 @@
 %rename("%(strip:[ALmixer_])s") ""; // wxHello -> Hello; FooBar -> FooBar
 #endif
 
+%include ALmixer_Callback.i
+
 /* 
  * Typemap for 
  * ALmixer_AudioInfo* desired_format
@@ -704,7 +706,9 @@ extern ALMIXER_DECLSPEC void ALMIXER_CALL ALmixer_FreeData(ALmixer_Data* almixer
 
 extern ALMIXER_DECLSPEC ALboolean ALMIXER_CALL ALmixer_IsPredecoded(ALmixer_Data* almixer_data);
 
-extern ALMIXER_DECLSPEC void ALMIXER_CALL ALmixer_SetPlaybackFinishedCallback(void (*playback_finished_callback)(ALint which_channel, ALuint al_source, ALmixer_Data* almixer_data, ALboolean finished_naturally, void* user_data), void* user_data);
+typedef void (*playback_finished_callback)(ALint which_channel, ALuint al_source, ALmixer_Data* almixer_data, ALboolean finished_naturally, void* ALmixer_SetPlaybackFinishedCallbackContainer);
+
+extern ALMIXER_DECLSPEC void ALMIXER_CALL ALmixer_SetPlaybackFinishedCallback(playback_finished_callback func, void* ALmixer_SetPlaybackFinishedCallbackContainer);
 
 extern ALMIXER_DECLSPEC void ALMIXER_CALL ALmixer_SetPlaybackDataCallback(void (*playback_data_callback)(ALint which_channel, ALuint al_source, ALbyte* pcm_data, ALuint num_bytes, ALuint frequency, ALubyte num_channels_in_sample, ALubyte bit_depth, ALboolean is_unsigned, ALboolean decode_mode_is_predecoded, ALuint length_in_msec, void* user_data), void* user_data);
 
