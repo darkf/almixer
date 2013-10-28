@@ -8,8 +8,9 @@
 
 %inline {
 typedef struct ALmixer_PlaybackFinishedCallbackContainer {
-  v8::Local<v8::Value> data;
-  v8::Local<v8::Value> func;
+  v8::Persistent<v8::Context> context;
+  v8::Persistent<v8::Value> data;
+  v8::Persistent<v8::Value> func;
 } ALmixer_PlaybackFinishedCallbackContainer;
 }
 
@@ -20,7 +21,8 @@ typedef struct ALmixer_PlaybackFinishedCallbackContainer {
   }
 
   data = (ALmixer_PlaybackFinishedCallbackContainer *)(argp);
-  data->func = v8::Local<v8::Value>::New(func1);
+  data->func = v8::Persistent<v8::Value>::New(func1);
+  data->context = v8::Persistent<v8::Context>::New(v8::Context::GetCurrent());
 
   $1 = %reinterpret_cast(data, $ltype);
 }
@@ -41,22 +43,31 @@ v8::Handle<v8::Value> ALmixer_PlaybackFinishedCallbackContainer_Wrap_Pointer(voi
   return scope.Close(ptrobj);
 }
 
-v8::Handle<v8::Value> ALmixer_SetPlaybackFinishedCallback_CallAsFunction(
+void ALmixer_SetPlaybackFinishedCallback_CallAsFunction(
     ALint which_channel, ALuint al_source, ALmixer_Data* almixer_data,
     ALboolean finished_naturally, ALmixer_PlaybackFinishedCallbackContainer *data, v8::Handle<v8::Value> func) {
 
-  v8::HandleScope scope;
-  if (!func->IsFunction()) return scope.Close(v8::Null());
+  //v8::Isolate* isolate = v8::Isolate::GetCurrent();
+  //if (isolate == NULL) {
+  //  isolate = v8::Isolate::New();
+  //}
+  //isolate->Enter();
+  {
+    v8::Locker locker;
+    v8::HandleScope scope;
+    v8::Handle<v8::Value> args[5];
+    if (!func->IsFunction()) return;
 
-  v8::Handle<v8::Value> args[5];
-  args[0] = v8::Number::New(which_channel);
-  args[1] = v8::Number::New(al_source);
-  args[2] = ALmixer_PlaybackFinishedCallbackContainer_Wrap_Pointer(almixer_data, SWIGTYPE_p_ALmixer_Data);
-  args[3] = v8::Boolean::New(finished_naturally);
-  args[4] = ALmixer_PlaybackFinishedCallbackContainer_Wrap_Pointer(data, SWIGTYPE_p_ALmixer_PlaybackFinishedCallbackContainer);
-  v8::Local<v8::Function> op = v8::Local<v8::Function>::New(v8::Handle<v8::Function>::Cast(func));
-
-  return op->Call(op, 5, args);
+    args[0] = v8::Number::New(which_channel);
+    args[1] = v8::Number::New(al_source);
+    args[2] = ALmixer_PlaybackFinishedCallbackContainer_Wrap_Pointer(almixer_data, SWIGTYPE_p_ALmixer_Data);
+    args[3] = v8::Boolean::New(finished_naturally);
+    args[4] = ALmixer_PlaybackFinishedCallbackContainer_Wrap_Pointer(data, SWIGTYPE_p_ALmixer_PlaybackFinishedCallbackContainer);
+    v8::Persistent<v8::Function> op = v8::Persistent<v8::Function>::New(v8::Handle<v8::Function>::Cast(func));
+    //op->Call(v8::Context::GetCurrent()->Global(), 5, args);
+    op->Call(op, 5, args);
+  }
+  //isolate->Exit();
 }
 void ALmixer_SetPlaybackFinishedCallback_JSCallbackHook(ALint which_channel, ALuint al_source, ALmixer_Data* almixer_data, ALboolean finished_naturally, void* voi) {
   ALmixer_PlaybackFinishedCallbackContainer *data = (ALmixer_PlaybackFinishedCallbackContainer *)voi;
