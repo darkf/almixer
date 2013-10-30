@@ -21,11 +21,23 @@ function JSALmixer_Initialize() {
 
 	s_JSALmixerDataChannelTable = {};
 
-	if (ALmixer.SetPlaybackFinishedCallback) {
+	if (Ti.Platform.osname != "android" && ALmixer.SetPlaybackFinishedCallback) {
 		playbackFinishedCallbackContainer = new ALmixer.PlaybackFinishedCallbackContainer();
 		ALmixer.SetPlaybackFinishedCallback(function(which_channel,channel_source,audio_data,finished_naturally,container) {
 			// We can now free our saved reference
 			s_JSALmixerDataChannelTable[which_channel] = null;
+
+			var event_table = {
+				name:"ALmixer",
+				type:"completed",
+				which_channel:which_channel,
+				channel_source:channel_source,
+				finished_naturally:finished_naturally,
+				audio_data:audio_data,
+				container:container
+			};
+
+			almixer_ti_proxy.fireEvent('ALmixerSoundPlaybackFinished', event_table);
 
 		}, playbackFinishedCallbackContainer);
 	}
