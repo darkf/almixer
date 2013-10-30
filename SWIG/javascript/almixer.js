@@ -21,26 +21,33 @@ function JSALmixer_Initialize() {
 
 	s_JSALmixerDataChannelTable = {};
 
-	if (Ti.Platform.osname != "android" && ALmixer.SetPlaybackFinishedCallback) {
-		playbackFinishedCallbackContainer = new ALmixer.PlaybackFinishedCallbackContainer();
-		ALmixer.SetPlaybackFinishedCallback(function(which_channel,channel_source,audio_data,finished_naturally,container) {
-			// We can now free our saved reference
-			s_JSALmixerDataChannelTable[which_channel] = null;
+	almixer_ti_proxy.addEventListener('ALmixerSoundPlaybackFinished', function(e) {
+		var which_channel = e.which_channel;
+		var saved_table = s_JSALmixerDataChannelTable[which_channel];
 
-			var event_table = {
-				name:"ALmixer",
-				type:"completed",
-				which_channel:which_channel,
-				channel_source:channel_source,
-				finished_naturally:finished_naturally,
-				audio_data:audio_data,
-				container:container
-			};
+		var callback_function = saved_table.onComplete;
+		var sound_handle = saved_table.soundHandle;
+		var event_table =
+		{
+			name:"ALmixer",
+			type:"completed",
+			which_channel:which_channel,
+			channel_source:e.channel_source,
+			completed:e.completed,
+			handle:saved_table.soundHandle,
+		};
 
-			almixer_ti_proxy.fireEvent('ALmixerSoundPlaybackFinished', event_table);
-
-		}, playbackFinishedCallbackContainer);
-	}
+		// We can now free our saved reference
+		s_JSALmixerDataChannelTable[which_channel] = null;
+		//
+		// Invoke user callback
+		if(null !== callback_function && undefined !== callback_function) {
+			callback_function(event_table);
+			event_table = null;
+			callback_function = null;
+		}
+		event_table = null;
+	});
 
 	ALmixer._original.PlayChannelTimed = ALmixer.PlayChannelTimed;
 	ALmixer.PlayChannelTimed = function(which_channel, sound_handle, num_loops, duration, on_complete) {
@@ -151,10 +158,10 @@ function JSALmixer_Initialize() {
 		var duration = -1;
 		var on_complete = null;
 		if(null !== options_table) {
-			if(null !== options_table.channel) {
-				which_channel = options_table.channel;
-			} else if(null !== options_table.alsource) {
-				which_channel = ALmixer.GetChannel(options_table.alsource);
+			if(null !== options_table.which_channel) {
+				which_channel = options_table.which_channel;
+			} else if(null !== options_table.channel_source) {
+				which_channel = ALmixer.GetChannel(options_table.channel_source);
 			}
 
 
