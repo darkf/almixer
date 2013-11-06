@@ -683,16 +683,19 @@ static void OpenSLES_close(Sound_Sample *sample) {
 
     SignalEos(file_container);
 
+    pthread_mutex_lock(&file_container->decoder_mutex);
     // Waiting for decoder
     while(file_container->decode_waiting == SL_BOOLEAN_TRUE) {
         pthread_cond_wait(&file_container->decoder_cond, &file_container->decoder_mutex);
     }
+    pthread_mutex_unlock(&file_container->decoder_mutex);
 
     pthread_cond_destroy(&file_container->decoder_cond);
     pthread_mutex_destroy(&file_container->decoder_mutex);
 
     if (internal->decoder_private != NULL) {
         if (file_container->player != NULL) {
+            (*file_container->playItf)->SetPlayState(file_container->playItf, SL_PLAYSTATE_STOPPED);
             (*file_container->player)->Destroy(file_container->player);
         }
         if (file_container->metadata != NULL) {
