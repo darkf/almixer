@@ -151,6 +151,7 @@ typedef struct OpenSLESFileContainer {
     pthread_mutex_t decoder_mutex;
     pthread_cond_t  decoder_cond;
 
+    SLboolean decode_waiting;
     SLboolean eos;
 
 } OpenSLESFileContainer;
@@ -226,9 +227,12 @@ static void decodePlayCallback(
     file_container->available = SL_BOOLEAN_TRUE;
     pthread_cond_signal(&file_container->decoder_cond);
 
+    file_container->decode_waiting = SL_BOOLEAN_TRUE;
     while(file_container->available == SL_BOOLEAN_TRUE && file_container->eos == SL_BOOLEAN_FALSE) {
         pthread_cond_wait(&file_container->decoder_cond, &file_container->decoder_mutex);
     }
+    file_container->decode_waiting = SL_BOOLEAN_FALSE;
+    pthread_cond_signal(&file_container->decoder_cond);
 
     if (file_container->eos == SL_BOOLEAN_FALSE) {
         SLresult result = (*file_container->decBuffQueueItf)->Enqueue(
@@ -512,6 +516,7 @@ static int OpenSLES_open(Sound_Sample *sample, const char *ext) {
     file_container->decBuffQueueItf = decBuffQueueItf;
     file_container->available = SL_BOOLEAN_FALSE;
     file_container->eos       = SL_BOOLEAN_FALSE;
+    file_container->decode_waiting = SL_BOOLEAN_FALSE;
     pthread_mutex_init(&file_container->prefetch_mutex, NULL);
     pthread_mutex_init(&file_container->decoder_mutex, NULL);
     pthread_cond_init(&file_container->prefetch_cond, NULL);
@@ -677,6 +682,11 @@ static void OpenSLES_close(Sound_Sample *sample) {
     OpenSLESFileContainer *file_container = (OpenSLESFileContainer *)internal->decoder_private;
 
     SignalEos(file_container);
+
+    // Waiting for decoder
+    while(file_container->decode_waiting == SL_BOOLEAN_TRUE) {
+        pthread_cond_wait(&file_container->decoder_cond, &file_container->decoder_mutex);
+    }
 
     pthread_cond_destroy(&file_container->decoder_cond);
     pthread_mutex_destroy(&file_container->decoder_mutex);
