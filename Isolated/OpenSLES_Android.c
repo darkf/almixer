@@ -719,7 +719,12 @@ static int OpenSLES_seek(Sound_Sample *sample, size_t ms) {
     Sound_SampleInternal *internal = (Sound_SampleInternal *)sample->opaque;
     OpenSLESFileContainer *file_container = (OpenSLESFileContainer *)internal->decoder_private;
     SLresult result = (*file_container->seekItf)->SetPosition(file_container->seekItf, ms, SL_SEEKMODE_ACCURATE);
-    return result == SL_RESULT_SUCCESS;
+
+    if (result != SL_RESULT_SUCCESS) {
+        sample->flags |= SOUND_SAMPLEFLAG_ERROR;
+    }
+
+    return(1);
 }
 
 #endif /* __ANDROID__ */
