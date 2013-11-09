@@ -1644,8 +1644,22 @@ extern ALMIXER_DECLSPEC void ALMIXER_CALL ALmixer_OutputDecoders(void);
 /** This function may be removed in the future. For debugging. Prints to stderr. */ 
 extern ALMIXER_DECLSPEC void ALMIXER_CALL ALmixer_OutputOpenALInfo(void);
 
-/** This function may be removed in the future. Returns true if compiled with threads, false if not. */ 
+/** This function is experimental. Returns true if compiled with threads, false if not. */ 
 extern ALMIXER_DECLSPEC ALboolean ALMIXER_CALL ALmixer_CompiledWithThreadBackend(void);
+
+/** This function is experimental. If compiled with threads, returns the current thread ID. If not compiled with threads, returns 0. */ 
+extern ALMIXER_DECLSPEC size_t ALMIXER_CALL ALmixer_GetCurrentThreadID(void);
+
+#define ALMIXER_THREAD_TYPE_ORIGINATING 1
+#define ALMIXER_THREAD_TYPE_UPDATE 2
+/** This function is experimental. 
+ * This will return the thread id for the specified type.
+ * This function is a bit of a hack to deal with complex threading situations we hit in a large framework on Android that already had a lot of complexity crossing the JNI bridge.
+ * @note This function does not lock and thus may not be atomic. The use case was to deal with callbacks in ALmixer which already have locks.
+ * @param almixer_thread_type Use the constants ALMIXER_THREAD_TYPE_ORIGINATING for the thread ALmixer was initialized on, or ALMIXER_THREAD_TYPE_UPDATE for the private background update thread.
+ * @return If compiled with threads, returns the thread ID for the specified type. If not compiled with threads, returns 0.
+ */
+extern ALMIXER_DECLSPEC size_t ALMIXER_CALL ALmixer_GetThreadIDForType(int almixer_thread_type);
 
 /**
  * @}

@@ -82,6 +82,8 @@
 		#define SDL_UnlockMutex SimpleMutex_UnlockMutex
 		#define SDL_CreateThread SimpleThread_CreateThread
 		#define SDL_WaitThread SimpleThread_WaitThread
+		#define SDL_ThreadID SimpleThread_GetCurrentThreadID
+		#define SDL_GetThreadID SimpleThread_GetThreadID
 	
 	#else
 		#include "SDL_thread.h"
@@ -233,6 +235,7 @@ static ALuint Is_Playing_global = 0;
 static ALboolean g_StreamThreadEnabled = AL_FALSE;
 static SDL_mutex* s_simpleLock = NULL;
 static SDL_Thread* Stream_Thread_global = NULL;
+static size_t s_originatingThreadID = 0;
 #endif /* ENABLE_ALMIXER_THREADS */
 
 static LinkedList* s_listOfALmixerData = NULL;
@@ -6972,6 +6975,8 @@ ALboolean ALmixer_Init(ALuint frequency, ALuint num_sources, ALuint refresh)
 		return AL_FALSE;
 	}
 	
+	s_originatingThreadID = (size_t)SDL_ThreadID();
+
 	/* Note: Only a few platforms change the priority. See implementation for notes. */
 	Internal_LowerThreadPriority(Stream_Thread_global);
 		
@@ -7531,6 +7536,8 @@ ALboolean ALmixer_InitMixer(ALuint num_sources)
 		return AL_FALSE;
 	}
 
+	s_originatingThreadID = (size_t)SDL_ThreadID();
+
 	/* Note: Only a few platforms change the priority. See implementation for notes. */
 	Internal_LowerThreadPriority(Stream_Thread_global);
 
@@ -7848,6 +7855,8 @@ void ALmixer_Quit()
 	/* This is safe to call with NULL thread, so we don't need to do anything special for interruptions. */
 	SDL_WaitThread(Stream_Thread_global, NULL);
 	Stream_Thread_global = NULL;
+
+	s_originatingThreadID = 0;
 
 	SDL_DestroyMutex(s_simpleLock);
 	s_simpleLock = NULL;
@@ -9932,6 +9941,34 @@ ALboolean ALmixer_CompiledWithThreadBackend()
 #endif
 }
 
+size_t ALmixer_GetCurrentThreadID()
+{
+#ifdef ENABLE_ALMIXER_THREADS
+	return (size_t)SDL_ThreadID();
+#else
+	return 0;
+#endif
+}
 
+/* This function does not lock on purpose because we need to call it in callbacks. */
+size_t ALmixer_GetThreadIDForType(int almixer_thread_type)
+{
+#ifdef ENABLE_ALMIXER_THREADS
+	if(ALMIXER_THREAD_TYPE_ORIGINATING == almixer_thread_type)
+	{
+		return (size_t)s_originatingThreadID;
+	}
+	else if(ALMIXER_THREAD_TYPE_UPDATE == almixer_thread_type)
+	{
+		return (size_t)SDL_GetThreadID(Stream_Thread_global);
+	}
+	else
+	{
+		return 0;
+	}
+#else
+	return 0;
+#endif
+}
 
 
