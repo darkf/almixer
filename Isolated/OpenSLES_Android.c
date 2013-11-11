@@ -154,6 +154,8 @@ typedef struct OpenSLESFileContainer {
     SLboolean decode_waiting;
     SLboolean eos;
 
+    AAsset* asset;
+
 } OpenSLESFileContainer;
 
 //-----------------------------------------------------------------
@@ -396,6 +398,8 @@ static int OpenSLES_open(Sound_Sample *sample, const char *ext) {
 
     SLDataSource decSource;
 
+    AAsset* asset = NULL;
+
     SLDataFormat_MIME format_srcMime = { SL_DATAFORMAT_MIME, NULL, SL_CONTAINERTYPE_UNSPECIFIED };
     /* Setup the data source for URI if file_name starts with full path "/" */
     if (strncmp(internal->optional_file_name, "/", 1) == 0) {
@@ -411,7 +415,7 @@ static int OpenSLES_open(Sound_Sample *sample, const char *ext) {
             SNDDBG("ALmixer_GetAssetManager failed");
             return(0);
         }
-        AAsset* asset = AAssetManager_open(asmgr, internal->optional_file_name, AASSET_MODE_UNKNOWN);
+        asset = AAssetManager_open(asmgr, internal->optional_file_name, AASSET_MODE_UNKNOWN);
         if (asset == NULL) {
             SNDDBG("AAssetManager_open failed");
             return(0);
@@ -517,6 +521,7 @@ static int OpenSLES_open(Sound_Sample *sample, const char *ext) {
     file_container->available = SL_BOOLEAN_FALSE;
     file_container->eos       = SL_BOOLEAN_FALSE;
     file_container->decode_waiting = SL_BOOLEAN_FALSE;
+    file_container->asset = asset;
     pthread_mutex_init(&file_container->prefetch_mutex, NULL);
     pthread_mutex_init(&file_container->decoder_mutex, NULL);
     pthread_cond_init(&file_container->prefetch_cond, NULL);
@@ -698,6 +703,10 @@ static void OpenSLES_close(Sound_Sample *sample) {
             (*file_container->playItf)->SetPlayState(file_container->playItf, SL_PLAYSTATE_STOPPED);
             (*file_container->player)->Destroy(file_container->player);
         }
+        if (file_container->asset != NULL) {
+            AAsset_close(file_container->asset);
+            file_container->asset = NULL;
+        }
         if (file_container->metadata != NULL) {
             free(file_container->metadata);
             file_container->metadata = NULL;
@@ -712,7 +721,19 @@ static void OpenSLES_close(Sound_Sample *sample) {
 }
 
 static int OpenSLES_rewind(Sound_Sample *sample) {
-    return OpenSLES_seek(sample, 0);
+    Sound_SampleInternal *internal = (Sound_SampleInternal *)sample->opaque;
+    OpenSLESFileContainer *file_container = (OpenSLESFileContainer *)internal->decoder_private;
+
+    (*file_container->playItf)->SetPlayState(file_container->playItf, SL_PLAYSTATE_STOPPED);
+
+    file_container->available = SL_BOOLEAN_FALSE;
+    file_container->eos       = SL_BOOLEAN_FALSE;
+    file_container->decode_waiting = SL_BOOLEAN_FALSE;
+
+    (*file_container->seekItf)->SetPosition(file_container->seekItf, 0, SL_SEEKMODE_ACCURATE);
+    (*file_container->playItf)->SetPlayState(file_container->playItf, SL_PLAYSTATE_PLAYING);
+
+    return(1);
 }
 
 static int OpenSLES_seek(Sound_Sample *sample, size_t ms) {
