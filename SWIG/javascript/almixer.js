@@ -315,6 +315,102 @@ function JSALmixer_Initialize()
 	}
 
 	ALmixer.util.Play = JSALmixerPlaySound;
+
+
+	function JSALmixerSanitizeFilePath(filename)
+	{
+		var resource_dir;
+
+		/* There are several cases:
+		 * User passed an absolute path starting with /
+		 * User passed some kind of URL
+		 * User passed a relative path (which we will interpret as looking in the platform's default resource directory)
+		 */
+		/* http://stackoverflow.com/questions/646628/javascript-startswith, see Mark Byers */
+		if(filename.lastIndexOf("/", 0) === 0)
+		{
+			// do nothing and keep the filename exactly as it was
+		}
+		// I don't know all the permutations, but my Titanium encounters so far start with file:
+		else if(filename.lastIndexOf("file:", 0) === 0)
+		{
+			// Originally, I was getting a file://localhost/ at the beginning of the directory. 
+			// This is a problem because ALmixer needs file paths compatible with the typical fopen type family.
+			filename = filename.replace(/^file:\/\/localhost/g,'');
+			// Later, Titanium started giving me URLs like file:// without the localhost. So this is a fallback string replacement.
+			filename = filename.replace(/^file:\/\//g,'');
+			// Replace %20 with spaces.
+			filename = filename.replace(/%20/g,' ');
+		}
+		else
+		{
+			// In Titanium, for Android, the relative path must be prepended with Resources/
+			// Mac/iOS should manually compose the NSBundle resourcePath.
+			if(Titanium)
+			{
+				if(Titanium.Platform.osname == 'android')
+				{
+					filename = "Resources/" + filename;
+				}
+				else
+				{
+					resource_dir = Ti.Filesystem.resourcesDirectory;
+					//var resource_dir = Ti.Filesystem.resourcesDirectory + Ti.Filesystem.separator;
+					// Originally, I was getting a file://localhost/ at the beginning of the directory. 
+					// This is a problem because ALmixer needs file paths compatible with the typical fopen type family.
+					resource_dir = resource_dir.replace(/^file:\/\/localhost/g,'');
+					// Later, Titanium started giving me URLs like file:// without the localhost. So this is a fallback string replacement.
+					resource_dir = resource_dir.replace(/^file:\/\//g,'');
+					// Replace %20 with spaces.
+					resource_dir = resource_dir.replace(/%20/g,' ');
+					filename = resource_dir + filename;
+				}
+			}
+			// else???
+		}
+		return filename;
+	}
+	ALmixer.util.SanitizeFilePath = JSALmixerSanitizeFilePath;
+
+	ALmixer._original.LoadAll = ALmixer.LoadAll;
+	ALmixer.LoadAll = function(filename, access_data)
+	{
+		if(!access_data)
+		{
+			access_data = 0;
+		}
+		filename = JSALmixerSanitizeFilePath(filename);
+		return ALmixer._original.LoadAll(filename, access_data);
+	}
+
+	ALmixer._original.LoadStream = ALmixer.LoadStream;
+	ALmixer.LoadStream = function(filename, buffer_size, max_queue_buffers, num_startup_buffers, suggested_number_of_buffers_to_queue_per_update_pass, access_data)
+	{
+		if(!buffer_size)
+		{
+			buffer_size = 0;
+		}
+		if(!max_queue_buffers)
+		{
+			max_queue_buffers = 0;
+		}
+		if(!num_startup_buffers)
+		{
+			num_startup_buffers = 0;
+		}
+		if(!suggested_number_of_buffers_to_queue_per_update_pass)
+		{
+			suggested_number_of_buffers_to_queue_per_update_pass = 0;
+		}
+		if(!access_data)
+		{
+			access_data = 0;
+		}
+		filename = JSALmixerSanitizeFilePath(filename);
+		return ALmixer._original.LoadStream(filename, buffer_size, max_queue_buffers, num_startup_buffers, suggested_number_of_buffers_to_queue_per_update_pass, access_data);
+	}
+
+
 }
 
 JSALmixer_Initialize();
