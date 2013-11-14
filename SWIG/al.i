@@ -97,7 +97,7 @@
 	}
 }
 
-// alGetSourcef
+// alGetSourcef, alGetSource3f
 /* Set the input argument to point to a temporary variable */
 %typemap(in, numinputs=1) ALfloat* algetsourcef_value (ALfloat internal_outvalue_storage)
 {
@@ -110,8 +110,37 @@
 		input_js_array = JSValueToObject(context, $input, NULL);
 		/* The -3 is needed because in the C APIs that use this typemap, the ALfloat* starts at the 3rd parameter, so $argnum-3 will allow the array elements to start at 0. */
 		JSObjectSetPropertyAtIndex(context, input_js_array, $argnum-3, JSValueMakeNumber(context, *$1), NULL);
-  }
+	}
+	else
+	{
+		SWIG_exception_fail(SWIG_TypeError, "Must provide a Javascript array for the ALfloat* value");
+	}
 }
+
+// alGetSourcefv
+/* Set the input argument to point to a temporary variable */
+/* alGetSourcefv has at most 3 elements */
+%typemap(in, numinputs=1) ALfloat* algetsourcefv_values (ALfloat internal_outvalue_storage[3])
+{
+   $1 = &internal_outvalue_storage[0];
+}
+%typemap(argout) ALfloat* algetsourcefv_values (JSObjectRef input_js_array, int current_array_element)
+{
+	if(JSValueIsObject(context, $input))
+	{
+		input_js_array = JSValueToObject(context, $input, NULL);
+		/* Set each element from array */
+		for(current_array_element=0; current_array_element<3; current_array_element++)
+		{
+			JSObjectSetPropertyAtIndex(context, input_js_array, current_array_element, JSValueMakeNumber(context, $1[current_array_element]), NULL);
+		}
+	}
+	else
+	{
+		SWIG_exception_fail(SWIG_TypeError, "Must provide a Javascript array for the ALfloat* value");
+	}
+}
+
 
 // alListenerfv
 %typemap(in) const ALfloat* allistenerfv_values (int input_array_length = 0, JSObjectRef input_js_array, JSValueRef current_array_jsvalue, int current_array_element, ALfloat target_array[6])
@@ -219,6 +248,7 @@ void alSourceiv( ALuint sid, ALenum param, const ALint* alsourceiv_values );
 void alGetSourcef( ALuint sid, ALenum param, ALfloat* algetsourcef_value );
 /* Yes, all 3 parameters are named the same thing intentionally to get the ALfloat* algetsourcef_value to apply to all parameters. */
 void alGetSource3f( ALuint sid, ALenum param, ALfloat* algetsourcef_value, ALfloat* algetsourcef_value, ALfloat* algetsourcef_value);
+void alGetSourcefv( ALuint sid, ALenum param, ALfloat* algetsourcefv_values );
 
 void alListenerfv( ALenum param, const ALfloat* allistenerfv_values );
 void alListeneriv( ALenum param, const ALint* allisteneriv_values );
