@@ -119,25 +119,24 @@
 extern "C" {
 #endif
 
-/* al.h */
-#define OPENAL
-#define ALAPI AL_API
-#define ALAPIENTRY AL_APIENTRY
-#define AL_INVALID                                (-1)
-#define AL_ILLEGAL_ENUM                           AL_INVALID_ENUM
-#define AL_ILLEGAL_COMMAND                        AL_INVALID_OPERATION
-
-#define AL_VERSION_1_0
-#define AL_VERSION_1_1
-
 /** For SWIG, change char to bool for the ALboolean type. */
+%apply ALboolean { bool };
 typedef bool ALboolean;
+
+#ifndef ALMIXER_SWIG_INCLUDE_OPENAL_BINDINGS
+/* These are essential OpenAL types that must be defined because ALmixer uses them directly. */
+
+typedef bool ALboolean;
+/** For SWIG, change char to bool for the ALboolean type. */
+%apply ALboolean { bool };
 
 /** character */
 typedef char ALchar;
 
 /** signed 8-bit 2's complement integer */
-typedef signed char ALbyte;
+/* Apple user char, OpenAL Soft uses signed char which will trigger SWIG warnings by SWIG if OpenAL is directly bound. */
+// typedef signed char ALbyte;
+typedef char ALbyte;
 
 /** unsigned 8-bit integer */
 typedef unsigned char ALubyte;
@@ -180,6 +179,23 @@ typedef void ALvoid;
 
 /** Boolean True. */
 #define AL_TRUE                                   1
+
+#endif /* ifndef ALMIXER_SWIG_INCLUDE_OPENAL_BINDINGS */
+
+
+#if 0  /* OpenAL defines */
+
+
+/* al.h */
+#define OPENAL
+#define ALAPI AL_API
+#define ALAPIENTRY AL_APIENTRY
+#define AL_INVALID                                (-1)
+#define AL_ILLEGAL_ENUM                           AL_INVALID_ENUM
+#define AL_ILLEGAL_COMMAND                        AL_INVALID_OPERATION
+
+#define AL_VERSION_1_0
+#define AL_VERSION_1_1
 
 /** Indicate Source has relative coordinates. */
 #define AL_SOURCE_RELATIVE                        0x202
@@ -451,6 +467,8 @@ typedef void ALvoid;
  */
 #define AL_PRIORITY                               0xE001
 #define AL_PRIORITY_SLOTS                         0xE002
+#endif /* OpenAL defines */
+
 
 #ifndef DOXYGEN_SHOULD_IGNORE_THIS
 
@@ -868,5 +886,14 @@ extern ALMIXER_DECLSPEC ALboolean ALMIXER_CALL ALmixer_CompiledWithThreadBackend
 /* Ends C function definitions when using C++ */
 #ifdef __cplusplus
 }
+#endif
+
+
+
+/**********
+* OpenAL
+***********/
+#ifdef ALMIXER_SWIG_INCLUDE_OPENAL_BINDINGS
+%include "al.i"
 #endif
 
