@@ -364,6 +364,7 @@ ALdouble Internal_alcMacOSXGetMixerOutputRate()
  * performance problems and cannot get audio to show up as a significant percentage
  * of the CPU time in Shark/Instruments.
  */
+#if 0 /* Internal_LowerThreadPriority */
 #ifdef ENABLE_ALMIXER_THREADS
 #if defined(__APPLE__) && !defined(ALMIXER_COMPILE_WITHOUT_SDL) && ( (TARGET_OS_IPHONE == 1) || (TARGET_IPHONE_SIMULATOR == 1) )
 #include <pthread.h>
@@ -388,6 +389,7 @@ static void Internal_LowerThreadPriority(SDL_Thread* simple_thread)
 #endif
 }
 #endif /* ENABLE_ALMIXER_THREADS */
+#endif /* Internal_LowerThreadPriority */
 
 /* If ENABLE_PARANOID_SIGNEDNESS_CHECK is used,
  * these values will be reset on Init()
@@ -6978,8 +6980,9 @@ ALboolean ALmixer_Init(ALuint frequency, ALuint num_sources, ALuint refresh)
 	s_originatingThreadID = (size_t)SDL_ThreadID();
 
 	/* Note: Only a few platforms change the priority. See implementation for notes. */
+	/*
 	Internal_LowerThreadPriority(Stream_Thread_global);
-		
+	*/	
 /*
 	fprintf(stderr, "Using threads\n");
 */
@@ -7539,8 +7542,9 @@ ALboolean ALmixer_InitMixer(ALuint num_sources)
 	s_originatingThreadID = (size_t)SDL_ThreadID();
 
 	/* Note: Only a few platforms change the priority. See implementation for notes. */
+	/*
 	Internal_LowerThreadPriority(Stream_Thread_global);
-
+	*/
 	/*
 	fprintf(stderr, "Using threads\n");
 	*/
@@ -7778,7 +7782,9 @@ void ALmixer_ResumeUpdates()
 		fprintf(stderr, "Critical Error: Could not create bookkeeping thread in EndInterruption\n");
 	}
 	/* Note: Only a few platforms change the priority. See implementation for notes. */
+	/*
 	Internal_LowerThreadPriority(Stream_Thread_global);	
+	*/
 #endif
 }
 
