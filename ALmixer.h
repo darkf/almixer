@@ -310,7 +310,8 @@ extern ALMIXER_DECLSPEC const ALmixer_version* ALMIXER_CALL ALmixer_GetLinkedVer
 
 #define ALMIXER_DEFAULT_FREQUENCY 	0
 #define ALMIXER_DEFAULT_REFRESH 	0
-#define ALMIXER_DEFAULT_NUM_CHANNELS	16
+/* Most of the old sound Windows sound cards that had 16 max are gone. 32 is the current limit on iOS. */
+#define ALMIXER_DEFAULT_NUM_CHANNELS	32
 #define ALMIXER_DEFAULT_NUM_SOURCES		ALMIXER_DEFAULT_NUM_CHANNELS
 
 /** 
