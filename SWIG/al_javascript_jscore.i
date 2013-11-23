@@ -445,7 +445,7 @@ FIXME: Cheating for now. Assuming max 32
 /* alSourceUnqueueBuffers */
 /* Set the input argument to point to a temporary variable */
 /* FIXME: Lazy hack: alSourceUnqueueBuffers has at most 32 elements */
-%typemap(in, numinputs=1) ALuint* alsourceunqueuebuffers_values (ALfloat internal_outvalue_storage[32])
+%typemap(in, numinputs=1) ALuint* alsourceunqueuebuffers_values (ALuint internal_outvalue_storage[32])
 {
    $1 = &internal_outvalue_storage[0];
 }
@@ -490,7 +490,7 @@ void alGetSourcefv( ALuint sid, ALenum param, ALfloat* algetsourcefv_values );
 void alGetSourcei( ALuint sid, ALenum param, ALint* algetsourcei_value );
 /* Yes, all 3 parameters are named the same thing intentionally to get the ALfloat* algetsourcef_value to apply to all parameters. */
 void alGetSource3i( ALuint sid, ALenum param, ALint* algetsourcei_value, ALint* algetsourcei_value, ALint* algetsourcei_value);
-void alGetSourceiv( ALuint sid, ALenum param, ALfloat* algetsourceiv_values );
+void alGetSourceiv( ALuint sid, ALenum param, ALint* algetsourceiv_values );
 
 
 void alListenerfv( ALenum param, const ALfloat* allistenerfv_values );
