@@ -3,12 +3,15 @@
 %{
 #include "al.h"
 #include "alc.h"
+#ifdef __APPLE__
+	#include "oalMacOSX_OALExtensions.h"
+#endif
 %}
 
 
 /* The Javascript backend has not implemented typemaps.i, so we do things the hard way. */
 #ifdef SWIG_JAVASCRIPT_JSC
-	%include "al_javascript_jsc.i"
+	%include "al_javascript_jscore.i"
 #elif SWIG_JAVASCRIPT_V8
 	%include "al_javascript_v8.i"
 
@@ -35,3 +38,7 @@ typedef bool ALboolean;
 /* Warning: alc not tested */
 %include "alc.h"
 
+#ifdef __APPLE__
+    /* Warning: not tested */
+    %include "oalMacOSX_OALExtensions.h"
+#endif
