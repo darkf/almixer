@@ -5,6 +5,31 @@ var s_JSALmixerTiProxy;
 
 var playbackFinishedCallbackContainer;
 
+// Ugh: There is a race condition because the Titanium callbacks may be deferred.
+// Calling Halt immediatelly followed by play is legal in C because the ALmixer callback fires immediately.
+// But in a scripting language binding where the callback may be queued (e.g. thread redirection),
+// we can't assume that. 
+// The problem is that to deal with memory management, 
+// I'm keeping my own shadow table that keeps ALmixer_Data rooted and keeps mappings 
+// to scripting language defined callback functions.
+// If Play is immediately called after Halt(), but the callback hasn't fired yet,
+// I will accidentally overwrite the callback data that is supposed to fire with 
+// the next Play's callback data.
+// To avoid, I need to keep a queue of callback data which PushCallbackTable and ShiftCallbackTable provide.
+function JSALmixer_PushCallbackTable(which_channel, saved_table)
+{
+	if(!s_JSALmixerDataChannelTable[which_channel])
+	{
+		s_JSALmixerDataChannelTable[which_channel] = [];
+	}
+	s_JSALmixerDataChannelTable[which_channel].push(saved_table);
+}
+
+function JSALmixer_ShiftCallbackTable(which_channel)
+{
+	return s_JSALmixerDataChannelTable[which_channel].shift();
+}
+
 function JSALmixer_Initialize()
 {
 	if(s_JSALmixerIsInitialized)
@@ -26,7 +51,8 @@ function JSALmixer_Initialize()
 	almixer_ti_proxy.addEventListener('ALmixerSoundPlaybackFinished', function(e)
 	{
 		var which_channel = e.which_channel;
-		var saved_table = s_JSALmixerDataChannelTable[which_channel];
+		// This will remove the callback table from the queue and return it.
+		var saved_table = JSALmixer_ShiftCallbackTable(which_channel);
 
 		var callback_function = saved_table.onComplete;
 		var sound_handle = saved_table.soundHandle;
@@ -41,16 +67,15 @@ function JSALmixer_Initialize()
 			userData:saved_table.userData
 		};
 
-		// We can now free our saved reference
-		s_JSALmixerDataChannelTable[which_channel] = null;
-		//
 		// Invoke user callback
-		if(null !== callback_function && undefined !== callback_function) {
+		if(callback_function)
+		{
 			callback_function(event_table);
 			event_table = null;
 			callback_function = null;
 		}
 		event_table = null;
+		saved_table = null;
 	});
 
 	ALmixer._original.PlayChannelTimed = ALmixer.PlayChannelTimed;
@@ -87,7 +112,8 @@ function JSALmixer_Initialize()
 			// In the callback, we can retrieve the data by looking up the channel which solves the pointer problem.
 			// Problem 3: We would also like to make the API nicer for Javascript and let people pass in anonymous callback functions for each channel.
 			// This table structure will let us also keep around their callback.
-			s_JSALmixerDataChannelTable[playing_channel] = { soundHandle:sound_handle, onComplete:on_complete, userData:user_data };
+			JSALmixer_PushCallbackTable(playing_channel, { soundHandle:sound_handle, onComplete:on_complete, userData:user_data } );
+
 		}
 		return playing_channel;
 	};
@@ -137,7 +163,7 @@ function JSALmixer_Initialize()
 			// In the callback, we can retrieve the data by looking up the channel which solves the pointer problem.
 			// Problem 3: We would also like to make the API nicer for Javascript and let people pass in anonymous callback functions for each channel.
 			// This table structure will let us also keep around their callback.
-			s_JSALmixerDataChannelTable[playing_channel] = { soundHandle:sound_handle, onComplete:on_complete, userData:user_data };
+			JSALmixer_PushCallbackTable(playing_channel, { soundHandle:sound_handle, onComplete:on_complete, userData:user_data } );
 		}
 		return playing_channel;
 	};
@@ -179,7 +205,7 @@ function JSALmixer_Initialize()
 			// In the callback, we can retrieve the data by looking up the channel which solves the pointer problem.
 			// Problem 3: We would also like to make the API nicer for Javascript and let people pass in anonymous callback functions for each channel.
 			// This table structure will let us also keep around their callback.
-			s_JSALmixerDataChannelTable[playing_channel] = { soundHandle:sound_handle, onComplete:on_complete, userData:user_data };
+			JSALmixer_PushCallbackTable(playing_channel, { soundHandle:sound_handle, onComplete:on_complete, userData:user_data } );
 		}
 		return playing_source;
 	};
@@ -231,7 +257,7 @@ function JSALmixer_Initialize()
 			// In the callback, we can retrieve the data by looking up the channel which solves the pointer problem.
 			// Problem 3: We would also like to make the API nicer for Javascript and let people pass in anonymous callback functions for each channel.
 			// This table structure will let us also keep around their callback.
-			s_JSALmixerDataChannelTable[playing_channel] = { soundHandle:sound_handle, onComplete:on_complete, userData:user_data };
+			JSALmixer_PushCallbackTable(playing_channel, { soundHandle:sound_handle, onComplete:on_complete, userData:user_data } );
 		}
 		return playing_source;
 	};
@@ -295,7 +321,7 @@ function JSALmixer_Initialize()
 			// In the callback, we can retrieve the data by looking up the channel which solves the pointer problem.
 			// Problem 3: We would also like to make the API nicer for Javascript and let people pass in anonymous callback functions for each channel.
 			// This table structure will let us also keep around their callback.
-			s_JSALmixerDataChannelTable[playing_channel] = { soundHandle:sound_handle, onComplete:on_complete, userData:user_data };
+			JSALmixer_PushCallbackTable(playing_channel, { soundHandle:sound_handle, onComplete:on_complete, userData:user_data } );
 		}
 
 		// I wish Javascript had multiple return values
