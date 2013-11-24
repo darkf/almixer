@@ -7868,6 +7868,13 @@ void ALmixer_Quit()
 	s_simpleLock = NULL;
 #endif
 	g_inInterruption = AL_FALSE;
+
+	/* If ALmixer was suspended, this variable needs clearing. */
+	if(NULL != s_savedIsPlayingStateForInterruption)
+	{
+		free(s_savedIsPlayingStateForInterruption);
+		s_savedIsPlayingStateForInterruption = NULL;
+	}
 	
 	/* Delete all the OpenAL sources */
 	for(i=0; i<Number_of_Channels_global; i++)
