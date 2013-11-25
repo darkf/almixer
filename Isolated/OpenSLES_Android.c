@@ -344,7 +344,7 @@ static int OpenSLES_init() {
 
 static void OpenSLES_quit() {
     if (slEngine != NULL) {
-        SNDDBG("Destory OpenSLES Engine");
+        SNDDBG("Destroy OpenSLES Engine");
         (*slEngine)->Destroy(slEngine);
         slEngine = NULL;
     }
@@ -631,7 +631,7 @@ static int OpenSLES_open(Sound_Sample *sample, const char *ext) {
 
     /* ------------------------------------------------------ */
     /* Start decoding */
-    printf("Starting to decode");
+    SNDDBG("Starting to decode");
     result = (*playItf)->SetPlayState(playItf, SL_PLAYSTATE_PLAYING);
     if (SL_RESULT_SUCCESS != result) {
         SNDDBG("Failed to set OpenSLES play state to SL_PLAYSTATE_PLAYING");
@@ -678,6 +678,8 @@ static size_t OpenSLES_read(Sound_Sample *sample) {
     pthread_cond_signal(&file_container->decoder_cond);
     pthread_mutex_unlock(&file_container->decoder_mutex);
 
+    SNDDBG("OpenSLES_read %d bytes", BUFFER_SIZE_IN_BYTES);
+
     return(BUFFER_SIZE_IN_BYTES);
 }
 
@@ -721,6 +723,7 @@ static void OpenSLES_close(Sound_Sample *sample) {
 }
 
 static int OpenSLES_rewind(Sound_Sample *sample) {
+    SNDDBG("OpenSLES_rewind");
     Sound_SampleInternal *internal = (Sound_SampleInternal *)sample->opaque;
     OpenSLESFileContainer *file_container = (OpenSLESFileContainer *)internal->decoder_private;
 
