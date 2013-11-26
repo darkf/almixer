@@ -2635,25 +2635,30 @@ static ALint Internal_PlayChannelTimed(ALint channel, ALmixer_Data* data, ALint 
 
 		ALuint bytes_returned;
 		ALuint j;
-		data->num_buffers_in_use=0;
-/****** MODIFICATION must go here *********/
-		/* Since buffer queuing is pushed off until here to 
-		 * avoid buffer conflicts, we must start reading 
-		 * data here. First we make sure we have at least one
-		 * packet. Then we queue up until we hit our limit.
+		/* Due to change for Android OpenSL ES rewind bug, we now have some data already decoded/ready-to-go.
+		 * But if this handle was rewound/played up, then there won't be any data.
 		 */
-		bytes_returned = GetMoreData(
-			data,
-			data->buffer[0]);
-		if(0 == bytes_returned)
+		if(data->num_buffers_in_use < 1)
 		{
-			/* No data or error */
-			ALmixer_SetError("Could not get data for streamed PlayChannel: %s", ALmixer_GetError());
-			Clean_Channel(channel);
-			return -1;
+/****** MODIFICATION must go here *********/
+			/* Since buffer queuing is pushed off until here to 
+			 * avoid buffer conflicts, we must start reading 
+			 * data here. First we make sure we have at least one
+			 * packet. Then we queue up until we hit our limit.
+			 */
+			bytes_returned = GetMoreData(
+				data,
+				data->buffer[0]);
+			if(0 == bytes_returned)
+			{
+				/* No data or error */
+				ALmixer_SetError("Could not get data for streamed PlayChannel: %s", ALmixer_GetError());
+				Clean_Channel(channel);
+				return -1;
+			}
+			/* Increment the number of buffers in use */
+			data->num_buffers_in_use++;
 		}
-		/* Increment the number of buffers in use */
-		data->num_buffers_in_use++;
 		
 
 		/* Now we need to fill up the rest of the buffers.
@@ -8227,10 +8232,47 @@ static ALmixer_Data* DoLoad(Sound_Sample* sample, ALuint buffersize, ALboolean d
 	 * is large enough */
 	if(AL_FALSE == decode_mode_is_predecoded)
 	{
+		/* This code has been hacked multiple times.
+		 * Originally there were problems reading Ogg Vorbis files, then compounded with OpenAL queuing bugs.
+		 * The work around for those was to read twice, rewind, and defer queuing to the update loop.
+		 * But with the introduction of the Android OpenSL ES decoder backend, Android's rewind seems broken when rewinding
+		 * right after the first read.
+		 * So this code is modified yet again. The Ogg Vorbis double read will be preserved, but buffer queuing will happen now,
+		 * with the expectation that the buffer queuing bugs are finally fixed.
+		 * This means we need temporary buffers to keep the read data around since we are still trying to optimize for the "lucky"
+		 * predecoded case. The "lucky" case now takes a penalty for allocating unnecessary temporary memory, but it is a small
+		 * price to pay since LoadAll could have been invoked directly.
+		 */
+		ALbyte* temp_read_buffer1 = NULL;
+		ALbyte* temp_read_buffer2 = NULL;
+		ALuint temp_read_buffer1_num_bytes = 0;
+		ALuint temp_read_buffer2_num_bytes = 0;
+
+		temp_read_buffer1 = (ALbyte*)malloc( sizeof(ALbyte) * buffersize);
+		if(NULL == temp_read_buffer1)
+		{
+			ALmixer_SetError("Out of Memory");
+			Sound_FreeSample(sample);
+			free(ret_data);
+			return NULL;
+		}
+
+		temp_read_buffer2 = (ALbyte*)malloc( sizeof(ALbyte) * buffersize);
+		if(NULL == temp_read_buffer2)
+		{
+			ALmixer_SetError("Out of Memory");
+			free(temp_read_buffer1);
+			Sound_FreeSample(sample);
+			free(ret_data);
+			return NULL;
+		}
+
 		bytes_decoded = Sound_Decode(sample);
 		if(sample->flags & SOUND_SAMPLEFLAG_ERROR)
 		{
 			ALmixer_SetError(Sound_GetError());
+			free(temp_read_buffer2);
+			free(temp_read_buffer1);
 			Sound_FreeSample(sample);
 			free(ret_data);
 			return NULL;
@@ -8240,10 +8282,15 @@ static ALmixer_Data* DoLoad(Sound_Sample* sample, ALuint buffersize, ALboolean d
 		if(0 == bytes_decoded)
 		{
 			ALmixer_SetError("File has no data");
+			free(temp_read_buffer2);
+			free(temp_read_buffer1);
 			Sound_FreeSample(sample);
 			free(ret_data);
 			return NULL;
 		}
+		
+		temp_read_buffer1_num_bytes = bytes_decoded;
+		memcpy(temp_read_buffer1, sample->buffer, temp_read_buffer1_num_bytes);
 		
 		/* Note, currently, my Ogg conservative modifications
 		 * prevent EOF from being detected in the first read
@@ -8254,10 +8301,9 @@ static ALmixer_Data* DoLoad(Sound_Sample* sample, ALuint buffersize, ALboolean d
 		 * predecoded.
 		 */
 
-		/* Correction: Since we no longer actually keep the 
-		 * streamed data we read here (we rewind and throw
-		 * it away, and start over on Play), it is
-		 * safe to read another chunk to see if we've hit EOF
+		/* We used to read the next buffer to see if we hit EOF and then throw away the results and rewind.
+		 * But rewinding was not working correctly on Android.
+		 * So the code now tries to keep the data in case it is valid.
 		 */
 		if(sample->flags & SOUND_SAMPLEFLAG_EAGAIN)
 		{
@@ -8265,9 +8311,17 @@ static ALmixer_Data* DoLoad(Sound_Sample* sample, ALuint buffersize, ALboolean d
 			if(sample->flags & SOUND_SAMPLEFLAG_ERROR)
 			{
 				ALmixer_SetError(Sound_GetError());
+				free(temp_read_buffer2);
+				free(temp_read_buffer1);
 				Sound_FreeSample(sample);
 				free(ret_data);
 				return NULL;
+			}
+			/* If there was valid data, save it. */
+			if(0 < bytes_decoded)
+			{
+				temp_read_buffer2_num_bytes = bytes_decoded;
+				memcpy(temp_read_buffer2, sample->buffer, temp_read_buffer2_num_bytes);		
 			}
 		}
 
@@ -8281,27 +8335,33 @@ static ALmixer_Data* DoLoad(Sound_Sample* sample, ALuint buffersize, ALboolean d
 			/*
 	fprintf(stderr, "We got LUCKY! File is predecoded even though STREAM was requested\n");
 */
+			/* We don't need the second buffer because everything fit in the first. */
+			free(temp_read_buffer2);
+			temp_read_buffer2 = NULL;
+
 			ret_data->decoded_all = 1;
 			/* Need to keep this information around for
 			 * seek and rewind abilities.
 			 */
-			ret_data->total_bytes = bytes_decoded;
+			ret_data->total_bytes = temp_read_buffer1_num_bytes;
 			/* For now, the loaded bytes is the same as total bytes, but
 			 * this could change during a seek operation
 			 */
-			ret_data->loaded_bytes = bytes_decoded;
+			ret_data->loaded_bytes = temp_read_buffer1_num_bytes;
 
 			/* Let's compute the total playing time 
 			 * SDL_sound does not yet provide this (we're working on
 			 * that at the moment...)
 			 */
-			ret_data->total_time = Compute_Total_Time(&sample->desired, bytes_decoded);
+			ret_data->total_time = Compute_Total_Time(&sample->desired, temp_read_buffer1_num_bytes);
 
 			/* Create one element in the buffer array for data for OpanAL */
 			ret_data->buffer = (ALuint*)malloc( sizeof(ALuint) );
 			if(NULL == ret_data->buffer)
 			{
 				ALmixer_SetError("Out of Memory");
+				free(temp_read_buffer2);
+				free(temp_read_buffer1);
 				Sound_FreeSample(sample);
 				free(ret_data);
 				return NULL;
@@ -8313,6 +8373,8 @@ static ALmixer_Data* DoLoad(Sound_Sample* sample, ALuint buffersize, ALboolean d
 			if( (error = alGetError()) != AL_NO_ERROR)
 			{
 				ALmixer_SetError("alGenBuffers failed: %s\n", alGetString(error));
+				free(temp_read_buffer2);
+				free(temp_read_buffer1);
 				Sound_FreeSample(sample);
 				free(ret_data->buffer);
 				free(ret_data);
@@ -8325,13 +8387,15 @@ static ALmixer_Data* DoLoad(Sound_Sample* sample, ALuint buffersize, ALboolean d
 			 * its own copy to assist hardware acceleration */
 			alBufferData(ret_data->buffer[0], 
 				TranslateFormat(&sample->desired), 
-				sample->buffer,
-				bytes_decoded,
+				temp_read_buffer1,
+				temp_read_buffer1_num_bytes,
 				sample->desired.rate
 			);
 			if( (error = alGetError()) != AL_NO_ERROR)
 			{
 				ALmixer_SetError("alBufferData failed: %s\n", alGetString(error));
+				free(temp_read_buffer2);
+				free(temp_read_buffer1);
 				Sound_FreeSample(sample);
 				alDeleteBuffers(1, ret_data->buffer);
 				free(ret_data->buffer);
@@ -8357,16 +8421,19 @@ static ALmixer_Data* DoLoad(Sound_Sample* sample, ALuint buffersize, ALboolean d
 			 * was expecting seek support
 			 * So Don't Do anything
 			 */
-			/*
 			if(0 == access_data)
 			{
 				Sound_FreeSample(sample);
 				ret_data->sample = NULL;
 			}
-			*/	
-			/* Else, We keep a copy of the sample around.
-			 * so don't do anything.
-			 */
+			else
+			{
+				/* copy back the temporary data to the Sound_Sample. */
+				memcpy(sample->buffer, temp_read_buffer1, temp_read_buffer1_num_bytes);
+			}
+			/* Free the temp buffer now that we are done with it. */
+			free(temp_read_buffer1);
+			temp_read_buffer1 = NULL;
 					
 #if 0
 #if defined(DISABLE_PREDECODED_SEEK)
@@ -8406,6 +8473,8 @@ static ALmixer_Data* DoLoad(Sound_Sample* sample, ALuint buffersize, ALboolean d
 			if(NULL == ret_data->buffer)
 			{
 				ALmixer_SetError("Out of Memory");
+				free(temp_read_buffer2);
+				free(temp_read_buffer1);
 				Sound_FreeSample(sample);
 				free(ret_data);
 				return NULL;
@@ -8418,6 +8487,8 @@ static ALmixer_Data* DoLoad(Sound_Sample* sample, ALuint buffersize, ALboolean d
 			if( (error = alGetError()) != AL_NO_ERROR)
 			{
 				ALmixer_SetError("alGenBuffers failed: %s\n", alGetString(error));
+				free(temp_read_buffer2);
+				free(temp_read_buffer1);
 				Sound_FreeSample(sample);
 				free(ret_data->buffer);
 				free(ret_data);
@@ -8449,15 +8520,58 @@ static ALmixer_Data* DoLoad(Sound_Sample* sample, ALuint buffersize, ALboolean d
 			 * and throw away the data, and rewind.
 			 */
 			
+			/*
 			if(0 == Sound_Rewind(ret_data->sample))
 			{
 				ALmixer_SetError("Cannot use sample for streamed data because it must be rewindable: %s", Sound_GetError() );
+				free(temp_read_buffer2);
+				free(temp_read_buffer1);
 				Sound_FreeSample(sample);
 				free(ret_data->buffer);
 				free(ret_data);
 				return NULL;
 			}
+			*/
+			alBufferData(ret_data->buffer[0],
+				TranslateFormat(&sample->desired),
+				temp_read_buffer1,
+				temp_read_buffer1_num_bytes,
+				sample->desired.rate
+			);
+			if( (error = alGetError()) != AL_NO_ERROR)
+			{
+				ALmixer_SetError("alBufferData failed: %s\n", alGetString(error));
+				free(temp_read_buffer2);
+				free(temp_read_buffer1);
+				Sound_FreeSample(sample);
+				free(ret_data->buffer);
+				free(ret_data);
+				return NULL;
+			}
+			ret_data->num_buffers_in_use++;
 			
+			/* If there was a second read, and there was data, make sure to use it. */
+			if(0 < temp_read_buffer2_num_bytes)
+			{
+				ret_data->num_buffers_in_use++;
+				alBufferData(ret_data->buffer[1],
+					TranslateFormat(&sample->desired), 
+					temp_read_buffer2,
+					temp_read_buffer2_num_bytes,
+					sample->desired.rate
+				);
+				if( (error = alGetError()) != AL_NO_ERROR)
+				{
+					ALmixer_SetError("alBufferData failed: %s\n", alGetString(error));
+					free(temp_read_buffer2);
+					free(temp_read_buffer1);
+					Sound_FreeSample(sample);
+					free(ret_data->buffer);
+					free(ret_data);
+					return NULL;
+				}
+				ret_data->num_buffers_in_use++;
+			}
 
 			/* If the user has selected access_data, we need to 
 			 * keep copies of the queuing buffers around because
@@ -8475,6 +8589,8 @@ static ALmixer_Data* DoLoad(Sound_Sample* sample, ALuint buffersize, ALboolean d
 				if(NULL == ret_data->buffer_map_list)
 				{
 					ALmixer_SetError("Out of Memory");
+					free(temp_read_buffer2);
+					free(temp_read_buffer1);
 					Sound_FreeSample(sample);
 					free(ret_data->buffer);
 					free(ret_data);
@@ -8486,14 +8602,29 @@ static ALmixer_Data* DoLoad(Sound_Sample* sample, ALuint buffersize, ALboolean d
 				{
 					ALmixer_SetError("Out of Memory");
 					free(ret_data->buffer_map_list);
+					free(temp_read_buffer2);
+					free(temp_read_buffer1);
 					Sound_FreeSample(sample);
 					free(ret_data->buffer);
 					free(ret_data);
 					return NULL;
 				}
 
+				/* Since we have the temp buffers already allocated, let's divert them for actual use. */
+				ret_data->buffer_map_list[0].albuffer = ret_data->buffer[0];
+				ret_data->buffer_map_list[0].index = 0;
+				ret_data->buffer_map_list[0].num_bytes = temp_read_buffer1_num_bytes;
+				ret_data->buffer_map_list[0].data = temp_read_buffer1;
+				temp_read_buffer1 = NULL;
+					
+				ret_data->buffer_map_list[1].albuffer = ret_data->buffer[1];
+				ret_data->buffer_map_list[1].index = 1;
+				ret_data->buffer_map_list[1].num_bytes = temp_read_buffer2_num_bytes;
+				ret_data->buffer_map_list[1].data = temp_read_buffer2;
+				temp_read_buffer2 = NULL;
 
-				for(j=0; j<max_queue_buffers; j++)
+				/* Now allocate the remaining buffers since we didn't already have enough space for these. */
+				for(j=2; j<max_queue_buffers; j++)
 				{
 					ret_data->buffer_map_list[j].albuffer = ret_data->buffer[j];
 					ret_data->buffer_map_list[j].index = j;
