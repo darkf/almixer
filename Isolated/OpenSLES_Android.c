@@ -114,7 +114,7 @@ const Sound_DecoderFunctions __Sound_DecoderFunctions_OpenSLES =
 #define SAMPLES_PER_SRC_FRAME 1024
 
 /* Size of each PCM buffer in the queue */
-#define BUFFER_SIZE_IN_BYTES   (2 * sizeof(short) * SAMPLES_PER_SRC_FRAME)
+#define BUFFER_SIZE_IN_BYTES   (4 * sizeof(short) * SAMPLES_PER_SRC_FRAME)
 
 /* size of the struct to retrieve the PCM format metadata values: the values we're interested in
  * are SLuint32, but it is saved in the data field of a SLMetadataInfo, hence the larger size.
