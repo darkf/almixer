@@ -142,11 +142,6 @@ typedef struct OpenSLESFileContainer {
     int8_t     *dstDataBase;
     int8_t     *dstData;
 
-    int8_t     *initialBuffer;
-    int         bytesReadCheckForRewind;
-    SLboolean   initialBufferDone;
-    SLboolean   shouldReturnInitialBuffer;
-
     // prefetch status, mutex and condition to protect prefetch_status
     SLuint32 prefetch_status;
     pthread_mutex_t prefetch_mutex;
@@ -527,11 +522,6 @@ static int OpenSLES_open(Sound_Sample *sample, const char *ext) {
     file_container->eos       = SL_BOOLEAN_FALSE;
     file_container->decode_waiting = SL_BOOLEAN_FALSE;
     file_container->asset = asset;
-    file_container->bytesReadCheckForRewind = 0;
-    file_container->shouldReturnInitialBuffer = SL_BOOLEAN_FALSE;
-    file_container->initialBuffer = (int8_t*)malloc(BUFFER_SIZE_IN_BYTES);
-    file_container->initialBufferDone = SL_BOOLEAN_FALSE;
-
     pthread_mutex_init(&file_container->prefetch_mutex, NULL);
     pthread_mutex_init(&file_container->decoder_mutex, NULL);
     pthread_cond_init(&file_container->prefetch_cond, NULL);
@@ -682,29 +672,13 @@ static size_t OpenSLES_read(Sound_Sample *sample) {
     OpenSLES_updateTotalTime(sample);
 
     // Update buffer
-    if (file_container->initialBufferDone == SL_BOOLEAN_FALSE) {
-        memcpy(file_container->initialBuffer, file_container->dstData, BUFFER_SIZE_IN_BYTES);
-        file_container->initialBufferDone = SL_BOOLEAN_TRUE;
-    }
-    if (file_container->shouldReturnInitialBuffer == SL_BOOLEAN_TRUE) {
-        memcpy(internal->buffer, file_container->initialBuffer, BUFFER_SIZE_IN_BYTES);
-        file_container->shouldReturnInitialBuffer = SL_BOOLEAN_FALSE;
-    } else {
-        memcpy(internal->buffer, file_container->dstData, BUFFER_SIZE_IN_BYTES);
-    }
+    memcpy(internal->buffer, file_container->dstData, BUFFER_SIZE_IN_BYTES);
 
     file_container->available = SL_BOOLEAN_FALSE;
     pthread_cond_signal(&file_container->decoder_cond);
     pthread_mutex_unlock(&file_container->decoder_mutex);
 
     SNDDBG("OpenSLES_read %d bytes", BUFFER_SIZE_IN_BYTES);
-
-    /*
-     * Just wanted to check if this is the first read or not.
-     */
-    if (file_container->bytesReadCheckForRewind <= BUFFER_SIZE_IN_BYTES * 2) {
-        file_container->bytesReadCheckForRewind += BUFFER_SIZE_IN_BYTES;
-    }
 
     return(BUFFER_SIZE_IN_BYTES);
 }
@@ -743,10 +717,6 @@ static void OpenSLES_close(Sound_Sample *sample) {
             free(file_container->dstDataBase);
             file_container->dstDataBase = NULL;
         }
-        if (file_container->initialBuffer != NULL) {
-            free(file_container->initialBuffer);
-            file_container->initialBuffer = NULL;
-        }
         free(file_container);
         internal->decoder_private = NULL;
     }
@@ -758,14 +728,6 @@ static int OpenSLES_rewind(Sound_Sample *sample) {
     OpenSLESFileContainer *file_container = (OpenSLESFileContainer *)internal->decoder_private;
 
     (*file_container->playItf)->SetPlayState(file_container->playItf, SL_PLAYSTATE_STOPPED);
-
-    /*
-     * This check is needed to make sure initial buffer is copied correctly
-     * because ALmixer call rewind() just after fist read() is done while LoadStream.
-     */
-    if (file_container->bytesReadCheckForRewind <= BUFFER_SIZE_IN_BYTES) {
-        file_container->shouldReturnInitialBuffer = SL_BOOLEAN_TRUE;
-    }
 
     file_container->available = SL_BOOLEAN_FALSE;
     file_container->eos       = SL_BOOLEAN_FALSE;
