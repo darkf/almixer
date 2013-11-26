@@ -433,7 +433,7 @@
 				MACOSX_DEPLOYMENT_TARGET = 10.6;
 				ONLY_ACTIVE_ARCH = YES;
 				SDKROOT = macosx;
-				USER_HEADER_SEARCH_PATHS = "$(BASE_SDK)/System/Library/Frameworks/OpenAL.framework/Headers";
+				USER_HEADER_SEARCH_PATHS = "$(SDKROOT)/System/Library/Frameworks/OpenAL.framework/Headers";
 			};
 			name = Debug;
 		};
@@ -459,7 +459,7 @@
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				MACOSX_DEPLOYMENT_TARGET = 10.6;
 				SDKROOT = macosx;
-				USER_HEADER_SEARCH_PATHS = "$(BASE_SDK)/System/Library/Frameworks/OpenAL.framework/Headers";
+				USER_HEADER_SEARCH_PATHS = "$(SDKROOT)/System/Library/Frameworks/OpenAL.framework/Headers";
 			};
 			name = Release;
 		};
