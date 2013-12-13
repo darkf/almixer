@@ -1420,8 +1420,6 @@ fprintf(stderr, "Hit eof while trying to buffer\n");
 	/* Now copy the data to the OpenAL buffer */
 	/* We can't just set a pointer because the API needs
 	 * its own copy to assist hardware acceleration */
-			fprintf(stderr, "GetMoreData bitdepth:%d, channels:%d, bytes:%d, freq=%d\n", GetBitDepth((&data->sample->desired)->format), (&data->sample->desired)->channels, bytes_decoded, data->sample->desired.rate);
-	
 	alBufferData(buffer,
 		TranslateFormat(&data->sample->desired), 
 		data->sample->buffer,
@@ -2634,14 +2632,9 @@ static ALint Internal_PlayChannelTimed(ALint channel, ALmixer_Data* data, ALint 
 	else
 	{
 		/* Need to use the streaming buffer for binding */
-	fprintf(stderr, "In PlayChannel, about start queueing: source=%d, num_buffers_in_use=%d\n",
-			ALmixer_Channel_List[channel].alsource, 
-			data->num_buffers_in_use);
-		
+
 		ALuint bytes_returned;
 		ALuint j;
-	
-	Internal_DetachBuffersFromSource(ALmixer_Channel_List[channel].alsource, 0);
 		/* Due to change for Android OpenSL ES rewind bug, we now have some data already decoded/ready-to-go.
 		 * But if this handle was rewound/played up, then there won't be any data.
 		 */
@@ -2665,11 +2658,6 @@ static ALint Internal_PlayChannelTimed(ALint channel, ALmixer_Data* data, ALint 
 			}
 			/* Increment the number of buffers in use */
 			data->num_buffers_in_use++;
-
-				fprintf(stderr, "In PlayChannel first buffer bytes_returned=%d, num_buffers_in_use=%d\n",
-			bytes_returned, 
-			data->num_buffers_in_use);
-
 		}
 		
 
@@ -2692,11 +2680,6 @@ static ALint Internal_PlayChannelTimed(ALint channel, ALmixer_Data* data, ALint 
 		bytes_returned = GetMoreData(
 				data,
 				data->buffer[j]);
-						fprintf(stderr, "In PlayChannel next buffer [j]=%d bytes_returned=%d, num_buffers_in_use=%d\n",
-							j,
-			bytes_returned, 
-			data->num_buffers_in_use);
-
 		/* 
 		 * This might be a problem. I made a mistake with the types. I accidentally
 		 * made the bytes returned an ALint and returned -1 on error.
@@ -2764,15 +2747,12 @@ fprintf(stderr, "Inside 000 >>>>>>>>>>Loops=%d\n", ALmixer_Channel_List[channel]
 			}
 			/* Increment the number of buffers in use */
 			data->num_buffers_in_use++;
-									fprintf(stderr, "In PlayChannel next buffer end [j]=%d bytes_returned=%d, num_buffers_in_use=%d\n",
-							j,
-			bytes_returned, 
-			data->num_buffers_in_use);
-
 		}
+		/*
 	fprintf(stderr, "In PlayChannel, about to queue: source=%d, num_buffers_in_use=%d\n",
 			ALmixer_Channel_List[channel].alsource, 
 			data->num_buffers_in_use);
+*/
 		
 		alSourceQueueBuffers(
 			ALmixer_Channel_List[channel].alsource, 
@@ -2780,25 +2760,10 @@ fprintf(stderr, "Inside 000 >>>>>>>>>>Loops=%d\n", ALmixer_Channel_List[channel]
 			data->buffer);
 		if((error = alGetError()) != AL_NO_ERROR)
 		{
-				fprintf(stderr, "In PlayChannel, alSourceQueueBuffers failed, trying again:%s\n", 	alGetString(error) );
-		
-
-	Internal_DetachBuffersFromSource(ALmixer_Channel_List[channel].alsource, 0);
-
-		alSourceQueueBuffers(
-			ALmixer_Channel_List[channel].alsource, 
-			data->num_buffers_in_use, 
-			data->buffer);
-		if((error = alGetError()) != AL_NO_ERROR)
-		{
-
-
 			ALmixer_SetError("Could not bind data to source: %s",
 				alGetString(error) );
 			Clean_Channel(channel);
 			return -1;
-		}
-
 		}
 		/* This is part of the hideous Nvidia workaround. In order to figure out
 		 * which buffer to show during callbacks (for things like
@@ -8573,7 +8538,6 @@ static ALmixer_Data* DoLoad(Sound_Sample* sample, ALuint buffersize, ALboolean d
 			}
 			
 			
-			fprintf(stderr, "DoLoad for stream, buffer 0, bitdepth:%d, channels:%d, bytes:%d, freq=%d\n", GetBitDepth((&sample->desired)->format), (&sample->desired)->channels, temp_read_buffer1_num_bytes, sample->desired.rate);
 			/* Now copy the data to the OpenAL buffer */
 			/* We can't just set a pointer because the API needs
 			 * its own copy to assist hardware acceleration */
@@ -8724,8 +8688,6 @@ static ALmixer_Data* DoLoad(Sound_Sample* sample, ALuint buffersize, ALboolean d
 				return NULL;
 			}
 			*/
-			fprintf(stderr, "DoLoad for stream, buffer 0, bitdepth:%d, channels:%d, bytes:%d, freq=%d\n", GetBitDepth((&sample->desired)->format), (&sample->desired)->channels, temp_read_buffer1_num_bytes, sample->desired.rate);
-			
 			alBufferData(ret_data->buffer[0],
 				TranslateFormat(&sample->desired),
 				temp_read_buffer1,
@@ -8748,8 +8710,6 @@ static ALmixer_Data* DoLoad(Sound_Sample* sample, ALuint buffersize, ALboolean d
 			if(0 < temp_read_buffer2_num_bytes)
 			{
 				ret_data->num_buffers_in_use++;
-			fprintf(stderr, "DoLoad for stream, buffer 1, bitdepth:%d, channels:%d, bytes:%d, freq=%d\n", GetBitDepth((&sample->desired)->format), (&sample->desired)->channels, temp_read_buffer2_num_bytes, sample->desired.rate);
-				
 				alBufferData(ret_data->buffer[1],
 					TranslateFormat(&sample->desired), 
 					temp_read_buffer2,
