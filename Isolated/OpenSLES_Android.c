@@ -678,7 +678,7 @@ static size_t OpenSLES_read(Sound_Sample *sample) {
     pthread_cond_signal(&file_container->decoder_cond);
     pthread_mutex_unlock(&file_container->decoder_mutex);
 
-    SNDDBG("OpenSLES_read %d bytes", BUFFER_SIZE_IN_BYTES);
+//    SNDDBG("OpenSLES_read %d bytes", BUFFER_SIZE_IN_BYTES);
 
     return(BUFFER_SIZE_IN_BYTES);
 }
