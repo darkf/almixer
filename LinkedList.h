@@ -75,6 +75,17 @@ extern "C" {
 typedef struct LinkedListNode LinkedListNode;
 typedef struct LinkedList LinkedList;
 
+struct C_LINKED_LIST_DECLSPEC LinkedListIterator
+{
+	/* These are all implementation details.
+	 * You should probably not directly touch.
+	 */
+	LinkedList* linkedList;
+	LinkedListNode* currentNode;
+	int atEnd;
+};
+typedef struct LinkedListIterator LinkedListIterator;
+
 extern C_LINKED_LIST_DECLSPEC LinkedList* C_LINKED_LIST_CALL LinkedList_Create(void);
 
 extern C_LINKED_LIST_DECLSPEC void C_LINKED_LIST_CALL LinkedList_Free(LinkedList* linked_list);
@@ -100,6 +111,10 @@ extern C_LINKED_LIST_DECLSPEC void* C_LINKED_LIST_CALL LinkedListNode_GetData(Li
 extern C_LINKED_LIST_DECLSPEC LinkedListNode* C_LINKED_LIST_CALL LinkedList_Find(LinkedList* linked_list, void* the_data, LinkedListNode* start_node);
 
 extern C_LINKED_LIST_DECLSPEC unsigned int C_LINKED_LIST_CALL LinkedList_Remove(LinkedList* linked_list, LinkedListNode* list_node);
+
+extern C_LINKED_LIST_DECLSPEC LinkedListIterator C_LINKED_LIST_CALL LinkedListIterator_GetIteratorAtBegin(LinkedList* linked_list);
+extern C_LINKED_LIST_DECLSPEC int C_LINKED_LIST_CALL LinkedListIterator_IteratorNext(LinkedListIterator* linkedlist_iterator);
+extern C_LINKED_LIST_DECLSPEC LinkedListNode* C_LINKED_LIST_CALL LinkedListIterator_GetNode(LinkedListIterator* linkedlist_iterator);
 
 /* Ends C function definitions when using C++ */
 #ifdef __cplusplus

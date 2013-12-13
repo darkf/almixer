@@ -4874,9 +4874,13 @@ static ALint Internal_PausedSource(ALuint source)
 	return Internal_PausedChannel(channel);
 }
 
-
-
-static void Internal_FreeData(ALmixer_Data* data)
+/* This is still core implementation, but the details are overly pedantic because this is dealing with the ALmixer_QuitWithoutFreeData hack.
+ * This implementation frees everything possible inside the ALmixer_Data, but not the ALmixer_Data itself.
+ * Nor does it remove anything from the linked list.
+ * Additionally, the explicit setting to NULL is very deliberate to deal with the case where a GC environment calls FreeData after QuitWithoutFreeData.
+ * The setting to NULL will allow avoiding crashing code paths from the second call (e.g. NULL checks and free(NULL) is safe).
+ */
+static void Internal_FreeDataInternalOnly(ALmixer_Data* data)
 {
 	ALenum error;
 	if(NULL == data)
@@ -4892,11 +4896,15 @@ static void Internal_FreeData(ALmixer_Data* data)
 		if(data->sample != NULL)
 		{
 			Sound_FreeSample(data->sample);
+			data->sample = NULL;
 		}
-		alDeleteBuffers(1, data->buffer);
-		if((error = alGetError()) != AL_NO_ERROR)
+		if(data->buffer != NULL)
 		{
-			fprintf(stderr, "ALmixer_FreeData: alDeleteBuffers failed. %s\n", alGetString(error));				
+			alDeleteBuffers(1, data->buffer);
+			if((error = alGetError()) != AL_NO_ERROR)
+			{
+				fprintf(stderr, "ALmixer_FreeData: alDeleteBuffers failed. %s\n", alGetString(error));				
+			}
 		}
 	}
 	else
@@ -4909,22 +4917,36 @@ static void Internal_FreeData(ALmixer_Data* data)
 			for(i=0; i<data->max_queue_buffers; i++)
 			{
 				free(data->buffer_map_list[i].data);
+				data->buffer_map_list[i].data = NULL;
 			}
 			free(data->buffer_map_list);
+			data->buffer_map_list = NULL;
 		}
 		if(data->circular_buffer_queue != NULL)
 		{
 			CircularQueueUnsignedInt_FreeQueue(data->circular_buffer_queue);
+			data->circular_buffer_queue = NULL;
 		}
 			
 		Sound_FreeSample(data->sample);
-		alDeleteBuffers(data->max_queue_buffers, data->buffer);		
-		if((error = alGetError()) != AL_NO_ERROR)
+		data->sample = NULL;
+		if(data->buffer != NULL)
 		{
-			fprintf(stderr, "ALmixer_FreeData: alDeleteBuffers failed. %s\n", alGetString(error));				
+			alDeleteBuffers(data->max_queue_buffers, data->buffer);		
+			if((error = alGetError()) != AL_NO_ERROR)
+			{
+				fprintf(stderr, "ALmixer_FreeData: alDeleteBuffers failed. %s\n", alGetString(error));				
+			}
 		}
 	}
 	free(data->buffer);
+	data->buffer = NULL;
+
+}
+
+static void Internal_FreeData(ALmixer_Data* data)
+{
+	Internal_FreeDataInternalOnly(data);
 
 	LinkedList_Remove(s_listOfALmixerData,
 		LinkedList_Find(s_listOfALmixerData, data, NULL)
@@ -7934,6 +7956,140 @@ void ALmixer_Quit()
 	return;
 }
 
+/* This is a lame hack to get around a really complicated problem relating to:
+ * 1) Android doesn't run the reinitialization of static variables to NULL at the top of this program.
+ * 2) When dealing with a garbage collected environment, if Quit() is called before the GC environment collects, dangling pointers will be passed to FreeData()
+ * 3) We are client of somebody else's environment and can't ensure Quit() is called after the GC environment is clean.
+ * 4) Android atexit() doesn't seem to actually trigger anything.
+ * This will clean up as much as possible.
+ * The linked list of data will be left alive and it will dangle after the program quits. Fortunately ALmixer doesn't null check the linked list and always recreates it on Init().
+ * Calling alBufferData after the OpenAL device is closed may cause problems depending on implementations.
+ */
+void ALmixer_QuitWithoutFreeData()
+{
+	ALCcontext* context;
+	ALCdevice* dev;
+	ALint i;
+	
+	if( ! ALmixer_Initialized)
+	{
+		return;
+	}
+
+#ifdef ENABLE_ALMIXER_THREADS
+	SDL_LockMutex(s_simpleLock);
+#endif
+	
+	/* Several things we need to do:
+	 First, we need to check if we are in an interruption.
+	 If so, we need to reactivate the alcContext so we can call OpenAL functions.
+	 Next, we should delete the OpenAL sources.
+	 Next, we need to free all the sound data via ALmixer_FreeData().
+	 Finally, we can delete the OpenAL context.
+	 */
+	
+	context = alcGetCurrentContext();
+	if(NULL == context)
+	{
+		/* We might have an interruption event where the current context is NULL */
+		if(NULL == s_interruptionContext)
+		{
+			/* Nothing left to try. I think we're done. */
+			fprintf(stderr, "ALmixer_Quit: Assertion Error. Expecting to find an OpenAL context, but could not find one.\n");
+			return;
+		}
+		else 
+		{
+			context = s_interruptionContext;
+			/* reactivate the context so we can call OpenAL functions */
+			alcMakeContextCurrent(context);
+			s_interruptionContext = NULL;
+		}
+	}	
+	
+	/* Shutdown everything before closing context */
+	Internal_HaltChannel(-1, AL_FALSE);
+	
+	/* This flag will cause the thread to terminate */
+	ALmixer_Initialized = AL_FALSE;
+#ifdef ENABLE_ALMIXER_THREADS
+	g_StreamThreadEnabled = AL_FALSE;
+	SDL_UnlockMutex(s_simpleLock);
+	/* This is safe to call with NULL thread, so we don't need to do anything special for interruptions. */
+	SDL_WaitThread(Stream_Thread_global, NULL);
+	Stream_Thread_global = NULL;
+
+	s_originatingThreadID = 0;
+
+	SDL_DestroyMutex(s_simpleLock);
+	s_simpleLock = NULL;
+#endif
+	g_inInterruption = AL_FALSE;
+
+	/* If ALmixer was suspended, this variable needs clearing. */
+	if(NULL != s_savedIsPlayingStateForInterruption)
+	{
+		free(s_savedIsPlayingStateForInterruption);
+		s_savedIsPlayingStateForInterruption = NULL;
+	}
+	
+	/* Delete all the OpenAL sources */
+	for(i=0; i<Number_of_Channels_global; i++)
+	{
+		alDeleteSources(1, &ALmixer_Channel_List[i].alsource);
+	}
+	/* Delete all the channels */
+	free(ALmixer_Channel_List);
+	free(Source_Map_List);
+
+	/* Reset the Number_of_Channels just in case somebody
+	 * tries using a ALmixer function.
+	 * I probably should put "Initialized" checks everywhere,
+	 * but I'm too lazy at the moment.
+	 */
+	Number_of_Channels_global = 0;
+	
+
+	/* HACK: Instead of freeing the ALmixer_Data and removing from the LinkedList,
+	 * we only free the internal buffer data, but leave the shells as is.
+	 * This will protect us the delayed freeing problem.
+	 * In the best case, the application exits, the rest of the ALmixer static pointers are cleared, and we don't leak.
+	 * In the worst case, we leak a small amount of memory for the linked list and ALmixer_Data shells.
+	 */
+	if(LinkedList_Size(s_listOfALmixerData) > 0)
+	{
+		LinkedListIterator list_iterator = LinkedListIterator_GetIteratorAtBegin(s_listOfALmixerData);
+		do
+		{
+			LinkedListNode* list_node = LinkedListIterator_GetNode(&list_iterator);
+			ALmixer_Data* almixer_data = LinkedListNode_GetData(list_node);
+			Internal_FreeDataInternalOnly(almixer_data);
+		} while(LinkedListIterator_IteratorNext(&list_iterator) != 0);
+	}
+	
+	/* Need to get the device before I close the context */
+	dev = alcGetContextsDevice(context);
+	
+	alcMakeContextCurrent(NULL);
+	alcDestroyContext(context);
+	
+	if(NULL == dev)
+	{
+		return;	
+	}
+	alcCloseDevice(dev);
+	
+	Sound_Quit();
+
+#ifdef ALMIXER_COMPILE_WITHOUT_SDL
+	/* Remember: ALmixer_SetError/GetError calls will not work while this is gone. */
+	TError_FreeErrorPool(s_ALmixerErrorPool);
+	s_ALmixerErrorPool = NULL;
+#endif
+	return;
+}
+
+
 ALboolean ALmixer_IsInitialized()
 {
 	return ALmixer_Initialized;
@@ -9083,19 +9239,22 @@ ALmixer_Data* ALmixer_LoadSample_RAW(const char* filename, ALmixer_AudioInfo* de
 
 void ALmixer_FreeData(ALmixer_Data* data)
 {
+	/*
 	if( (AL_FALSE == ALmixer_Initialized) || (AL_TRUE == g_inInterruption) )
 	{
 		return;
 	}
+	*/
 
 	/* Bypass if in interruption event */
 	/* FIXME: Buffers are connected to devices, sources are connected to contexts. I should still be able to delete the buffers even if there is no context. */
+	/*
 	if(NULL == alcGetCurrentContext())
 	{
 		fprintf(stderr, "ALmixer_FreeData: Programmer Error. You cannot delete data when the OpenAL content is currently NULL. You may have already called ALmixer_Quit() or are in an interruption event\n");
 		return;
 	}
-	
+	*/
 	Internal_FreeData(data);
 }
 

@@ -443,6 +443,19 @@ extern ALMIXER_DECLSPEC ALboolean ALmixer_IsPlayingStateSuspended(void);
  * before calling this method.
  */
 extern ALMIXER_DECLSPEC void ALMIXER_CALL ALmixer_Quit(void);
+/** 
+ * HACK to shutdown ALmixer without freeing ALmixer_Data.
+ * This is a lame hack to get around a really complicated problem relating to:
+ * 1) Android doesn't run the reinitialization of static variables to NULL at the top of this program.
+ * 2) When dealing with a garbage collected environment, if Quit() is called before the GC environment collects, dangling pointers will be passed to FreeData()
+ * 3) We are client of somebody else's environment and can't ensure Quit() is called after the GC environment is clean.
+ * 4) Android atexit() doesn't seem to actually trigger anything.
+ * This will clean up as much as possible.
+ * The linked list of data will be left alive and it will dangle after the program quits. Fortunately ALmixer doesn't null check the linked list and always recreates it on Init().
+ * Calling alBufferData after the OpenAL context is dead may cause problems depending on implementations.
+ */
+extern ALMIXER_DECLSPEC void ALMIXER_CALL ALmixer_QuitWithoutFreeData(void);
+
 /**
  * Returns whether ALmixer has been initializatized (via Init) or not.
  * @return Returns true for initialized and false for not initialized.

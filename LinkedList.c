@@ -2,6 +2,7 @@
 #include <stddef.h> /* for NULL */
 #include <stdlib.h> /* for malloc/free */
 #include <stdio.h> /* for debugging */
+#include <string.h> /* for memset */
 
 struct LinkedListNode
 {
@@ -345,5 +346,59 @@ unsigned int LinkedList_Remove(LinkedList* linked_list, LinkedListNode* list_nod
 
 }
 
+
+LinkedListIterator LinkedListIterator_GetIteratorAtBegin(LinkedList* linked_list)
+{
+	LinkedListIterator the_iterator;
+	if(NULL == linked_list)
+	{
+		memset(&the_iterator, 0, sizeof(LinkedListIterator));
+		return the_iterator;
+		
+//		return Internal_CreateBadIterator();
+	}
+	if(0 ==  linked_list->currentSize)
+	{
+		memset(&the_iterator, 0, sizeof(LinkedListIterator));
+		the_iterator.linkedList = linked_list;	
+		return the_iterator;
+	}
+	memset(&the_iterator, 0, sizeof(LinkedListIterator));
+
+	the_iterator.linkedList = linked_list;
+	the_iterator.currentNode = linked_list->headPtr;
+	return the_iterator;
+
+}
+
+int LinkedListIterator_IteratorNext(LinkedListIterator* linkedlist_iterator)
+{
+	if(NULL == linkedlist_iterator)
+	{
+		return 0;
+	}
+	if(NULL == linkedlist_iterator->currentNode)
+	{
+		return 0;
+	}
+	linkedlist_iterator->currentNode = linkedlist_iterator->currentNode->nextNode;
+	if(NULL == linkedlist_iterator->currentNode)
+	{
+		return 0;
+	}
+	else
+	{
+		return 1;
+	}
+}
+
+LinkedListNode* LinkedListIterator_GetNode(LinkedListIterator* linkedlist_iterator)
+{
+	if(NULL == linkedlist_iterator)
+	{
+		return 0;
+	}
+	return linkedlist_iterator->currentNode;
+}
 
 
