@@ -209,7 +209,7 @@ int SoundDecoder_Init()
 	}
 
 	total_number_of_decoders = sizeof(s_linkedDecoders) / sizeof(s_linkedDecoders[0]);
-	s_availableDecoders = (SoundDecoder_DecoderInfo **)malloc((total_number_of_decoders) * sizeof(SoundDecoder_DecoderInfo*));
+	s_availableDecoders = (const SoundDecoder_DecoderInfo **)malloc((total_number_of_decoders) * sizeof(SoundDecoder_DecoderInfo*));
 	if(NULL == s_availableDecoders)
 	{
 		SoundDecoder_SetError(ERR_OUT_OF_MEMORY);
