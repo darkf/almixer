@@ -578,6 +578,8 @@ extern ALMIXER_DECLSPEC ALboolean ALmixer_AreUpdatesSuspended(void);
 
     
 extern ALMIXER_DECLSPEC void ALMIXER_CALL ALmixer_Quit(void);
+extern ALMIXER_DECLSPEC void ALMIXER_CALL ALmixer_QuitWithoutFreeData(void);
+
 extern ALMIXER_DECLSPEC ALboolean ALMIXER_CALL ALmixer_IsInitialized(void);
 
 extern ALMIXER_DECLSPEC ALuint ALMIXER_CALL ALmixer_GetFrequency(void);
@@ -881,7 +883,9 @@ extern ALMIXER_DECLSPEC void ALMIXER_CALL ALmixer_OutputDecoders(void);
 extern ALMIXER_DECLSPEC void ALMIXER_CALL ALmixer_OutputOpenALInfo(void);
 
 /** This function may be removed in the future. Returns true if compiled with threads, false if not. */ 
+extern ALMIXER_DECLSPEC size_t ALMIXER_CALL ALmixer_GetCurrentThreadID(void);
 extern ALMIXER_DECLSPEC ALboolean ALMIXER_CALL ALmixer_CompiledWithThreadBackend(void);
+extern ALMIXER_DECLSPEC size_t ALMIXER_CALL ALmixer_GetThreadIDForType(int almixer_thread_type);
 
 /* Ends C function definitions when using C++ */
 #ifdef __cplusplus

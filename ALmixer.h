@@ -888,7 +888,9 @@ ALmixer_Data* ALmixer_LoadAll_RAW(const char* file_name, ALmixer_AudioInfo* desi
  * Releases the memory associated with a ALmixer_Data. Use this when you are done playing the audio sample
  * and wish to release the memory.
  * @warning Do not try releasing data that is currently in use (e.g. playing, paused).
- * @warning Make sure to free your data before calling ALmixer_Quit. Do not free data aftter ALmixer_Quit().
+ * @warning Make sure to free your data before calling ALmixer_Quit. Do not free data after ALmixer_Quit(). 
+ * The implementation may partly handle this case, particularly if you use the hack ALmixer_QuitWithoutFreeData() instead.
+ * However, the behavior is considered risky and the hack only exists to deal with systems like garbage collection where order isn't deterministic.
  * @param almixer_data The ALmixer_Data* you want to free.
  */
 extern ALMIXER_DECLSPEC void ALMIXER_CALL ALmixer_FreeData(ALmixer_Data* almixer_data);
@@ -1661,14 +1663,17 @@ extern ALMIXER_DECLSPEC void ALMIXER_CALL ALmixer_OutputOpenALInfo(void);
 /** This function is experimental. Returns true if compiled with threads, false if not. */ 
 extern ALMIXER_DECLSPEC ALboolean ALMIXER_CALL ALmixer_CompiledWithThreadBackend(void);
 
-/** This function is experimental. If compiled with threads, returns the current thread ID. If not compiled with threads, returns 0. */ 
+/** This function is experimental. If compiled with threads, returns the current thread ID. If not compiled with threads, returns 0. 
+ * We have since solved these problems in different ways and the need for this seems mitigated, so it could be removed in the future.
+ */ 
 extern ALMIXER_DECLSPEC size_t ALMIXER_CALL ALmixer_GetCurrentThreadID(void);
 
 #define ALMIXER_THREAD_TYPE_ORIGINATING 1
 #define ALMIXER_THREAD_TYPE_UPDATE 2
-/** This function is experimental. 
+/** This function is experimental and could be removed.
  * This will return the thread id for the specified type.
  * This function is a bit of a hack to deal with complex threading situations we hit in a large framework on Android that already had a lot of complexity crossing the JNI bridge.
+ * We have since solved these problems in different ways and the need for this seems mitigated, so it could be removed in the future.
  * @note This function does not lock and thus may not be atomic. The use case was to deal with callbacks in ALmixer which already have locks.
  * @param almixer_thread_type Use the constants ALMIXER_THREAD_TYPE_ORIGINATING for the thread ALmixer was initialized on, or ALMIXER_THREAD_TYPE_UPDATE for the private background update thread.
  * @return If compiled with threads, returns the thread ID for the specified type. If not compiled with threads, returns 0.
