@@ -27,6 +27,7 @@
 
 #include <stddef.h> /* NULL */
 #include <stdio.h> /* printf */
+#include <errno.h>
 #include <pthread.h>
 
 #include <SLES/OpenSLES.h>
@@ -700,8 +701,12 @@ static void OpenSLES_close(Sound_Sample *sample) {
 
     pthread_mutex_lock(&file_container->decoder_mutex);
     // Waiting for decoder
+    struct timespec timeout;
+    timeout.tv_sec = time(NULL) + 1;
+    timeout.tv_nsec = 0;
     while(file_container->decode_waiting == SL_BOOLEAN_TRUE) {
-        pthread_cond_wait(&file_container->decoder_cond, &file_container->decoder_mutex);
+        int ret = pthread_cond_timedwait(&file_container->decoder_cond, &file_container->decoder_mutex, &timeout);
+        if (ret == ETIMEDOUT) break;
     }
     pthread_mutex_unlock(&file_container->decoder_mutex);
 
