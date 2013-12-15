@@ -638,6 +638,14 @@ static int OpenSLES_open(Sound_Sample *sample, const char *ext) {
         return(0);
     }
 
+    SNDDBG("Awaiting metadata before exiting OpenSLES_open()");
+    pthread_mutex_lock(&file_container->decoder_mutex);
+    while(file_container->available == SL_BOOLEAN_FALSE && file_container->eos == SL_BOOLEAN_FALSE) {
+        pthread_cond_wait(&file_container->decoder_cond, &file_container->decoder_mutex);
+    }
+    pthread_mutex_unlock(&file_container->decoder_mutex);
+    SNDDBG("Exiting OpenSLES_open()");
+
     return(1);
 }
 
