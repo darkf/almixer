@@ -692,6 +692,39 @@ static size_t OpenSLES_read(Sound_Sample *sample) {
     return(BUFFER_SIZE_IN_BYTES);
 }
 
+static pthread_mutex_t destroy_workaround_mutex;
+static pthread_cond_t destroy_condition;
+static my_destroy_flag = 0;
+
+void SignalEosDestroy() {
+    pthread_mutex_lock(&destroy_workaround_mutex);
+    my_destroy_flag = 1;
+    pthread_cond_signal(&destroy_condition);
+    pthread_mutex_unlock(&destroy_workaround_mutex);
+}
+static void* DestroyWorkaroundThreadFunction(void* parm)
+{
+ //   pthread_mutex_lock(&destroy_workaround_mutex);
+	
+    OpenSLESFileContainer *file_container = (OpenSLESFileContainer *)parm;
+    SNDDBG("OpenSLES_close calling Destroy in thread");
+my_destroy_flag = 0;
+	
+	(*file_container->player)->Destroy(file_container->player);
+    SNDDBG("OpenSLES_close finished calling Destroy in thread");
+	pthread_cond_signal(&destroy_condition);
+my_destroy_flag = 1;
+ //   pthread_mutex_unlock(&destroy_workaround_mutex);
+	
+	return NULL;
+}
+     #include <signal.h>
+
+static void thread_exit_handler(int sig)
+{ 
+    printf("this signal is %d \n", sig);
+    pthread_exit(0);
+}
 static void OpenSLES_close(Sound_Sample *sample) {
     SNDDBG("OpenSLES_close");
     Sound_SampleInternal *internal = (Sound_SampleInternal *)sample->opaque;
@@ -701,6 +734,7 @@ static void OpenSLES_close(Sound_Sample *sample) {
 
     pthread_mutex_lock(&file_container->decoder_mutex);
     // Waiting for decoder
+    SNDDBG("OpenSLES_close Waiting for decoder");
     struct timespec timeout;
     timeout.tv_sec = time(NULL) + 1;
     timeout.tv_nsec = 0;
@@ -708,31 +742,163 @@ static void OpenSLES_close(Sound_Sample *sample) {
         int ret = pthread_cond_timedwait(&file_container->decoder_cond, &file_container->decoder_mutex, &timeout);
         if (ret == ETIMEDOUT) break;
     }
+    SNDDBG("OpenSLES_close before unlock");
     pthread_mutex_unlock(&file_container->decoder_mutex);
+    SNDDBG("OpenSLES_close after unlock");
+    SNDDBG("OpenSLES_close before pthread_cond_destroy");
 
     pthread_cond_destroy(&file_container->decoder_cond);
+    SNDDBG("OpenSLES_close before pthread_mutex_destroy");
     pthread_mutex_destroy(&file_container->decoder_mutex);
+    SNDDBG("OpenSLES_close after pthread_mutex_destroy");
 
     if (internal->decoder_private != NULL) {
+    SNDDBG("OpenSLES_close internal->decoder_private != NULL");		
         if (file_container->player != NULL) {
+    SNDDBG("OpenSLES_close file_container->player != NULL");		
             (*file_container->playItf)->SetPlayState(file_container->playItf, SL_PLAYSTATE_STOPPED);
-            (*file_container->player)->Destroy(file_container->player);
+    SNDDBG("OpenSLES_close after SetPlayState");
+
+			SLuint32 check_state;
+
+			do
+			{
+            (*file_container->playItf)->SetPlayState(file_container->playItf, SL_PLAYSTATE_STOPPED);
+
+				(*file_container->playItf)->GetPlayState(file_container->playItf, &check_state);
+    SNDDBG("OpenSLES_close GetPlayState %d", check_state);
+			} while(SL_PLAYSTATE_STOPPED != check_state);
+    SNDDBG("OpenSLES_close after GetPlayState loop");
+
+			//	(*file_container->decBuffQueueItf)->Clear(file_container->decBuffQueueItf);
+    SNDDBG("OpenSLES_close before Destroy");
+		//	usleep(500*1000);	
+	{
+    pthread_cond_init(&destroy_condition, NULL);
+pthread_t pthread_destroy_workaround;
+
+
+    pthread_mutex_init(&destroy_workaround_mutex, NULL);
+//    SignalEosDestroy();
+  pthread_cond_broadcast(&destroy_condition);
+    pthread_mutex_lock(&destroy_workaround_mutex);
+	
+    pthread_create(&pthread_destroy_workaround, NULL, DestroyWorkaroundThreadFunction, file_container);
+
+
+        struct timeval tv;
+    struct timespec destroy_timeout;
+
+        gettimeofday(&tv, NULL);
+        destroy_timeout.tv_sec = tv.tv_sec + 1;
+        destroy_timeout.tv_nsec = 0;
+
+    destroy_timeout.tv_sec  = tv.tv_sec;
+    destroy_timeout.tv_nsec = tv.tv_usec * 1000;
+    destroy_timeout.tv_sec += 1;
+#if 0
+    {
+    SNDDBG("OpenSLES_close waiting on condition");
+        int destroy_ret = pthread_cond_timedwait(&destroy_condition, &destroy_workaround_mutex, &destroy_timeout);
+        if (destroy_ret == ETIMEDOUT)
+		{
+    SNDDBG("OpenSLES_close ETIMEOUT!!!!");
+			
+//			break;
+		}
+		else
+		{
+    SNDDBG("OpenSLES_close not ETIMEOUT");
+			
+		}
+    }
+#else
+	struct sigaction actions;
+memset(&actions, 0, sizeof(actions)); 
+sigemptyset(&actions.sa_mask);
+actions.sa_flags = 0; 
+actions.sa_handler = thread_exit_handler;
+sigaction(SIGUSR1,&actions,NULL);
+
+
+
+        struct timeval tv2;
+        gettimeofday(&tv2, NULL);		
+	my_destroy_flag = 0;
+    pthread_mutex_unlock(&destroy_workaround_mutex);
+    SNDDBG("spinning: flag=%d, tv2.tv_sec=%d, destroy_timeout.tv_sec=%d", my_destroy_flag, tv2.tv_sec, destroy_timeout.tv_sec);
+	
+	while(!my_destroy_flag && tv2.tv_sec < destroy_timeout.tv_sec)
+	{
+		usleep(1000*10);
+        gettimeofday(&tv2, NULL);		
+    SNDDBG("spinning: flag=%d, tv2.tv_sec=%d, destroy_timeout.tv_sec=%d", my_destroy_flag, tv2.tv_sec, destroy_timeout.tv_sec);
+	}
+
+	if(!my_destroy_flag)
+	{
+    SNDDBG("OpenSLES_close ETIMEOUT!!!!");
+		int status;
+		if ( (status = pthread_kill(pthread_destroy_workaround, SIGUSR1)) != 0) 
+{ 
+printf("Error cancelling thread %d, error = %d (%s)", pthread_destroy_workaround, status, strerror(status));
+} 
+
+
+	}
+	else
+{
+    SNDDBG("OpenSLES_close not ETIMEOUT");
+    SNDDBG("OpenSLES_close before pthread_join");
+
+	pthread_join(pthread_destroy_workaround, NULL);
+}
+#endif
+    SNDDBG("OpenSLES_close passed condition");
+//    pthread_mutex_unlock(&destroy_workaround_mutex);
+    SNDDBG("OpenSLES_close before pthread_join");
+
+//	pthread_join(pthread_destroy_workaround, NULL);
+
+
+    SNDDBG("OpenSLES_close after pthread_join");
+    SNDDBG("OpenSLES_close before destroy_condition");
+
+    pthread_cond_destroy(&destroy_condition);
+    SNDDBG("OpenSLES_close before destroy_workaround_mutex");
+    pthread_mutex_destroy(&destroy_workaround_mutex);
+
+
+
+	
+	}
+
+
+     //       (*file_container->player)->Destroy(file_container->player);
+    SNDDBG("OpenSLES_close after Destroy block");		
         }
         if (file_container->asset != NULL) {
+    SNDDBG("OpenSLES_close file_container->asset != NULL");		
             AAsset_close(file_container->asset);
+    SNDDBG("OpenSLES_close after AAsset_close");		
             file_container->asset = NULL;
         }
         if (file_container->metadata != NULL) {
+    SNDDBG("OpenSLES_close file_container->metadata != NULL");		
             free(file_container->metadata);
             file_container->metadata = NULL;
         }
         if (file_container->dstDataBase != NULL) {
+    SNDDBG("OpenSLES_close file_container->dstDataBase != NULL");		
             free(file_container->dstDataBase);
             file_container->dstDataBase = NULL;
         }
+    SNDDBG("OpenSLES_close free(file_container)");		
         free(file_container);
         internal->decoder_private = NULL;
     }
+    SNDDBG("OpenSLES_close end");
+	
 }
 
 static int OpenSLES_rewind(Sound_Sample *sample) {
