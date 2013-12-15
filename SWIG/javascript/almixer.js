@@ -45,6 +45,8 @@ function JSALmixer_Initialize()
 	ALmixer._original = {};
 	// Create a table for utility/helper APIs
 	ALmixer.util = {};
+	// Create a table for experiemental functions
+	ALmixer.experimental = {};
 
 	s_JSALmixerDataChannelTable = {};
 
@@ -77,6 +79,11 @@ function JSALmixer_Initialize()
 		event_table = null;
 		saved_table = null;
 	});
+
+	ALmixer.experimental.collectgarbage = function()
+	{
+		almixer_ti_proxy.collectgarbage();
+	}
 
 	ALmixer._original.PlayChannelTimed = ALmixer.PlayChannelTimed;
 	ALmixer.PlayChannelTimed = function(which_channel, sound_handle, num_loops, duration, on_complete, user_data)
@@ -436,6 +443,20 @@ function JSALmixer_Initialize()
 		return ALmixer._original.LoadStream(filename, buffer_size, max_queue_buffers, num_startup_buffers, suggested_number_of_buffers_to_queue_per_update_pass, access_data);
 	}
 
+	ALmixer._original.Quit = ALmixer.Quit;
+	ALmixer.Quit = function()
+	{
+		// Because audio resources need to be cleaned up before Quit, we really need to try our best to force garbage collection.
+		ALmixer.experimental.collectgarbage();
+		ALmixer._original.Quit();
+	}
+	ALmixer._original.QuitWithoutFreeData = ALmixer.QuitWithoutFreeData;
+	ALmixer.QuitWithoutFreeData = function()
+	{
+		// Because audio resources need to be cleaned up before Quit, we really need to try our best to force garbage collection.
+		ALmixer.experimental.collectgarbage();
+		ALmixer._original.QuitWithoutFreeData();
+	}
 
 }
 
