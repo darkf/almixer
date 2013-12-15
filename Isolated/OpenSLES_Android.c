@@ -225,6 +225,31 @@ static void decodePlayCallback(
     Sound_SampleInternal *internal = (Sound_SampleInternal *)sample->opaque;
     OpenSLESFileContainer *file_container = (OpenSLESFileContainer *)internal->decoder_private;
 
+    if (file_container->formatQueried == SL_BOOLEAN_FALSE) {
+        /* retrieve sample rate */
+        SLresult result = (*file_container->metaItf)->GetValue(
+                                file_container->metaItf, file_container->sampleRateKeyIndex,
+                                PCM_METADATA_VALUE_SIZE, file_container->metadata);
+        if (SL_RESULT_SUCCESS == result) {
+            sample->actual.rate = *((SLuint32*)file_container->metadata->data);
+        }
+        /* retrieve channel count */
+        result = (*file_container->metaItf)->GetValue(file_container->metaItf,
+            file_container->channelCountKeyIndex, PCM_METADATA_VALUE_SIZE, file_container->metadata);
+        if (SL_RESULT_SUCCESS == result) {
+            sample->actual.channels = *((SLuint32*)file_container->metadata->data);
+        }
+
+        /* Update sample attributes */
+        sample->actual.format = AUDIO_S16SYS;
+        sample->flags = SOUND_SAMPLEFLAG_CANSEEK;
+        sample->desired = sample->actual;
+
+        SNDDBG("Sound metadata: rate=%d, channels=%d", sample->actual.rate, sample->actual.channels);
+
+        file_container->formatQueried = SL_BOOLEAN_TRUE;
+    }
+
     pthread_mutex_lock(&file_container->decoder_mutex);
     file_container->available = SL_BOOLEAN_TRUE;
     pthread_cond_signal(&file_container->decoder_cond);
@@ -249,31 +274,6 @@ static void decodePlayCallback(
             file_container->dstData = file_container->dstDataBase;
         }
         memset(file_container->dstData, 0, BUFFER_SIZE_IN_BYTES);
-    }
-
-    if (file_container->formatQueried == SL_BOOLEAN_FALSE) {
-        /* retrieve sample rate */
-        SLresult result = (*file_container->metaItf)->GetValue(
-                                file_container->metaItf, file_container->sampleRateKeyIndex,
-                                PCM_METADATA_VALUE_SIZE, file_container->metadata);
-        if (SL_RESULT_SUCCESS == result) {
-            sample->actual.rate = *((SLuint32*)file_container->metadata->data);
-        }
-        /* retrieve channel count */
-        result = (*file_container->metaItf)->GetValue(file_container->metaItf,
-            file_container->channelCountKeyIndex, PCM_METADATA_VALUE_SIZE, file_container->metadata);
-        if (SL_RESULT_SUCCESS == result) {
-            sample->actual.channels = *((SLuint32*)file_container->metadata->data);
-        }
-
-        /* Update sample attributes */
-        sample->actual.format = AUDIO_S16SYS;
-        sample->flags = SOUND_SAMPLEFLAG_CANSEEK;
-        sample->desired = sample->actual;
-
-        SNDDBG("Sound metadata: rate=%d, channels=%d", sample->actual.rate, sample->actual.channels);
-
-        file_container->formatQueried = SL_BOOLEAN_TRUE;
     }
 
     pthread_mutex_unlock(&file_container->decoder_mutex);
