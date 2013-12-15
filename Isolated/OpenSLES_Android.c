@@ -25,8 +25,15 @@
 
 #ifdef __ANDROID__
 
+
+// HACK to workaround nasty deadlock problem with Player->Destroy()
+// Since this *is* Android, nobody upgrades so we'll be stuck with this workaround forever.
+#define SOUNDDECODER_OPENSLES_ANDROID_USE_DESTROY_DEADLOCK_WORKAROUND 1
+
+
 #include <stddef.h> /* NULL */
 #include <stdio.h> /* printf */
+#include <stdbool.h>
 #include <errno.h>
 #include <pthread.h>
 
@@ -156,6 +163,10 @@ typedef struct OpenSLESFileContainer {
     SLboolean eos;
 
     AAsset* asset;
+
+#if	SOUNDDECODER_OPENSLES_ANDROID_USE_DESTROY_DEADLOCK_WORKAROUND
+	_Bool destroySucceeded;
+#endif	
 
 } OpenSLESFileContainer;
 
@@ -692,41 +703,36 @@ static size_t OpenSLES_read(Sound_Sample *sample) {
     return(BUFFER_SIZE_IN_BYTES);
 }
 
-static pthread_mutex_t destroy_workaround_mutex;
-static pthread_cond_t destroy_condition;
-static my_destroy_flag = 0;
 
-void SignalEosDestroy() {
-    pthread_mutex_lock(&destroy_workaround_mutex);
-    my_destroy_flag = 1;
-    pthread_cond_signal(&destroy_condition);
-    pthread_mutex_unlock(&destroy_workaround_mutex);
-}
+#if SOUNDDECODER_OPENSLES_ANDROID_USE_DESTROY_DEADLOCK_WORKAROUND
+
+#include <signal.h>
+
 static void* DestroyWorkaroundThreadFunction(void* parm)
 {
- //   pthread_mutex_lock(&destroy_workaround_mutex);
-	
-    OpenSLESFileContainer *file_container = (OpenSLESFileContainer *)parm;
-    SNDDBG("OpenSLES_close calling Destroy in thread");
-my_destroy_flag = 0;
-	
+	// Notice that I don't lock anything because since Destroy gets stuck,
+	// we need the calling thread to wake up periodically so it can kill this thread.
+	// Locking may prevent that.
+	// I only have a single flag I need to flip, so I think the action is atomic enough any way.
+	OpenSLESFileContainer* file_container = (OpenSLESFileContainer*)parm;
+//    SNDDBG("OpenSLES_close calling Destroy in thread");
 	(*file_container->player)->Destroy(file_container->player);
-    SNDDBG("OpenSLES_close finished calling Destroy in thread");
-	pthread_cond_signal(&destroy_condition);
-my_destroy_flag = 1;
- //   pthread_mutex_unlock(&destroy_workaround_mutex);
-	
+//    SNDDBG("OpenSLES_close finished calling Destroy in thread");
+	file_container->destroySucceeded = true;
 	return NULL;
 }
-     #include <signal.h>
 
-static void thread_exit_handler(int sig)
+// http://stackoverflow.com/questions/4610086/pthread-cancel-alternatives-in-android-ndk
+static void DestroyWorkaroundThreadExitHandler(int sig)
 { 
-    printf("this signal is %d \n", sig);
-    pthread_exit(0);
+	SNDDBG("DestroyWorkaroundThreadExitHandler signal is %d. Calling pthread_exit(0).", sig);
+	pthread_exit(0);
 }
+#endif /* SOUNDDECODER_OPENSLES_ANDROID_USE_DESTROY_DEADLOCK_WORKAROUND */
+
+
 static void OpenSLES_close(Sound_Sample *sample) {
-    SNDDBG("OpenSLES_close");
+    SNDDBG("OpenSLES_close begin");
     Sound_SampleInternal *internal = (Sound_SampleInternal *)sample->opaque;
     OpenSLESFileContainer *file_container = (OpenSLESFileContainer *)internal->decoder_private;
 
@@ -734,7 +740,7 @@ static void OpenSLES_close(Sound_Sample *sample) {
 
     pthread_mutex_lock(&file_container->decoder_mutex);
     // Waiting for decoder
-    SNDDBG("OpenSLES_close Waiting for decoder");
+//    SNDDBG("OpenSLES_close Waiting for decoder");
     struct timespec timeout;
     timeout.tv_sec = time(NULL) + 1;
     timeout.tv_nsec = 0;
@@ -742,163 +748,75 @@ static void OpenSLES_close(Sound_Sample *sample) {
         int ret = pthread_cond_timedwait(&file_container->decoder_cond, &file_container->decoder_mutex, &timeout);
         if (ret == ETIMEDOUT) break;
     }
-    SNDDBG("OpenSLES_close before unlock");
     pthread_mutex_unlock(&file_container->decoder_mutex);
-    SNDDBG("OpenSLES_close after unlock");
-    SNDDBG("OpenSLES_close before pthread_cond_destroy");
-
     pthread_cond_destroy(&file_container->decoder_cond);
-    SNDDBG("OpenSLES_close before pthread_mutex_destroy");
     pthread_mutex_destroy(&file_container->decoder_mutex);
-    SNDDBG("OpenSLES_close after pthread_mutex_destroy");
 
     if (internal->decoder_private != NULL) {
-    SNDDBG("OpenSLES_close internal->decoder_private != NULL");		
         if (file_container->player != NULL) {
-    SNDDBG("OpenSLES_close file_container->player != NULL");		
             (*file_container->playItf)->SetPlayState(file_container->playItf, SL_PLAYSTATE_STOPPED);
-    SNDDBG("OpenSLES_close after SetPlayState");
+            // For the deadlock problem with Destroy, I did verify using GetPlayState was returning SL_PLAYSTATE_STOPPED.
+            // I hoped maybe we could loop on this until the flag changed, but Android thinks it is stopped.
 
-			SLuint32 check_state;
+			// The idea for the workaround is we put the call to Destroy into a background thread and kill the thread if it takes too long.
+            #if SOUNDDECODER_OPENSLES_ANDROID_USE_DESTROY_DEADLOCK_WORKAROUND
+			    SNDDBG("OpenSLES_close using SOUNDDECODER_OPENSLES_ANDROID_USE_DESTROY_DEADLOCK_WORKAROUND");
+			    pthread_t destroy_workaround_thread;
+			    file_container->destroySucceeded = false;
+			    pthread_create(&destroy_workaround_thread, NULL, DestroyWorkaroundThreadFunction, file_container);
+			    struct timeval destroy_workaround_timeval;
+			    gettimeofday(&destroy_workaround_timeval, NULL);
+			    // give it 1 second before we kill it (I think we could give it a lot less time actually)
+			    time_t expire_time = destroy_workaround_timeval.tv_sec + 1;
+			    // http://stackoverflow.com/questions/4610086/pthread-cancel-alternatives-in-android-ndk
+			    struct sigaction actions;
+			    memset(&actions, 0, sizeof(actions)); 
+			    sigemptyset(&actions.sa_mask);
+			    actions.sa_flags = 0; 
+			    actions.sa_handler = DestroyWorkaroundThreadExitHandler;
+			    sigaction(SIGUSR1,&actions,NULL);
 
-			do
-			{
-            (*file_container->playItf)->SetPlayState(file_container->playItf, SL_PLAYSTATE_STOPPED);
+			    // Now we spin until either Destroy finished successfully or we exceed our specified time limit
+			    while(!file_container->destroySucceeded && destroy_workaround_timeval.tv_sec < expire_time) {
+			        // try to yield and be nice
+				    usleep(1000*10);
+				    gettimeofday(&destroy_workaround_timeval, NULL);		
+				    // SNDDBG("spinning: flag=%d, tv2.tv_sec=%d, destroy_timeout.tv_sec=%d", my_destroy_flag, tv2.tv_sec, destroy_timeout.tv_sec);
+			    }
 
-				(*file_container->playItf)->GetPlayState(file_container->playItf, &check_state);
-    SNDDBG("OpenSLES_close GetPlayState %d", check_state);
-			} while(SL_PLAYSTATE_STOPPED != check_state);
-    SNDDBG("OpenSLES_close after GetPlayState loop");
+			    // Now check whether we got out of the loop because things worked normally or because we timed out
+			    if(!file_container->destroySucceeded) {
+					__android_log_print(ANDROID_LOG_ERROR, "ALmixer", "Serious Android error occurred in OpenSL ES: Due to an Android race condition in OpenSL ES, Player->Destroy() deadlocked. To prevent your entire app from freezing, we are killing the thread. But this will cause a resource leak and may reduce the number of new audio files you can open until you restart, assuming it doesn't lead to other problems first.");
+					int kill_status;
+			        if ( (kill_status = pthread_kill(destroy_workaround_thread, SIGUSR1)) != 0) { 
+			            SNDDBG("Error cancelling Destroy() thread %d, error = %d (%s)", destroy_workaround_thread, kill_status, strerror(kill_status));
+			        } 
+			    }
+			    else {
+				    // Destroy finished naturally so we can clean up normally.
+				    pthread_join(destroy_workaround_thread, NULL);
+			    }
 
-			//	(*file_container->decBuffQueueItf)->Clear(file_container->decBuffQueueItf);
-    SNDDBG("OpenSLES_close before Destroy");
-		//	usleep(500*1000);	
-	{
-    pthread_cond_init(&destroy_condition, NULL);
-pthread_t pthread_destroy_workaround;
-
-
-    pthread_mutex_init(&destroy_workaround_mutex, NULL);
-//    SignalEosDestroy();
-  pthread_cond_broadcast(&destroy_condition);
-    pthread_mutex_lock(&destroy_workaround_mutex);
-	
-    pthread_create(&pthread_destroy_workaround, NULL, DestroyWorkaroundThreadFunction, file_container);
-
-
-        struct timeval tv;
-    struct timespec destroy_timeout;
-
-        gettimeofday(&tv, NULL);
-        destroy_timeout.tv_sec = tv.tv_sec + 1;
-        destroy_timeout.tv_nsec = 0;
-
-    destroy_timeout.tv_sec  = tv.tv_sec;
-    destroy_timeout.tv_nsec = tv.tv_usec * 1000;
-    destroy_timeout.tv_sec += 1;
-#if 0
-    {
-    SNDDBG("OpenSLES_close waiting on condition");
-        int destroy_ret = pthread_cond_timedwait(&destroy_condition, &destroy_workaround_mutex, &destroy_timeout);
-        if (destroy_ret == ETIMEDOUT)
-		{
-    SNDDBG("OpenSLES_close ETIMEOUT!!!!");
-			
-//			break;
-		}
-		else
-		{
-    SNDDBG("OpenSLES_close not ETIMEOUT");
-			
-		}
-    }
-#else
-	struct sigaction actions;
-memset(&actions, 0, sizeof(actions)); 
-sigemptyset(&actions.sa_mask);
-actions.sa_flags = 0; 
-actions.sa_handler = thread_exit_handler;
-sigaction(SIGUSR1,&actions,NULL);
-
-
-
-        struct timeval tv2;
-        gettimeofday(&tv2, NULL);		
-	my_destroy_flag = 0;
-    pthread_mutex_unlock(&destroy_workaround_mutex);
-    SNDDBG("spinning: flag=%d, tv2.tv_sec=%d, destroy_timeout.tv_sec=%d", my_destroy_flag, tv2.tv_sec, destroy_timeout.tv_sec);
-	
-	while(!my_destroy_flag && tv2.tv_sec < destroy_timeout.tv_sec)
-	{
-		usleep(1000*10);
-        gettimeofday(&tv2, NULL);		
-    SNDDBG("spinning: flag=%d, tv2.tv_sec=%d, destroy_timeout.tv_sec=%d", my_destroy_flag, tv2.tv_sec, destroy_timeout.tv_sec);
-	}
-
-	if(!my_destroy_flag)
-	{
-    SNDDBG("OpenSLES_close ETIMEOUT!!!!");
-		int status;
-		if ( (status = pthread_kill(pthread_destroy_workaround, SIGUSR1)) != 0) 
-{ 
-printf("Error cancelling thread %d, error = %d (%s)", pthread_destroy_workaround, status, strerror(status));
-} 
-
-
-	}
-	else
-{
-    SNDDBG("OpenSLES_close not ETIMEOUT");
-    SNDDBG("OpenSLES_close before pthread_join");
-
-	pthread_join(pthread_destroy_workaround, NULL);
-}
-#endif
-    SNDDBG("OpenSLES_close passed condition");
-//    pthread_mutex_unlock(&destroy_workaround_mutex);
-    SNDDBG("OpenSLES_close before pthread_join");
-
-//	pthread_join(pthread_destroy_workaround, NULL);
-
-
-    SNDDBG("OpenSLES_close after pthread_join");
-    SNDDBG("OpenSLES_close before destroy_condition");
-
-    pthread_cond_destroy(&destroy_condition);
-    SNDDBG("OpenSLES_close before destroy_workaround_mutex");
-    pthread_mutex_destroy(&destroy_workaround_mutex);
-
-
-
-	
-	}
-
-
-     //       (*file_container->player)->Destroy(file_container->player);
-    SNDDBG("OpenSLES_close after Destroy block");		
+			#else
+			    (*file_container->player)->Destroy(file_container->player);
+			#endif
         }
         if (file_container->asset != NULL) {
-    SNDDBG("OpenSLES_close file_container->asset != NULL");		
             AAsset_close(file_container->asset);
-    SNDDBG("OpenSLES_close after AAsset_close");		
             file_container->asset = NULL;
         }
         if (file_container->metadata != NULL) {
-    SNDDBG("OpenSLES_close file_container->metadata != NULL");		
             free(file_container->metadata);
             file_container->metadata = NULL;
         }
         if (file_container->dstDataBase != NULL) {
-    SNDDBG("OpenSLES_close file_container->dstDataBase != NULL");		
             free(file_container->dstDataBase);
             file_container->dstDataBase = NULL;
         }
-    SNDDBG("OpenSLES_close free(file_container)");		
         free(file_container);
         internal->decoder_private = NULL;
     }
     SNDDBG("OpenSLES_close end");
-	
 }
 
 static int OpenSLES_rewind(Sound_Sample *sample) {
