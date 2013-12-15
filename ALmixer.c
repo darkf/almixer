@@ -4948,9 +4948,13 @@ static void Internal_FreeData(ALmixer_Data* data)
 {
 	Internal_FreeDataInternalOnly(data);
 
-	LinkedList_Remove(s_listOfALmixerData,
-		LinkedList_Find(s_listOfALmixerData, data, NULL)
-	);
+	/* Because of race conditions ALmixer_QuitWithoutFreeData was designed to deal with, it is possible this list is gone */
+	if(s_listOfALmixerData != NULL)
+	{
+		LinkedList_Remove(s_listOfALmixerData,
+			LinkedList_Find(s_listOfALmixerData, data, NULL)
+		);
+	}
 
 	free(data);
 }
@@ -8056,6 +8060,7 @@ void ALmixer_QuitWithoutFreeData()
 	 * In the best case, the application exits, the rest of the ALmixer static pointers are cleared, and we don't leak.
 	 * In the worst case, we leak a small amount of memory for the linked list and ALmixer_Data shells.
 	 */
+	fprintf(stderr, "ALmixer_QuitWithoutFreeData has %d ALmixer_Data references outstanding\n", (int)LinkedList_Size(s_listOfALmixerData));
 	if(LinkedList_Size(s_listOfALmixerData) > 0)
 	{
 		LinkedListIterator list_iterator = LinkedListIterator_GetIteratorAtBegin(s_listOfALmixerData);
@@ -8065,6 +8070,23 @@ void ALmixer_QuitWithoutFreeData()
 			ALmixer_Data* almixer_data = LinkedListNode_GetData(list_node);
 			Internal_FreeDataInternalOnly(almixer_data);
 		} while(LinkedListIterator_IteratorNext(&list_iterator) != 0);
+
+		/* We have a choice to make. 
+		 * We can leave the linked list alive or we can release it.
+		 * If we keep it, we obviously leak.
+		 * If we remove it, then we have to be very careful about the assumptions of FreeData 
+		 * because it no longer has the linked list of items it expects. 
+		 * Remember that LinkedList_Free() does clean up its nodes, so that doesn't leak.
+		 * I think I fixed FreeData so it is resilient to a missing linked list.
+		 */
+		LinkedList_Free(s_listOfALmixerData);
+		s_listOfALmixerData = NULL;
+	}
+	else
+	{
+		/* In this case, everything happened to already be cleaned up. It is safe to free the list and we avoid all memory leaks. */
+		LinkedList_Free(s_listOfALmixerData);
+		s_listOfALmixerData = NULL;
 	}
 	
 	/* Need to get the device before I close the context */
