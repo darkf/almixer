@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		0044F81F185F71B600E88278 /* AVFoundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 0044F81E185F71B600E88278 /* AVFoundation.framework */; };
 		00605C9F162550F600A479DE /* OpenAL.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 00605C9E162550F600A479DE /* OpenAL.framework */; };
 		00605CA1162550FF00A479DE /* AudioToolbox.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 00605CA0162550FF00A479DE /* AudioToolbox.framework */; };
 		00605CF01625555400A479DE /* ALmixer.c in Sources */ = {isa = PBXBuildFile; fileRef = 00605CCF1625555400A479DE /* ALmixer.c */; };
@@ -58,6 +59,7 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
+		0044F81E185F71B600E88278 /* AVFoundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AVFoundation.framework; path = System/Library/Frameworks/AVFoundation.framework; sourceTree = SDKROOT; };
 		00605C5416254FDF00A479DE /* libALmixer.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = libALmixer.a; sourceTree = BUILT_PRODUCTS_DIR; };
 		00605C9E162550F600A479DE /* OpenAL.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = OpenAL.framework; path = System/Library/Frameworks/OpenAL.framework; sourceTree = SDKROOT; };
 		00605CA0162550FF00A479DE /* AudioToolbox.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AudioToolbox.framework; path = System/Library/Frameworks/AudioToolbox.framework; sourceTree = SDKROOT; };
@@ -115,6 +117,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				0044F81F185F71B600E88278 /* AVFoundation.framework in Frameworks */,
 				00605DB31625582800A479DE /* libALmixer.a in Frameworks */,
 				00605DB01625573700A479DE /* AudioToolbox.framework in Frameworks */,
 				00605DAF1625573000A479DE /* QuartzCore.framework in Frameworks */,
@@ -152,6 +155,7 @@
 		00605C5616254FDF00A479DE /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
+				0044F81E185F71B600E88278 /* AVFoundation.framework */,
 				00605CA0162550FF00A479DE /* AudioToolbox.framework */,
 				00605C9E162550F600A479DE /* OpenAL.framework */,
 				00605D0F1625559F00A479DE /* QuartzCore.framework */,

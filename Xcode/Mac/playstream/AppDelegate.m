@@ -5,12 +5,18 @@
 //  Created by Eric Wing on 1/2/13.
 //  Copyright (c) 2013 PlayControl Software LLC. All rights reserved.
 //
+// This example demonstrates how to integrate ALmixer directly within a typical native app.
+// It is assumed ALmixer has been compiled with threads so you don't have to explicitly pump the update loop for ALmixer.
+// As a consequence, rememember that ALmixer callbacks may happen on a background thread.
+// (Currently, HaltChannel() callbacks typically happens on the calling thread, while everything else happens on a background thread.)
+// If you do anything NSObject related in the callback, you will want to set up an autoreleasepool for that thread.
+// If you do anything UI related, you'll probably want to re-direct back to the main thread as much of view stuff is not thread safe in Cocoa.
 
 #import "AppDelegate.h"
 #include "ALmixer.h"
 
 @interface AppDelegate ()
-@property(nonatomic, assign) ALmixer_Data* musicHandle;
+@property(nonatomic, assign, readonly) ALmixer_Data* musicHandle;
 @end
 
 

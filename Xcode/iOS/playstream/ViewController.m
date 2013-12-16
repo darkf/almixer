@@ -7,6 +7,8 @@
 //
 
 #import "ViewController.h"
+#import <AVFoundation/AVFoundation.h>
+#import "ALmixer.h"
 
 #define BUFFER_OFFSET(i) ((char *)NULL + (i))
 
@@ -123,19 +125,60 @@ GLfloat gCubeVertexData[216] =
     view.drawableDepthFormat = GLKViewDrawableDepthFormat24;
     
     [self setupGL];
+	
+	
+	// What is useful to library writers is that the iOS 6+ notification center based interruption system can now deliver messages to multiple independent listeners that don't need to know about each other. (The old system could only have one global listener and would clobber each other if different frameworks.
+	// Uncomment these out to demonstrate that we can have multiple listeners (the other is in AppDelegate)
+//	[[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(handleAudioInterruption:) name:AVAudioSessionInterruptionNotification object:nil];
+	
+	
 }
 
 - (void)viewDidUnload
 {    
     [super viewDidUnload];
-    
+	
+//	[[NSNotificationCenter defaultCenter] removeObserver:self];
+
     [self tearDownGL];
     
     if ([EAGLContext currentContext] == self.context) {
         [EAGLContext setCurrentContext:nil];
     }
     self.context = nil;
+
 }
+
+// What is useful to library writers is that the iOS 6+ notification center based interruption system can now deliver messages to multiple independent listeners that don't need to know about each other. (The old system could only have one global listener and would clobber each other if different frameworks.
+// Uncomment these out to demonstrate that we can have multiple listeners (the other is in AppDelegate)
+/*
+- (void) handleAudioInterruption:(NSNotification*)the_notification
+{
+	NSNumber* ns_interruption_type = [[the_notification userInfo] objectForKey:AVAudioSessionInterruptionTypeKey];
+	NSUInteger interruption_type = [ns_interruption_type unsignedIntegerValue];
+	
+	switch(interruption_type)
+	{
+		case AVAudioSessionInterruptionTypeBegan:
+		{
+			NSLog(@"Begin Interruption2\n");
+			
+			ALmixer_BeginInterruption();
+			break;
+		}
+		case AVAudioSessionInterruptionTypeEnded:
+		{
+			NSLog(@"End Interruption2\n");
+			ALmixer_EndInterruption();
+			break;
+		}
+		default:
+		{
+			NSLog(@"Unexpected type received in handleAudioInterruption\n");
+		}
+	}
+}
+*/
 
 - (void)didReceiveMemoryWarning
 {
