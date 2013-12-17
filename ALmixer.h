@@ -61,8 +61,8 @@
  * audio as all the OpenAL buffer queuing happens in this function. It is less likely the background thread will
  * be blocked for long periods and thus less likely your buffer queues will be starved. However, this means you 
  * need to be extra careful about what you do in callback functions as they are invoked from the background thread.
- * I still consider this feature a experimental (though I am starting to use it more myself) and there
- * may still be bugs.
+ * I still refer to this feature as experimental, but this feature has been in active use in the Corona SDK 
+ * for many years now and used by millions of users, so it is shippable.
  *
  * @author Eric Wing
  *
