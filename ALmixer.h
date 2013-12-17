@@ -199,7 +199,7 @@ extern "C" {
 /* Printable format: "%d.%d.%d", MAJOR, MINOR, PATCHLEVEL
  */
 #define ALMIXER_MAJOR_VERSION		0
-#define ALMIXER_MINOR_VERSION		2
+#define ALMIXER_MINOR_VERSION		3
 #define ALMIXER_PATCHLEVEL			0
 
 
@@ -373,14 +373,24 @@ extern ALMIXER_DECLSPEC ALboolean ALMIXER_CALL ALmixer_InitMixer(ALuint num_sour
 /**
  * (EXPERIMENTAL) Call to notify ALmixer that your device needs to handle an interruption.
  * (EXPERIMENTAL) For devices like iOS that need special handling for interruption events like phone calls and alarms,
- * this function will do the correct platform correct thing to handle the interruption w.r.t. OpenAL. This calls ALmixer_SuspendUpdates().
+ * this function will do the correct platform correct thing to handle the interruption w.r.t. OpenAL.
+ * This function will suspend and save all current playing state (so it can be resumed),
+ * tear down the background update thread (to avoid wasting CPU if background operations are permitted)
+ * and set the current OpenAL context to NULL.
+ * While this was intended for iOS interruptions, this function works well on all platforms 
+ * and can be used as a universal suspend/resume.
+ * A weaker form that does not tear down the update thread nor set the OpenAL context to NULL can be found in ALmixer_SuspendPlayingState. 
+ * This calls ALmixer_SuspendUpdates() and ALmixer_SuspendPlayingState().
+ * @see ALmixer_SuspendUpdates, ALmixer_SuspendPlayingState, ALmixer_EndInterruption, ALmixer_IsInInterruption
  */
 extern ALMIXER_DECLSPEC void ALMIXER_CALL ALmixer_BeginInterruption(void);
 
 /**
  * (EXPERIMENTAL) Call to notify ALmixer that your device needs to resume from an interruption.
  * (EXPERIMENTAL) For devices like iOS that need special handling for interruption events like phone calls and alarms,
- * this function will do the correct platform correct thing to resume from the interruption w.r.t. OpenAL. This calls ALmixer_ResumeUpdates().
+ * this function will do the correct platform correct thing to resume from the interruption w.r.t. OpenAL. 
+ * This calls ALmixer_ResumePlayingState() and ALmixer_ResumeUpdates().
+ * @see ALmixer_ResumeUpdates, ALmixer_ResumePlayingState, ALmixer_BeginInterruption, ALmixer_IsInInterruption
  */
 extern ALMIXER_DECLSPEC void ALMIXER_CALL ALmixer_EndInterruption(void);
 
@@ -388,6 +398,7 @@ extern ALMIXER_DECLSPEC void ALMIXER_CALL ALmixer_EndInterruption(void);
  * (EXPERIMENTAL) Call to determine if in an interruption.
  * (EXPERIMENTAL) For devices like iOS that need special handling for interruption events like phone calls and alarms,
  * this function will do the correct platform correct thing to determine if in an interruption.
+ * @see ALmixer_BeginInterruption, ALmixer_EndInterruption
  */	
 extern ALMIXER_DECLSPEC ALboolean ALmixer_IsInInterruption(void);
 
@@ -395,17 +406,20 @@ extern ALMIXER_DECLSPEC ALboolean ALmixer_IsInInterruption(void);
 /**
  * (EXPERIMENTAL) Destroys the background update thread (ENABLE_ALMIXER_THREADS only). 
  * (EXPERIMENTAL) Destroys the background update thread (ENABLE_ALMIXER_THREADS only). BeginInterruption used to do this internally, but this was split off due to an iOS OpenAL race condition bug (10081775). Being able to manipulate the thread without manipulating the context was useful for suspend/resume backgrounding when not dealing with a full-blown interruption event.
+ * @see ALmixer_ResumeUpdates, ALmixer_AreUpdatesSuspended
  */
 extern ALMIXER_DECLSPEC void ALMIXER_CALL ALmixer_SuspendUpdates(void);
 
 /**
  * (EXPERIMENTAL) Recreates the background update thread (ENABLE_ALMIXER_THREADS only). 
  * (EXPERIMENTAL) Recreates the background update thread (ENABLE_ALMIXER_THREADS only). EndInterruption used to do this internally, but this was split off due to an iOS OpenAL race condition bug (10081775). Being able to manipulate the thread without manipulating the context was useful for suspend/resume backgrounding when not dealing with a full-blown interruption event.
+ * @see ALmixer_SuspendUpdates, ALmixer_AreUpdatesSuspended
  */
 extern ALMIXER_DECLSPEC void ALMIXER_CALL ALmixer_ResumeUpdates(void);
 
 /**
  * (EXPERIMENTAL) Call to determine if in ALmixer_SuspendUpdates(). (ENABLE_ALMIXER_THREADS only.)
+ * @see ALmixer_SuspendUpdates, ALmixer_ResumeUpdates
  */
 extern ALMIXER_DECLSPEC ALboolean ALmixer_AreUpdatesSuspended(void);
 
@@ -417,6 +431,9 @@ extern ALMIXER_DECLSPEC ALboolean ALmixer_AreUpdatesSuspended(void);
  * You don't necessarily want to resume all channels, because some channels may be paused already and you don't want those to automatically resume.
  * This function does those extra checks and book keeping. 
  * If you call BeginInterruption, you don't need to call this because it calls this on your behalf.
+ * There is an implicit assumption that you will not attempt any playing or channel manipulation until you call ALmixer_ResumePlayingState.
+ * If you want to quickly pause all audio and then later quickly resume all audio, this is a convenient and fast function to use 
+ * as it does not tear down background threads nor disable the OpenAL context.
  * @see ALmixer_ResumePlayingState, ALmixer_IsPlayingStateSuspended.
  */
 extern ALMIXER_DECLSPEC void ALMIXER_CALL ALmixer_SuspendPlayingState(void);
@@ -434,6 +451,7 @@ extern ALMIXER_DECLSPEC void ALMIXER_CALL ALmixer_ResumePlayingState(void);
 
 /**
  * (EXPERIMENTAL) Call to determine if in ALmixer_SuspendPlayingState().
+ * @see ALmixer_SuspendPlayingState, ALmixer_ResumePlayingState.
  */
 extern ALMIXER_DECLSPEC ALboolean ALmixer_IsPlayingStateSuspended(void);
 

@@ -29,23 +29,36 @@ Why would you want to use ALmixer over SDL_mixer?
 - The callback API allows for void* userdata (a.k.a. context) to be passed through.
 - Uses OpenAL as the audio engine instead of SDL.
 - Not subject to known SDL and SDL_mixer bugs/limitations
-- You can utilize OpenAL for additional features and effects.
-
+- ALmixer was designed to work cooperatively with OpenAL features and effects.
+- ALmixer has been used by millions of users as the sound engine behind the Corona SDK.
+- ALmixer has successfully been binded for use in Lua and JavaScript.
 
 Why would you want to use SDL_mixer over ALmixer?
-- ALmixer is newer, less proven code
+- SDL_mixer has been around longer and audited by more developers.
 - OpenAL while an industry cross-platform standard, is still not as ubiquitous as SDL.
 - OpenAL may have a different set of bugs and there are different implementations of OpenAL which may have different bugs.
 - SDL_mixer effects are not ported. (You should utilize OpenAL effects instead.)
 
+
+Why ALmixer vs. other sound engines (besides SDL_mixer)?
+- ALmixer is written in pure C and has worked on many platforms (e.g. Windows, Linux, Mac, iOS, Android, FreeBSD, Solaris)
+- Despite being written in C, the API is very friendly (Corona SDK/Lua developers have done amazing things with it)
+- ALmixer interoperates easy with the OpenAL effect APIs
+- ALmixer is open source
+- ALmixer has good performance and latency characteristics
+- ALmixer is relatively easy to bind to other languages
+- ALmixer has been used in many, many games, used by millions of users
+- ALmixer is has filed more bugs with Apple (and gotten them fixed) than any other sound library
 
 
 Compile Flags:
 
 There are some #defines you can set to change the behavior at compile time. Most you shouldn't touch.
 
-The one worth noting is ENABLE_ALMIXER_THREADS. If enabled, ALmixer_Update() is automatically called on a background thread so you no longer have to explicitly call it. (The function turns into a no-op so your existing
-code won't break.) Having Update run in a separate thread has some advantages, particularly for streaming audio as all the OpenAL buffer queuing happens in this function. It is less likely the background thread will be blocked for long periods and thus less likely your buffer queues will be starved. However, this means you need to be extra careful about what you do in callback functions as they are invoked from the background thread. I still consider this feature a experimental (though I am starting to use it more myself) and there may still be bugs.
+The one worth noting is ENABLE_ALMIXER_THREADS. If enabled, ALmixer_Update() is automatically called on a background thread so you no longer have to explicitly call it. (The function turns into a no-op so your existing code won't break.) 
+Having Update run in a separate thread has some advantages, particularly for streaming audio as all the OpenAL buffer queuing happens in this function. It is less likely the background thread will be blocked for long periods and thus less likely your buffer queues will be starved. However, this means you need to be extra careful about what you do in callback functions as they are invoked from the background thread. 
+I still consider this refer to this feature as experimental, but this feature has been in active use in the Corona SDK for many years now and used by millions of users, so it is shippable.
+
 
 
 Building:
@@ -61,6 +74,9 @@ cmake ..
 make
 
 Or use the ccmake or the CMake GUI to make it easier to configure options like ENABLE_ALMIXER_THREADS.
+
+Android developers should refer to the HelloAndroidALmixer sample project which contains a complete example of how to build OpenAL, ALmixer, and how to integrate into a native Android project.
+https://bitbucket.org/ewing/hello-android-almixer
 
 
 Backstory:
@@ -82,6 +98,41 @@ Fast forward to 2010 (today). I still haven't cleaned up ALmixer. SDL_mixer has 
 And I have recently been working on a project that would benefit greatly from something like ALmixer. I realized that I don't have the time/money to do the clean-up, nor is it feasible for me to do an entire rewrite. I also realize that despite the scariness of the code, the library seems to generally work.
 
 So I have decided to finally release ALmixer, even without the clean ups. My hope is people find it useful and I also get some good testing feedback. Maybe some heros will even make it better. Please be kind when reading the code and reporting bugs. I admit the code is scary and many of the comments are now obsolete.
+
+
+
+================
+Technical Notes:
+================
+
+Threads: 
+If you compile with threads enabled, you must understand that most callbacks fire on a background thread. (One exceptions is that HaltChannel callbacks will fire on the calling thread.) 
+You are responsible for dealing with thread safety issues.
+Also be aware that except for ALmixer_FreeData, it is not safe to call other ALmixer fuctions in a callback. (Recursive locks are NOT used.)
+A wishlist item is to switch to spin locks (for speed) instead of recursive locks (instead of safety).
+
+
+Platform Decoders and minimal depedencies:
+ALmixer can be compiled to use SDL+SDL_sound to get the benefit of a mature codebase and vast number of codecs.
+However, ALmixer has been developing native platform decoders to eliminate external dependencies (i.e. no SDL and no SDL_sound) and avoid patent and royalty issues, which formats like MP3 and AAC are encumbered with.
+ALmixer currently has a mature Core Audio backend (Mac/iOS).
+ALmixer has also introduced an Android OpenSL ES backend.
+A Windows Media Foundation backend is on the wish list.
+
+
+Additional Android Notes:
+The Android OpenSL ES backend uses Google's decoder API extensions which are introduced in Android 4.0 (API 14). This is the minimum requirement for this backend.
+However, Android audio latency problems are infamous (search for Android bug #3434), and things are generally terrible. Android 4.1 improves things significantly (though they still are terrible.
+For the sake of avoiding bad reviews, you may want to consider requiring 4.1 as your minimum.
+
+Additionally, the OpenSL ES API extensions fail to provide a classic API that uses function pointers for the fopen/fread/fseek/fclose family to allow abstraction layers to exist. As a consequence, SDL_RWops does not work with the native Android decoder backend. Please file feature requests with Android to convince them to correct this.
+
+See the HelloAndroidALmixer example.
+https://bitbucket.org/ewing/hello-android-almixer
+
+
+LGPL issues:
+ALmixer is transitioning away from LGPL to a more liberal license. However, it's dependency on SDL_sound keeps it bound to LGPL. Currently the native Core Audio and Android backends avoid LGPL code as long as you don't compile in additional codecs (labeled under the folder LGPL).
 
 
 Eric Wing <ewing . public @ playcontrol.net>

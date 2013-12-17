@@ -576,7 +576,12 @@ extern ALMIXER_DECLSPEC void ALMIXER_CALL ALmixer_ResumeUpdates(void);
 
 extern ALMIXER_DECLSPEC ALboolean ALmixer_AreUpdatesSuspended(void);
 
+extern ALMIXER_DECLSPEC void ALMIXER_CALL ALmixer_SuspendPlayingState(void);
+extern ALMIXER_DECLSPEC void ALMIXER_CALL ALmixer_ResumePlayingState(void);
+extern ALMIXER_DECLSPEC ALboolean ALmixer_IsPlayingStateSuspended(void);
     
+
+
 extern ALMIXER_DECLSPEC void ALMIXER_CALL ALmixer_Quit(void);
 extern ALMIXER_DECLSPEC void ALMIXER_CALL ALmixer_QuitWithoutFreeData(void);
 
