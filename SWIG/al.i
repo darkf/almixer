@@ -4,7 +4,12 @@
 #include "al.h"
 #include "alc.h"
 #ifdef __APPLE__
-	#include "oalMacOSX_OALExtensions.h"
+	#include <TargetConditionals.h>
+	#if (TARGET_OS_IPHONE == 1) || (TARGET_IPHONE_SIMULATOR == 1)
+		#include "oalMacOSX_OALExtensions.h"
+	#else
+		#include "MacOSX_OALExtensions.h"
+	#endif
 #endif
 %}
 
