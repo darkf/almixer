@@ -7,7 +7,8 @@
         // Our module fuses with a lot of additional Titanium infrastructure which makes it distinct.
         %module co_lanica_almixer
     #else
-        %module net_playcontrol_almixer
+//        %module net_playcontrol_almixer
+        %module ALmixer
     #endif
 #else
 	%module ALmixer

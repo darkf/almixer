@@ -78,7 +78,8 @@ void ALmixer_SetPlaybackFinishedCallback_JSCallbackHook(ALint which_channel, ALu
 #elif SWIG_JAVASCRIPT_JSC
 
 %inline {
-typedef struct ALmixer_PlaybackFinishedCallbackContainer {
+typedef struct ALmixer_PlaybackFinishedCallbackContainer
+{
   JSValueRef   data;
   JSContextRef context;
   JSObjectRef  thisObject;
@@ -143,6 +144,30 @@ void ALmixer_SetPlaybackFinishedCallback_JSCallbackHook(ALint which_channel, ALu
 }
 %}
 
+
 #else
 %warn "Callback binding not implemented for requested target langauge"
 #endif
+
+
+#if ALMIXER_SWIG_USE_CUSTOM_SDL_EVENT
+%{
+#include "SDL.h"
+
+ALuint ALmixer_GetSourceFromSDLEvent(SDL_Event* the_event)
+{
+	return (ALuint)the_event->user.data2;
+}
+
+ALboolean ALmixer_GetFinishedNaturallyFromSDLEvent(SDL_Event* the_event)
+{
+	return (ALboolean)the_event->user.code;
+}
+
+%}
+ALuint ALmixer_GetSourceFromSDLEvent(SDL_Event* the_event);
+
+ALboolean ALmixer_GetFinishedNaturallyFromSDLEvent(SDL_Event* the_event);
+
+#endif
+
