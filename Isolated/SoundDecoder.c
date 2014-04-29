@@ -28,6 +28,8 @@ static const SoundDecoder_DecoderInfo** s_availableDecoders = NULL;
 	extern const Sound_DecoderFunctions __Sound_DecoderFunctions_CoreAudio;
 #elif defined(__ANDROID__)
 	extern const Sound_DecoderFunctions __Sound_DecoderFunctions_OpenSLES;
+#elif defined(_WIN32)
+	extern const Sound_DecoderFunctions __Sound_DecoderFunctions_MediaFoundation;
 #endif
 #ifdef SOUND_SUPPORTS_AAC
 	extern const Sound_DecoderFunctions __Sound_DecoderFunctions_AAC;
@@ -56,6 +58,8 @@ static SoundElement s_linkedDecoders[] =
 		{ 0, &__Sound_DecoderFunctions_CoreAudio },
 #elif defined(__ANDROID__)
 		{ 0, &__Sound_DecoderFunctions_OpenSLES },
+#elif defined(_WIN32)
+		{ 0, &__Sound_DecoderFunctions_MediaFoundation },
 #endif
 #ifdef SOUND_SUPPORTS_AAC
 	{ 0, &__Sound_DecoderFunctions_AAC },

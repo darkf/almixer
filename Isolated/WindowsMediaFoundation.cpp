@@ -36,7 +36,18 @@
 #include <stdio.h>
 #include <mferror.h>
 
+/*
+#include <iostream>
+#include <string.h>
+#include <windows.h>
+#include <mfapi.h>
+#include <mfidl.h>
+#include <mfreadwrite.h>
+#include <mferror.h>
+#include <assert.h>
+*/
 
+#include <propvarutil.h>
 
 #include <stddef.h> /* NULL */
 #include <stdio.h> /* printf */
@@ -57,25 +68,32 @@ template <class T> void SafeRelease(T **ppT)
 
 typedef struct MediaFoundationFileContainer
 {
-	IMFSourceReader* pReader;
-//	AudioFileID* audioFileID;
-	//ExtAudioFileRef extAudioFileRef;
-	//AudioStreamBasicDescription* outputFormat;
-			IMFMediaType *pUncompressedAudioType;
-		IMFMediaType *pPartialType;
-		IMFMediaType *ppPCMAudio;
-
+	IMFSourceReader* sourceReader;
+	IMFMediaType* uncompressedAudioType;
+	int nextFrame;
+	short* leftoverBuffer;
+    UINT32 leftoverBufferSize;
+    UINT32 leftoverBufferLength;
+    int leftoverBufferPosition;
+    long currentPosition;
+    bool isDead;
+    bool isSeeking;
+	unsigned int bitsPerSample;
+	short destBufferShort[8192];
 } MediaFoundationFileContainer;
 
-static int MediaFoundation_init(void);
-static void MediaFoundation_quit(void);
-static int MediaFoundation_open(Sound_Sample *sample, const char *ext);
-static void MediaFoundation_close(Sound_Sample *sample);
-static size_t MediaFoundation_read(Sound_Sample *sample);
-static int MediaFoundation_rewind(Sound_Sample *sample);
-static int MediaFoundation_seek(Sound_Sample *sample, size_t ms);
-
-static const char *extensions_MediaFoundation[] = 
+extern "C"
+{
+	static int MediaFoundation_init(void);
+	static void MediaFoundation_quit(void);
+	static int MediaFoundation_open(Sound_Sample *sample, const char *ext);
+	static void MediaFoundation_close(Sound_Sample *sample);
+	static size_t MediaFoundation_read(Sound_Sample *sample);
+	static int MediaFoundation_rewind(Sound_Sample *sample);
+	static int MediaFoundation_seek(Sound_Sample *sample, size_t ms);
+}
+// http://msdn.microsoft.com/en-us/library/windows/desktop/dd757927(v=vs.85).aspx
+static const char* extensions_MediaFoundation[] = 
 {
 	"aif",
 	"aiff",
@@ -87,47 +105,68 @@ static const char *extensions_MediaFoundation[] =
 	"m4a",
 	"aac",
 	"adts",
-	"caf",
-	"Sd2f",
-	"Sd2",
-	"au",
-	"snd",
-	"next",
-	"mp2",
-	"mp1",
-	"ac3",
+//	"caf",
+//	"Sd2f",
+//	"Sd2",
+//	"au",
+//	"snd",
+//	"next",
+//	"mp2",
+//	"mp1",
+//	"ac3",
 	"3gpp",
 	"3gp",
 	"3gp2",
 	"3g2",
-	"amrf",
-	"amr",
-	"ima4",
-	"ima",
+//	"amrf",
+//	"amr",
+//	"ima4",
+//	"ima",
+	"asf",
+	"wma",
+	"sami",
+	"sm",
 	NULL 
 };
-const Sound_DecoderFunctions __Sound_DecoderFunctions_MediaFoundation =
-{
-    {
-        extensions_MediaFoundation,
-        "Decode audio through Core Audio through",
-        "Eric Wing <ewing . public @ playcontrol.net>",
-        "http://playcontrol.net"
-    },
-	
-    MediaFoundation_init,       /*   init() method */
-    MediaFoundation_quit,       /*   quit() method */
-    MediaFoundation_open,       /*   open() method */
-    MediaFoundation_close,      /*  close() method */
-    MediaFoundation_read,       /*   read() method */
-    MediaFoundation_rewind,     /* rewind() method */
-    MediaFoundation_seek        /*   seek() method */
-};
+
+//extern Sound_DecoderFunctions __Sound_DecoderFunctions_MediaFoundation;
+extern "C" const Sound_DecoderFunctions __Sound_DecoderFunctions_MediaFoundation;
+
+	const Sound_DecoderFunctions __Sound_DecoderFunctions_MediaFoundation =
+//	__Sound_DecoderFunctions_MediaFoundation =
+	{
+		{
+			extensions_MediaFoundation,
+			"Decode audio through Windows Media Foundation",
+			"Eric Wing <ewing . public @ playcontrol.net>",
+			"http://playcontrol.net"
+		},
+
+		MediaFoundation_init,       /*   init() method */
+		MediaFoundation_quit,       /*   quit() method */
+		MediaFoundation_open,       /*   open() method */
+		MediaFoundation_close,      /*  close() method */
+		MediaFoundation_read,       /*   read() method */
+		MediaFoundation_rewind,     /* rewind() method */
+		MediaFoundation_seek        /*   seek() method */
+
+	};
 
 
 static int MediaFoundation_init(void)
 {
     HRESULT hr = S_OK;
+
+	/* Initialize the COM library. */
+    hr = CoInitializeEx(NULL, COINIT_APARTMENTTHREADED | COINIT_DISABLE_OLE1DDE);
+    if(FAILED(hr))
+	{
+//        std::cerr << "SSMF: failed to initialize COM" << std::endl;
+        SNDDBG(("WindowsMediaFoundation: Failed to initialize COM"));
+        return 0;
+    }
+
+
 	hr = MFStartup(MF_VERSION, 0);
 	if(S_OK == hr)
 	{
@@ -135,6 +174,7 @@ static int MediaFoundation_init(void)
 	}
 	else
 	{
+        SNDDBG(("WindowsMediaFoundation: MFStartup failed"));
 		return 0;
 	}	
 } /* MediaFoundation_init */
@@ -143,6 +183,7 @@ static int MediaFoundation_init(void)
 static void MediaFoundation_quit(void)
 {
     MFShutdown();
+    CoUninitialize();	
 } /* MediaFoundation_quit */
 
 /*
@@ -309,301 +350,245 @@ OSStatus MediaFoundation_ReadCallback(
 static int MediaFoundation_open(Sound_Sample *sample, const char *ext)
 {
 	MediaFoundationFileContainer* media_foundation_file_container;
-	Sound_SampleInternal *internal = (Sound_SampleInternal *) sample->opaque;
+	Sound_SampleInternal* internal = (Sound_SampleInternal*)sample->opaque;
 	//Float64 estimated_duration;
 	//UInt32 format_size;
 	HRESULT hresult;
 	IMFSourceReader* source_reader = NULL;
-    const WCHAR* source_file = L"C:\\Users\\pinky\\Documents\\Source\\HG\\BUILD_ALMIXER\\Debug\\pcm1644m.wav";
+//	const WCHAR* source_file = L"C:\\Users\\pinky\\Documents\\Mario_Jumping.wav";
+//	const WCHAR* source_file = L"C:\\Users\\pinky\\Documents\\battle_hymn_of_the_republic.mp3";
+	const WCHAR* source_file = L"C:\\Users\\pinky\\Documents\\TheDeclarationOfIndependencePreambleJFK.m4a";
 	
-	media_foundation_file_container = (MediaFoundationFileContainer*)malloc(sizeof(MediaFoundationFileContainer));
+	media_foundation_file_container = (MediaFoundationFileContainer*)calloc(1, sizeof(MediaFoundationFileContainer));
 	BAIL_IF_MACRO(media_foundation_file_container == NULL, ERR_OUT_OF_MEMORY, 0);
 
 //hresult = MFCreateSourceReaderFromByteStream();
 	hresult = MFCreateSourceReaderFromURL(source_file, NULL, &source_reader);
-	if (FAILED(hresult))
+	if(FAILED(hresult))
     {
-		fprintf(stderr, "Error opening input file: %S\n", source_file, hresult);
+		SNDDBG(("Error opening input file"));
+//		fprintf(stderr, "Error opening input file: %S\n", source_file, hresult);
+		free(media_foundation_file_container);
+		return 0;
 	}
-	
-	
+
+	internal->decoder_private = media_foundation_file_container;
+	media_foundation_file_container->sourceReader = source_reader;
+
 	{
-		IMFSourceReader* pReader = source_reader;
-//	HRESULT hr = hresult;
+		HRESULT hr = hresult;
 		IMFMediaType *pUncompressedAudioType = NULL;
-		IMFMediaType *pPartialType = NULL;
-		IMFMediaType *ppPCMAudio;
+		IMFMediaType* audio_type = NULL;
 
 		// Select the first audio stream, and deselect all other streams.
-		HRESULT hr = pReader->SetStreamSelection(
-			(DWORD)MF_SOURCE_READER_ALL_STREAMS, FALSE);
+		hr = source_reader->SetStreamSelection((DWORD)MF_SOURCE_READER_ALL_STREAMS, false);
 
 		if (SUCCEEDED(hr))
 		{
-			hr = pReader->SetStreamSelection(
-				(DWORD)MF_SOURCE_READER_FIRST_AUDIO_STREAM, TRUE);
+			// select first stream
+			hr = source_reader->SetStreamSelection((DWORD)MF_SOURCE_READER_FIRST_AUDIO_STREAM, true);
 		}
 
-		// Create a partial media type that specifies uncompressed PCM audio.
-		hr = MFCreateMediaType(&pPartialType);
-
-		if (SUCCEEDED(hr))
+		// Getting format data and debugging
 		{
-			hr = pPartialType->SetGUID(MF_MT_MAJOR_TYPE, MFMediaType_Audio);
+			// Not sure of the difference between GetNativeMediaType/GetNativeMediaType.
+			// Search suggests GetCurrentMediaType gets the complete uncompressed format.
+			// hr = source_reader->GetCurrentMediaType(MF_SOURCE_READER_FIRST_AUDIO_STREAM, &audio_type);
+			// The method returns a copy of the media type, so it is safe to modify the object received in the ppMediaType parameter.
+			hr = source_reader->GetNativeMediaType(MF_SOURCE_READER_FIRST_AUDIO_STREAM,
+				0, // Index of the media type to retreive (don't really know what that means)
+				&audio_type
+			);
+			if(FAILED(hr))
+			{
+				SNDDBG(("GetNativeMediaType failed"));
+				free(media_foundation_file_container);
+				SafeRelease(&source_reader);		
+				return 0;
+    		}
+
+			UINT32 all_samples_independent = 0;
+			UINT32 fixed_size_samples = 0;
+			UINT32 sample_size = 0;
+			UINT32 bits_per_sample = 0;
+			UINT32 block_alignment = 0;
+			UINT32 num_channels = 0;
+			UINT32 samples_per_second = 0;
+			hr = audio_type->GetUINT32(MF_MT_ALL_SAMPLES_INDEPENDENT, &all_samples_independent);
+			hr = audio_type->GetUINT32(MF_MT_FIXED_SIZE_SAMPLES, &fixed_size_samples);
+			hr = audio_type->GetUINT32(MF_MT_SAMPLE_SIZE, &sample_size);
+			hr = audio_type->GetUINT32(MF_MT_AUDIO_BITS_PER_SAMPLE, &bits_per_sample);
+			hr = audio_type->GetUINT32(MF_MT_AUDIO_BLOCK_ALIGNMENT, &block_alignment);
+			hr = audio_type->GetUINT32(MF_MT_AUDIO_NUM_CHANNELS, &num_channels);
+			hr = audio_type->GetUINT32(MF_MT_AUDIO_SAMPLES_PER_SECOND, &samples_per_second);
+
+			SNDDBG(("WindowsMediaFoundation: all_samples_independent == (%d).\n", all_samples_independent));
+			SNDDBG(("WindowsMediaFoundation: fixed_size_samples == (%d).\n", fixed_size_samples));
+			SNDDBG(("WindowsMediaFoundation: sample_size == (%d).\n", sample_size));
+			SNDDBG(("WindowsMediaFoundation: bits_per_sample == (%d).\n", bits_per_sample));
+			SNDDBG(("WindowsMediaFoundation: block_alignment == (%d).\n", block_alignment));
+			SNDDBG(("WindowsMediaFoundation: num_channels == (%d).\n", num_channels));
+			SNDDBG(("WindowsMediaFoundation: samples_per_second == (%d).\n", samples_per_second));
+
+
+			// Get the total length of the stream 
+			PROPVARIANT prop_variant;
+			double duration_in_milliseconds = -1.0;
+			// get the duration, which is a 64-bit integer of 100-nanosecond units
+			hr = source_reader->GetPresentationAttribute(MF_SOURCE_READER_MEDIASOURCE, MF_PD_DURATION, &prop_variant);
+			if(FAILED(hr))
+			{
+				SNDDBG(("WindowsMediaFoundation: Failed to get duration"));
+				duration_in_milliseconds = -1.0;
+			}
+			else
+			{
+				LONGLONG file_duration = prop_variant.uhVal.QuadPart;
+				//double durationInSeconds = (file_duration / static_cast<double>(10000 * 1000));
+				duration_in_milliseconds = (file_duration / static_cast<double>(10000));
+			}
+			PropVariantClear(&prop_variant);
+
+
+			sample->flags = SOUND_SAMPLEFLAG_CANSEEK;
+			sample->actual.rate = samples_per_second;
+			sample->actual.channels = (UINT8)num_channels;
+			internal->total_time = (INT32)(duration_in_milliseconds + 0.5);
+			/*
+			 * I want to use the native system to do conversion and decoding for performance reasons.
+			 * This is particularly important on mobile devices like iOS.
+			 * Taking from the Ogg Vorbis decode, I pretend the "actual" format is the same 
+			 * as the desired format. 
+			 */
+			if(0 == sample->desired.format)
+			{
+				sample->actual.format = AUDIO_S16SYS;
+			}
+			else
+			{
+				sample->actual.format = sample->desired.format;				
+			}
+
+			SNDDBG(("WindowsMediaFoundation: total seconds of sample == (%d).\n", internal->total_time));
+
+
+			// For compressed files, the bits per sample is undefined
+			if(0 == bits_per_sample)
+			{
+				// hard code to 16
+				media_foundation_file_container->bitsPerSample = 16;
+			}
+			else
+			{
+				media_foundation_file_container->bitsPerSample = bits_per_sample;
+			}
+
+			SafeRelease(&audio_type);		
+			
+
 		}
 
-		if (SUCCEEDED(hr))
+
 		{
-			hr = pPartialType->SetGUID(MF_MT_SUBTYPE, MFAudioFormat_PCM);
+			IMFMediaType* target_audio_type = NULL;
+		
+
+			// Create a partial media type that specifies uncompressed PCM audio.
+			hr = MFCreateMediaType(&target_audio_type);
+			if(FAILED(hr))
+			{
+				SNDDBG(("WindowsMediaFoundation: Failed to create target MediaType\n"));
+				SafeRelease(&source_reader);
+				free(media_foundation_file_container);
+			}
+
+			hr = target_audio_type->SetGUID(MF_MT_MAJOR_TYPE, MFMediaType_Audio);
+			if(FAILED(hr))
+			{
+				SNDDBG(("WindowsMediaFoundation: Failed to set MFMediaType_Audio\n"));
+				SafeRelease(&target_audio_type);
+				SafeRelease(&source_reader);
+				free(media_foundation_file_container);
+				return 0;
+			}
+			// We want to decode to raw PCM
+			hr = target_audio_type->SetGUID(MF_MT_SUBTYPE, MFAudioFormat_PCM);
+			if(FAILED(hr))
+			{
+				SNDDBG(("WindowsMediaFoundation: Failed to set MFAudioFormat_PCM\n"));
+				SafeRelease(&target_audio_type);
+				SafeRelease(&source_reader);
+				free(media_foundation_file_container);
+				return 0;
+			}
+
+			// Set this type on the source reader. The source reader will
+			// load the necessary decoder.
+			hr = source_reader->SetCurrentMediaType((DWORD)MF_SOURCE_READER_FIRST_AUDIO_STREAM, NULL, target_audio_type);
+			if(FAILED(hr))
+			{
+				SNDDBG(("WindowsMediaFoundation: Failed to set SetCurrentMediaType\n"));
+				SafeRelease(&target_audio_type);
+				SafeRelease(&source_reader);
+				free(media_foundation_file_container);
+				return 0;
+			}
+
+			// Don't need this any more
+			SafeRelease(&target_audio_type);
 		}
 
-		// Set this type on the source reader. The source reader will
-		// load the necessary decoder.
-		if (SUCCEEDED(hr))
+		// specify the output type (pcm)
 		{
-			hr = pReader->SetCurrentMediaType(
-				(DWORD)MF_SOURCE_READER_FIRST_AUDIO_STREAM,
-				NULL, pPartialType);
+			IMFMediaType* uncompressed_audio_type = NULL;
+			
+
+			// Get the complete uncompressed format.
+			hr = source_reader->GetCurrentMediaType((DWORD)MF_SOURCE_READER_FIRST_AUDIO_STREAM, &uncompressed_audio_type);
+			if(FAILED(hr))
+			{
+				SNDDBG(("WindowsMediaFoundation: Failed to set SetCurrentMediaType\n"));
+				SafeRelease(&source_reader);
+				free(media_foundation_file_container);
+				return 0;
+			}
+			hr = source_reader->SetStreamSelection((DWORD)MF_SOURCE_READER_FIRST_AUDIO_STREAM, true);
+			// Ensure the stream is selected.
+			if(FAILED(hr))
+			{
+				SNDDBG(("WindowsMediaFoundation: Failed to set SetCurrentMediaType\n"));
+				SafeRelease(&uncompressed_audio_type);
+				SafeRelease(&source_reader);
+				free(media_foundation_file_container);
+				return 0;
+			}
+
+			// libaudiodecoder
+			UINT32 leftover_buffer_size = 0;
+			hr = uncompressed_audio_type->GetUINT32(MF_MT_SAMPLE_SIZE, &leftover_buffer_size);
+			if(FAILED(hr))
+			{
+				SNDDBG(("WindowsMediaFoundation: Failed to get leftover_buffer_size\n"));
+				leftover_buffer_size = 32;
+			}
+
+
+
+			media_foundation_file_container->leftoverBufferSize = leftover_buffer_size;
+			media_foundation_file_container->leftoverBufferSize = leftover_buffer_size;
+			media_foundation_file_container->leftoverBufferSize /= 2; // convert size in bytes to size in int16s
+			media_foundation_file_container->leftoverBuffer = (short*)malloc(media_foundation_file_container->leftoverBufferSize * sizeof(short));
+
+			media_foundation_file_container->uncompressedAudioType = uncompressed_audio_type;
+			media_foundation_file_container->uncompressedAudioType->AddRef();
+			SafeRelease(&uncompressed_audio_type);
+
 		}
 
-		// Get the complete uncompressed format.
-		if (SUCCEEDED(hr))
-		{
-			hr = pReader->GetCurrentMediaType(
-				(DWORD)MF_SOURCE_READER_FIRST_AUDIO_STREAM,
-				&pUncompressedAudioType);
-		}
-
-		// Ensure the stream is selected.
-		if (SUCCEEDED(hr))
-		{
-			hr = pReader->SetStreamSelection(
-				(DWORD)MF_SOURCE_READER_FIRST_AUDIO_STREAM,
-				TRUE);
-		}
-
-		// Return the PCM format to the caller.
-		if (SUCCEEDED(hr))
-		{
-			ppPCMAudio = pUncompressedAudioType;
-			ppPCMAudio->AddRef();
-		}
-			media_foundation_file_container->ppPCMAudio = ppPCMAudio;
-
-		SafeRelease(&pUncompressedAudioType);
-		SafeRelease(&pPartialType);
 	}
 		
 	
-#if 0	
-	audio_file_id = (AudioFileID*)malloc(sizeof(AudioFileID));
-	BAIL_IF_MACRO(audio_file_id == NULL, ERR_OUT_OF_MEMORY, 0);
 
-	error_result = AudioFileOpenWithCallbacks(
-		internal->rw,
-		MediaFoundation_ReadCallback,
-		NULL,
-		MediaFoundation_SizeCallback,
-		NULL,
-		MediaFoundation_GetAudioTypeForExtension(ext),
-		audio_file_id
-	);
-	if (error_result != noErr)
-	{
-		AudioFileClose(*audio_file_id);
-		free(audio_file_id);
-		free(media_foundation_file_container);
-		SNDDBG(("Core Audio: can't grok data. reason: [%s].\n", MediaFoundation_FourCCToString(error_result)));
-		BAIL_MACRO("Core Audio: Not valid audio data.", 0);
-	} /* if */
-	
-    format_size = sizeof(actual_format);
-    error_result = AudioFileGetProperty(
-		*audio_file_id,
-		kAudioFilePropertyDataFormat,
-		&format_size,
-		&actual_format
-	);
-    if (error_result != noErr)
-	{
-		AudioFileClose(*audio_file_id);
-		free(audio_file_id);
-		free(media_foundation_file_container);
-		SNDDBG(("Core Audio: AudioFileGetProperty failed. reason: [%s]", MediaFoundation_FourCCToString(error_result)));
-		BAIL_MACRO("Core Audio: Not valid audio data.", 0);
-	} /* if */
-
-    format_size = sizeof(estimated_duration);
-    error_result = AudioFileGetProperty(
-		*audio_file_id,
-		kAudioFilePropertyEstimatedDuration,
-		&format_size,
-		&estimated_duration
-	);
-    if (error_result != noErr)
-	{
-		AudioFileClose(*audio_file_id);
-		free(audio_file_id);
-		free(media_foundation_file_container);
-		SNDDBG(("Core Audio: AudioFileGetProperty failed. reason: [%s].\n", MediaFoundation_FourCCToString(error_result)));
-		BAIL_MACRO("Core Audio: Not valid audio data.", 0);
-	} /* if */
-
-
-	media_foundation_file_container->audioFileID = audio_file_id;
-	
-	
-#endif
-	internal->decoder_private = media_foundation_file_container;
-/*	
-	sample->flags = SOUND_SAMPLEFLAG_CANSEEK;
-	sample->actual.rate = (UInt32) actual_format.mSampleRate;
-	sample->actual.channels = (UInt8)actual_format.mChannelsPerFrame;
-	internal->total_time = (SInt32)(estimated_duration * 1000.0 + 0.5);
-*/
-	sample->flags = SOUND_SAMPLEFLAG_CANSEEK;
-	sample->actual.rate = (uint32_t) 44100;
-	sample->actual.channels = (uint8_t)1;
-	internal->total_time = (int32_t)(7 * 1000.0 + 0.5);
-
-#if 0
-
-#else
-	
-	
-	
-    /*
-     * I want to use Core Audio to do conversion and decoding for performance reasons.
-	 * This is particularly important on mobile devices like iOS.
-	 * Taking from the Ogg Vorbis decode, I pretend the "actual" format is the same 
-	 * as the desired format. 
-     */
-    sample->actual.format = (sample->desired.format == 0) ?
-	AUDIO_S16SYS : sample->desired.format;
-#endif	
-
-
-	SNDDBG(("MediaFoundation: channels == (%d).\n", sample->actual.channels));
-	SNDDBG(("MediaFoundation: sampling rate == (%d).\n",sample->actual.rate));
-	SNDDBG(("MediaFoundation: total seconds of sample == (%d).\n", internal->total_time));
-	SNDDBG(("MediaFoundation: sample->actual.format == (%d).\n", sample->actual.format));
-
-
-#if 0	
-	error_result = ExtAudioFileWrapAudioFileID(*audio_file_id,
-		false, // set to false for read-only
-		&media_foundation_file_container->extAudioFileRef
-	);
-	if(error_result != noErr)
-	{
-		AudioFileClose(*audio_file_id);
-		free(audio_file_id);
-		free(media_foundation_file_container);
-		SNDDBG(("Core Audio: can't wrap data. reason: [%s].\n", MediaFoundation_FourCCToString(error_result)));
-		BAIL_MACRO("Core Audio: Failed to wrap data.", 0);
-	} /* if */
-
-
-	/* The output format must be linear PCM because that's the only type OpenAL knows how to deal with.
-	 * Set the client format to 16 bit signed integer (native-endian) data because that is the most
-	 * optimal format on iPhone/iPod Touch hardware.
-	 * Maintain the channel count and sample rate of the original source format.
-	 */
-	output_format.mSampleRate = actual_format.mSampleRate; // preserve the original sample rate
-	output_format.mChannelsPerFrame = actual_format.mChannelsPerFrame; // preserve the number of channels
-	output_format.mFormatID = kAudioFormatLinearPCM; // We want linear PCM data
-	output_format.mFramesPerPacket = 1; // We know for linear PCM, the definition is 1 frame per packet
-
-	if(sample->desired.format == 0)
-	{
-		// do AUDIO_S16SYS
-		output_format.mFormatFlags = kAudioFormatFlagsNativeEndian | kAudioFormatFlagIsSignedInteger | kAudioFormatFlagIsPacked; // I seem to read failures problems without kAudioFormatFlagIsPacked. From a mailing list post, this seems to be a Core Audio bug.
-		output_format.mBitsPerChannel = 16; // We know we want 16-bit
-	}
-	else
-	{
-		output_format.mFormatFlags = 0; // clear flags
-		output_format.mFormatFlags |= kAudioFormatFlagIsPacked; // I seem to read failures problems without kAudioFormatFlagIsPacked. From a mailing list post, this seems to be a Core Audio bug.
-		// Mask against bitsize
-		if(0xFF & sample->desired.format)
-		{
-			output_format.mBitsPerChannel = 16; /* 16-bit */
-		}
-		else
-		{
-			output_format.mBitsPerChannel = 8; /* 8-bit */
-		}
-
-		// Mask for signed/unsigned
-		if((1<<15) & sample->desired.format)
-		{
-			output_format.mFormatFlags = output_format.mFormatFlags | kAudioFormatFlagIsSignedInteger;
-
-		}
-		else
-		{
-			// no flag set for unsigned
-		}
-		// Mask for big/little endian
-		if((1<<12) & sample->desired.format)
-		{
-			output_format.mFormatFlags = output_format.mFormatFlags | kAudioFormatFlagIsBigEndian;
-		}
-		else
-		{
-			// no flag set for little endian 
-		}
-	}
-
-	output_format.mBytesPerPacket = output_format.mBitsPerChannel/8 * output_format.mChannelsPerFrame; // e.g. 16-bits/8 * channels => so 2-bytes per channel per frame
-	output_format.mBytesPerFrame = output_format.mBitsPerChannel/8 * output_format.mChannelsPerFrame; // For PCM, since 1 frame is 1 packet, it is the same as mBytesPerPacket
-
-	
-/*
-	output_format.mSampleRate = actual_format.mSampleRate; // preserve the original sample rate
-	output_format.mChannelsPerFrame = actual_format.mChannelsPerFrame; // preserve the number of channels
-	output_format.mFormatID = kAudioFormatLinearPCM; // We want linear PCM data
-//	output_format.mFormatFlags = kAudioFormatFlagsNativeEndian | kAudioFormatFlagIsPacked | kAudioFormatFlagIsSignedInteger;
-	output_format.mFormatFlags = kAudioFormatFlagsNativeEndian |  kAudioFormatFlagIsSignedInteger;
-	output_format.mFramesPerPacket = 1; // We know for linear PCM, the definition is 1 frame per packet
-	output_format.mBitsPerChannel = 16; // We know we want 16-bit
-	output_format.mBytesPerPacket = 2 * output_format.mChannelsPerFrame; // We know we are using 16-bit, so 2-bytes per channel per frame
-	output_format.mBytesPerFrame = 2 * output_format.mChannelsPerFrame; // For PCM, since 1 frame is 1 packet, it is the same as mBytesPerPacket
-*/
-	SNDDBG(("output_format: mSampleRate: %lf\n", output_format.mSampleRate)); 
-	SNDDBG(("output_format: mChannelsPerFrame: %d\n", output_format.mChannelsPerFrame)); 
-	SNDDBG(("output_format: mFormatID: %d\n", output_format.mFormatID)); 
-	SNDDBG(("output_format: mFormatFlags: %d\n", output_format.mFormatFlags)); 
-	SNDDBG(("output_format: mFramesPerPacket: %d\n", output_format.mFramesPerPacket)); 
-	SNDDBG(("output_format: mBitsPerChannel: %d\n", output_format.mBitsPerChannel)); 
-	SNDDBG(("output_format: mBytesPerPacket: %d\n", output_format.mBytesPerPacket)); 
-	SNDDBG(("output_format: mBytesPerFrame: %d\n", output_format.mBytesPerFrame)); 
-	
-	
-	/* Set the desired client (output) data format */
-	error_result = ExtAudioFileSetProperty(media_foundation_file_container->extAudioFileRef, kExtAudioFileProperty_ClientDataFormat, sizeof(output_format), &output_format);
-	if(noErr != error_result)
-	{
-		ExtAudioFileDispose(media_foundation_file_container->extAudioFileRef);
-		AudioFileClose(*audio_file_id);
-		free(audio_file_id);
-		free(media_foundation_file_container);
-		SNDDBG(("Core Audio: ExtAudioFileSetProperty(kExtAudioFileProperty_ClientDataFormat) failed, reason: [%s].\n", MediaFoundation_FourCCToString(error_result)));
-		BAIL_MACRO("Core Audio: Not valid audio data.", 0);
-	}	
-
-
-	media_foundation_file_container->outputFormat = (AudioStreamBasicDescription*)malloc(sizeof(AudioStreamBasicDescription));
-	BAIL_IF_MACRO(media_foundation_file_container->outputFormat == NULL, ERR_OUT_OF_MEMORY, 0);
-
-
-	
-	/* Copy the output format to the audio_description that was passed in so the 
-	 * info will be returned to the user.
-	 */
-	memcpy(media_foundation_file_container->outputFormat, &output_format, sizeof(AudioStreamBasicDescription));
-
-#endif	
 
 	return(1);
 } /* MediaFoundation_open */
@@ -611,22 +596,18 @@ static int MediaFoundation_open(Sound_Sample *sample, const char *ext)
 
 static void MediaFoundation_close(Sound_Sample *sample)
 {
-	Sound_SampleInternal *internal = (Sound_SampleInternal *) sample->opaque;
-	MediaFoundationFileContainer* media_foundation_file_container = (MediaFoundationFileContainer *) internal->decoder_private;
+	Sound_SampleInternal* internal = (Sound_SampleInternal*)sample->opaque;
+	MediaFoundationFileContainer* media_foundation_file_container = (MediaFoundationFileContainer *)internal->decoder_private;
 
-//	free(media_foundation_file_container->outputFormat);
-/*	
-	ExtAudioFileDispose(media_foundation_file_container->extAudioFileRef);
-	AudioFileClose(*media_foundation_file_container->audioFileID);
-	*/
-//	free(media_foundation_file_container->audioFileID);
+	SafeRelease(&media_foundation_file_container->sourceReader);
+	free(media_foundation_file_container->leftoverBuffer);
 	free(media_foundation_file_container);
-		
 } /* MediaFoundation_close */
 
 
 
-DWORD CalculateMaxAudioDataSize(
+// MSDN
+static DWORD CalculateMaxAudioDataSize(
     IMFMediaType *pAudioType,    // The PCM audio format.
     DWORD cbHeader,              // The size of the WAVE file header.
     DWORD msecAudioData          // Maximum duration, in milliseconds.
@@ -659,382 +640,459 @@ DWORD CalculateMaxAudioDataSize(
     return cbAudioClipSize;
 }
 
-
-static size_t MediaFoundation_read(Sound_Sample *sample)
+/**
+ * libaudiodecoder
+ * Copies min(destFrames, srcFrames) frames to dest from src. Anything leftover
+ * is moved to the beginning of m_leftoverBuffer, so empty it first (possibly
+ * with this method). If src and dest overlap, I'll hurt you.
+ */
+static void MediaFoundation_CopyFrames(
+    short *dest, size_t *destFrames, const short *src, size_t srcFrames, UINT8 num_channels, MediaFoundationFileContainer* media_foundation_file_container)
 {
-//	OSStatus error_result = noErr;	
-	/* Documentation/example shows SInt64, but is problematic for big endian
-	 * on 32-bit cast for ExtAudioFileRead() because it takes the upper
-	 * bits which turn to 0.
-	 */
-	uint32_t buffer_size_in_frames = 0;
-	uint32_t buffer_size_in_frames_remaining = 0;
-	uint32_t total_frames_read = 0;
-	uint32_t data_buffer_size = 0;
-	uint32_t bytes_remaining = 0;
+    if (srcFrames > *destFrames) {
+        int samplesToCopy = *destFrames * num_channels;
+        memcpy(dest, src, samplesToCopy * sizeof(*src));
+        srcFrames -= *destFrames;
+        memmove(media_foundation_file_container->leftoverBuffer,
+            src + samplesToCopy,
+            srcFrames * num_channels * sizeof(*src));
+        *destFrames = 0;
+        media_foundation_file_container->leftoverBufferLength = srcFrames;
+    } else {
+        int samplesToCopy = srcFrames * num_channels;
+        memcpy(dest, src, samplesToCopy * sizeof(*src));
+        *destFrames -= srcFrames;
+        if (src == media_foundation_file_container->leftoverBuffer) {
+            media_foundation_file_container->leftoverBufferLength = 0;
+        }
+    }
+}
+
+/**
+ * Convert a 100ns Media Foundation value to a frame offset.
+ */
+static __int64 MediaFoundation_FrameFromMF(__int64 mf, int sample_rate)
+{
+    return static_cast<__int64>(mf) * sample_rate / 1e7;
+}
+/**
+ * Convert a frame offset to a 100ns Media Foundation value.
+ */
+static __int64 MediaFoundation_MfFromFrame(__int64 frame, int sample_rate)
+{
+    return static_cast<__int64>(frame) / sample_rate * 1e7;
+}
+
+
+static const MFTIME ONE_SECOND = 10000000; // One second.
+static const LONG   ONE_MSEC = 1000;       // One millisecond
+// Convert 100-nanosecond units to milliseconds.
+static LONG MediaFoundation_MFTimeToMsec(const LONGLONG& time)
+{
+    return (LONG)(time / (ONE_SECOND / ONE_MSEC));
+}
+
+static LONGLONG MediaFoundation_MsecToMFTime(const LONG& time)
+{
+    return (LONGLONG)((ONE_SECOND / ONE_MSEC) * time);
+}
+
+
+
+static size_t MediaFoundation_read(Sound_Sample* sample)
+{
 	size_t total_bytes_read = 0;
+
 	Sound_SampleInternal *internal = (Sound_SampleInternal *) sample->opaque;
-	MediaFoundationFileContainer* media_foundation_file_container = (MediaFoundationFileContainer *) internal->decoder_private;
-	uint32_t max_buffer_size = internal->buffer_size;
+	MediaFoundationFileContainer* media_foundation_file_container = (MediaFoundationFileContainer*)internal->decoder_private;
+	UINT32 max_buffer_size = internal->buffer_size;
+	UINT8 num_channels = sample->actual.channels;
+	int sample_rate = sample->actual.rate;
 
     HRESULT hr = S_OK;
-    DWORD cbAudioData = 0;
-    DWORD cbBuffer = 0;
-    BYTE *pAudioData = NULL;
 
-    IMFSample *pSample = NULL;
-    IMFMediaBuffer *pBuffer = NULL;
-
-    // Get audio samples from the source reader.
-    while (true)
-    {
-        DWORD dwFlags = 0;
-		IMFSourceReader* pReader = media_foundation_file_container->pReader;
-		      DWORD  cbMaxAudioData = CalculateMaxAudioDataSize(media_foundation_file_container->ppPCMAudio, 44, 6000);
-        // Read the next sample.
-        hr = pReader->ReadSample(
-            (DWORD)MF_SOURCE_READER_FIRST_AUDIO_STREAM,
-            0, NULL, &dwFlags, NULL, &pSample );
-
-        if (FAILED(hr)) { break; }
-
-        if (dwFlags & MF_SOURCE_READERF_CURRENTMEDIATYPECHANGED)
-        {
-            printf("Type change - not supported by WAVE file format.\n");
-            break;
-        }
-        if (dwFlags & MF_SOURCE_READERF_ENDOFSTREAM)
-        {
-            printf("End of input file.\n");
-            break;
-        }
-
-        if (pSample == NULL)
-        {
-            printf("No sample\n");
-            continue;
-        }
-
-        // Get a pointer to the audio data in the sample.
-
-        hr = pSample->ConvertToContiguousBuffer(&pBuffer);
-
-        if (FAILED(hr)) { break; }
+    IMFSample* the_sample = NULL;
 
 
-        hr = pBuffer->Lock(&pAudioData, NULL, &cbBuffer);
-
-        if (FAILED(hr)) { break; }
-
-
-        // Make sure not to exceed the specified maximum size.
-        if (cbMaxAudioData - cbAudioData < cbBuffer)
-        {
-            cbBuffer = cbMaxAudioData - cbAudioData;
-        }
-
-        // Write this data to the output file.
-      //  hr = WriteToFile(hFile, pAudioData, cbBuffer);
-
-		{
-			HRESULT hr = S_OK;
-			DWORD cbAudioData = 0;
-			DWORD cbBuffer = 0;
-			BYTE *pAudioData = NULL;
-
-			IMFSample *pSample = NULL;
-			IMFMediaBuffer *pBuffer = NULL;
-
-			// Get audio samples from the source reader.
-			while (true)
-			{
-				DWORD dwFlags = 0;
-
-				// Read the next sample.
-				hr = pReader->ReadSample(
-					(DWORD)MF_SOURCE_READER_FIRST_AUDIO_STREAM,
-					0, NULL, &dwFlags, NULL, &pSample );
-
-				if (FAILED(hr)) { break; }
-
-				if (dwFlags & MF_SOURCE_READERF_CURRENTMEDIATYPECHANGED)
-				{
-					printf("Type change - not supported by WAVE file format.\n");
-					break;
-				}
-				if (dwFlags & MF_SOURCE_READERF_ENDOFSTREAM)
-				{
-					printf("End of input file.\n");
-					break;
-				}
-
-				if (pSample == NULL)
-				{
-					printf("No sample\n");
-					continue;
-				}
-
-				// Get a pointer to the audio data in the sample.
-
-				hr = pSample->ConvertToContiguousBuffer(&pBuffer);
-
-				if (FAILED(hr)) { break; }
+	// need to convert bytes to samples
+	/*
+	max_buffer_size (bytes)   	8 bits 	    
+	----------------------- * 	------- * 	--------------
+								1 byte 		bitsPerSample
+	*/
+	UINT32 requested_sample_size = max_buffer_size / media_foundation_file_container->bitsPerSample * 8;
+	// Note: internal->buffer is char*, not short*
+	short* dest_buffer = (short*)internal->buffer;
+	size_t frames_requested = (requested_sample_size /  num_channels);
+    size_t frames_needed = frames_requested;
 
 
-				hr = pBuffer->Lock(&pAudioData, NULL, &cbBuffer);
-
-				if (FAILED(hr)) { break; }
 
 
-				// Make sure not to exceed the specified maximum size.
-				if (cbMaxAudioData - cbAudioData < cbBuffer)
-				{
-					cbBuffer = cbMaxAudioData - cbAudioData;
-				}
-
-				// Write this data to the output file.
-//				hr = WriteToFile(hFile, pAudioData, cbBuffer);
-
-				if (FAILED(hr)) { break; }
-
-				// Unlock the buffer.
-				hr = pBuffer->Unlock();
-				pAudioData = NULL;
-
-				if (FAILED(hr)) { break; }
-
-				// Update running total of audio data.
-				cbAudioData += cbBuffer;
-
-				if (cbAudioData >= cbMaxAudioData)
-				{
-					break;
-				}
-
-				SafeRelease(&pSample);
-				SafeRelease(&pBuffer);
-			}
-
-			if (SUCCEEDED(hr))
-			{
-				printf("Wrote %d bytes of audio data.\n", cbAudioData);
-
-				*pcbDataWritten = cbAudioData;
-			}
-
-			if (pAudioData)
-			{
-				pBuffer->Unlock();
-			}
-
-			SafeRelease(&pBuffer);
-			SafeRelease(&pSample);
-		}
-
-        if (FAILED(hr)) { break; }
-
-        // Unlock the buffer.
-        hr = pBuffer->Unlock();
-        pAudioData = NULL;
-
-        if (FAILED(hr)) { break; }
-
-        // Update running total of audio data.
-        cbAudioData += cbBuffer;
-
-        if (cbAudioData >= cbMaxAudioData)
-        {
-            break;
-        }
-
-        SafeRelease(&pSample);
-        SafeRelease(&pBuffer);
-    }
-
-    if (SUCCEEDED(hr))
-    {
-        printf("Wrote %d bytes of audio data.\n", cbAudioData);
-
-        *pcbDataWritten = cbAudioData;
-    }
-
-    if (pAudioData)
-    {
-        pBuffer->Unlock();
-    }
-
-    SafeRelease(&pBuffer);
-    SafeRelease(&pSample);
-	
-#if 0	
-	
-//	printf("internal->buffer_size=%d, internal->buffer=0x%x, sample->buffer_size=%d\n", internal->buffer_size, internal->buffer, sample->buffer_size); 
-//	printf("internal->max_buffer_size=%d\n", max_buffer_size); 
-
-	/* Compute how many frames will fit into our max buffer size */
-	/* Warning: If this is not evenly divisible, the buffer will not be completely filled which violates the SDL_sound assumption. */
-	buffer_size_in_frames = max_buffer_size / media_foundation_file_container->outputFormat->mBytesPerFrame;
-//	printf("buffer_size_in_frames=%ld, internal->buffer_size=%d, internal->buffer=0x%x outputFormat->mBytesPerFrame=%d, sample->buffer_size=%d\n", buffer_size_in_frames, internal->buffer_size, internal->buffer, media_foundation_file_container->outputFormat->mBytesPerFrame, sample->buffer_size); 
-
-
-//	void* temp_buffer = malloc(max_buffer_size);
-	
-	AudioBufferList audio_buffer_list;
-	audio_buffer_list.mNumberBuffers = 1;
-	audio_buffer_list.mBuffers[0].mDataByteSize = max_buffer_size;
-	audio_buffer_list.mBuffers[0].mNumberChannels = media_foundation_file_container->outputFormat->mChannelsPerFrame;
-	audio_buffer_list.mBuffers[0].mData = internal->buffer;
-
-
-	bytes_remaining = max_buffer_size;
-	buffer_size_in_frames_remaining = buffer_size_in_frames;
-	
-	// oops. Due to the kAudioFormatFlagIsPacked bug, 
-	// I was misled to believe that Core Audio
-	// was not always filling my entire requested buffer. 
-	// So this while-loop might be unnecessary.
-	// However, I have not exhaustively tested all formats, 
-	// so maybe it is possible this loop is useful.
-	// It might also handle the not-evenly disvisible case above.
-	while(buffer_size_in_frames_remaining > 0 && !(sample->flags & SOUND_SAMPLEFLAG_EOF))
+	// first, copy frames from leftover buffer IF the leftover buffer is at
+	// the correct frame
+	if(media_foundation_file_container->leftoverBufferLength > 0 && media_foundation_file_container->leftoverBufferPosition == media_foundation_file_container->nextFrame)
 	{
-		
-		data_buffer_size = (UInt32)(buffer_size_in_frames * media_foundation_file_container->outputFormat->mBytesPerFrame);
-//		printf("data_buffer_size=%d\n", data_buffer_size); 
-
-		buffer_size_in_frames = buffer_size_in_frames_remaining;
-		
-//		printf("reading buffer_size_in_frames=%"PRId64"\n", buffer_size_in_frames); 
-
-
-		audio_buffer_list.mBuffers[0].mDataByteSize = bytes_remaining;
-		audio_buffer_list.mBuffers[0].mData = &(((UInt8*)internal->buffer)[total_bytes_read]);
-
-		
-		/* Read the data into an AudioBufferList */
-		error_result = ExtAudioFileRead(media_foundation_file_container->extAudioFileRef, &buffer_size_in_frames, &audio_buffer_list);
-		if(error_result == noErr)
+		MediaFoundation_CopyFrames(dest_buffer, &frames_needed, media_foundation_file_container->leftoverBuffer,
+			media_foundation_file_container->leftoverBufferLength, num_channels, media_foundation_file_container);
+		if(media_foundation_file_container->leftoverBufferLength > 0)
 		{
-		
-		
-			/* Success */
-			
-			total_frames_read += buffer_size_in_frames;
-			buffer_size_in_frames_remaining = buffer_size_in_frames_remaining - buffer_size_in_frames;
-			
-//			printf("read buffer_size_in_frames=%"PRId64", buffer_size_in_frames_remaining=%"PRId64"\n", buffer_size_in_frames, buffer_size_in_frames_remaining); 
-
-			/* ExtAudioFileRead returns the number of frames actually read. Need to convert back to bytes. */
-			data_buffer_size = (UInt32)(buffer_size_in_frames * media_foundation_file_container->outputFormat->mBytesPerFrame);
-//			printf("data_buffer_size=%d\n", data_buffer_size); 
-
-			total_bytes_read += data_buffer_size;
-			bytes_remaining = bytes_remaining - data_buffer_size;
-
-			/* Note: 0 == buffer_size_in_frames is a legitimate value meaning we are EOF. */
-			if(0 == buffer_size_in_frames)
+			if(frames_needed != 0)
 			{
-				sample->flags |= SOUND_SAMPLEFLAG_EOF;			
+				SNDDBG(("WindowsMediaFoundation: Expected frames needed to be 0. Abandoning this file.\n"));
+				media_foundation_file_container->isDead = true;
 			}
-
+			media_foundation_file_container->leftoverBufferPosition += frames_requested;
 		}
-		else 
-		{
-			SNDDBG(("Core Audio: ExtAudioFileReadfailed, reason: [%s].\n", MediaFoundation_FourCCToString(error_result)));
+	}
+	else
+	{
+		// leftoverBuffer already empty or in the wrong position, clear it
+		media_foundation_file_container->leftoverBufferLength = 0;
+	}
 
-			sample->flags |= SOUND_SAMPLEFLAG_ERROR;
+
+
+
+	while(!media_foundation_file_container->isDead && frames_needed > 0)
+	{
+		HRESULT hr = S_OK;
+		DWORD stream_flags = 0;
+		__int64 timestamp = 0;
+		IMFSample* current_sample = NULL;
+		bool the_error = false; // set to true to break after releasing
+
+		hr = media_foundation_file_container->sourceReader->ReadSample(
+			MF_SOURCE_READER_FIRST_AUDIO_STREAM, // [in] DWORD dwStreamIndex,
+			0,                                   // [in] DWORD dwControlFlags,
+			NULL,                                // [out] DWORD *pdwActualStreamIndex,
+			&stream_flags,                            // [out] DWORD *pdwStreamFlags,
+			&timestamp,                          // [out] LONGLONG *pllTimestamp,
+			&current_sample);                           // [out] IMFSample **ppSample
+		if(FAILED(hr))
+		{
+			SNDDBG(("WindowsMediaFoundation read: ReadSample failed\n"));
 			break;
-			
+		}
+
+		/*
+		   std::cout << "ReadSample timestamp: " << timestamp
+		   << "frame: " << frameFromMF(timestamp)
+		   << "dwflags: " << stream_flags
+		   << std::endl;
+		   */
+		SNDDBG(("WindowsMediaFoundation: ReadSample timestamp:%ld, frame:%ld, stream_flags:%d\n", 
+				timestamp,
+				MediaFoundation_FrameFromMF(timestamp, sample_rate),
+				stream_flags
+		));
+
+		if (stream_flags & MF_SOURCE_READERF_ERROR)
+		{
+			// our source reader is now dead, according to the docs
+			SNDDBG(("WindowsMediaFoundation read: ReadSample set ERROR, SourceReader is now dead\n"));
+			media_foundation_file_container->isDead = true;
+//			sample->flags |= SOUND_SAMPLEFLAG_EOF;
+			// more C++ BS
+			sample->flags = (SoundDecoder_SampleFlags)(sample->flags | SOUND_SAMPLEFLAG_ERROR);
+			break;
+		}
+		else if(stream_flags & MF_SOURCE_READERF_ENDOFSTREAM)
+		{
+			SNDDBG(("WindowsMediaFoundation read: End of input file.\n"));
+//			sample->flags |= SOUND_SAMPLEFLAG_EOF;
+			// more C++ BS
+			sample->flags = (SoundDecoder_SampleFlags)(sample->flags | SOUND_SAMPLEFLAG_EOF);
+			break;
+		}
+		else if (stream_flags & MF_SOURCE_READERF_CURRENTMEDIATYPECHANGED)
+		{
+			SNDDBG(("WindowsMediaFoundation read: Type change\n"));			
+			/* Don't know what to do here. */
+//			sample->flags |= SOUND_SAMPLEFLAG_EAGAIN;
+			// more C++ BS
+			sample->flags = (SoundDecoder_SampleFlags)(sample->flags | SOUND_SAMPLEFLAG_EAGAIN);
+			break;
+		}
+		else if(NULL == current_sample)
+		{
+			// generally this will happen when stream_flags contains ENDOFSTREAM,
+			// so it'll be caught before now -bkgood
+			SNDDBG(("WindowsMediaFoundation read: No sample\n"));			
+			/* Don't know what to do here. */
+//			sample->flags |= SOUND_SAMPLEFLAG_ERROR;
+			// more C++ BS
+			sample->flags = (SoundDecoder_SampleFlags)(sample->flags | SOUND_SAMPLEFLAG_ERROR);
+			continue;
+		} // we now own a ref to the instance at current_sample
+
+
+		IMFMediaBuffer* media_buffer = NULL;
+		// I know this does at least a memcopy and maybe a malloc, if we have
+		// xrun issues with this we might want to look into using
+		// IMFSample::GetBufferByIndex (although MS doesn't recommend this)
+		if(FAILED(hr = current_sample->ConvertToContiguousBuffer(&media_buffer)))
+		{
+			the_error = true;
+			goto releaseSample;
+		}
+		short* the_buffer = NULL;
+		size_t buffer_length = 0;
+		hr = media_buffer->Lock(reinterpret_cast<unsigned __int8**>(&the_buffer), NULL,
+			reinterpret_cast<DWORD*>(&buffer_length));
+		if(FAILED(hr))
+		{
+			the_error = true;
+			goto releaseMBuffer;
+		}
+		buffer_length /= (media_foundation_file_container->bitsPerSample / 8 * num_channels); // now in frames
+
+		if(media_foundation_file_container->isSeeking)
+		{
+			__int64 buffer_position = MediaFoundation_FrameFromMF(timestamp, sample_rate);
+			SNDDBG(("WindowsMediaFoundation read: While seeking to nextFrame:%d, WMF put us at buffer_position:%ld\n", 
+				media_foundation_file_container->nextFrame,
+				buffer_position,
+			));
+			/*
+			   std::cout << "While seeking to "
+			   << m_nextFrame << "WMF put us at " << buffer_position
+			   << std::endl;
+*/
+            if (media_foundation_file_container->nextFrame < buffer_position)
+			{
+                // Uh oh. We are farther forward than our seek target. Emit
+                // silence? We can't seek backwards here.
+                short* buffer_current_position = dest_buffer + (requested_sample_size - frames_needed * num_channels);
+                __int64 offshoot_frames = buffer_position - media_foundation_file_container->nextFrame;
+
+                // If we can correct this immediately, write zeros and adjust
+                // media_foundation_file_container->nextFrame to pretend it never happened.
+
+                if(offshoot_frames <= frames_needed)
+				{
+					SNDDBG(("WindowsMediaFoundation read: Working around inaccurate seeking. Writing silence for:%ld offshoot frames\n", offshootFrames));				
+					/*
+					   std::cerr << __FILE__ << __LINE__
+					   << "Working around inaccurate seeking. Writing silence for"
+					   << offshootFrames << "frames";
+					   */
+					// Set offshoot_frames * num_channels samples to zero.
+					memset(buffer_current_position, 0,
+						sizeof(*buffer_current_position) * offshoot_frames *
+						num_channels);
+					// Now media_foundation_file_container->nextFrame == buffer_position
+					media_foundation_file_container->nextFrame += offshoot_frames;
+					frames_needed -= offshoot_frames;
+				}
+				else
+				{
+					// It's more complicated. The buffer we have just decoded is
+					// more than framesNeeded frames away from us. It's too hard
+					// for us to handle this correctly currently, so let's just
+					// try to get on with our lives.
+					media_foundation_file_container->isSeeking = false;
+					media_foundation_file_container->nextFrame = buffer_position;
+					SNDDBG(("WindowsMediaFoundation read: Seek offshoot is too drastic. Cutting losses and pretending the current decoded audio buffer is the right seek point.\n"));
+					/*
+					   std::cerr << __FILE__ << __LINE__
+					   << "Seek offshoot is too drastic. Cutting losses and pretending the current decoded audio buffer is the right seek point.";
+					   */
+				}
+			}
+
+			if(media_foundation_file_container->nextFrame >= buffer_position &&
+				media_foundation_file_container->nextFrame < buffer_position + buffer_length)
+			{
+				// media_foundation_file_container->nextFrame is in this buffer.
+				the_buffer += (media_foundation_file_container->nextFrame - buffer_position) * num_channels;
+				buffer_length -= media_foundation_file_container->nextFrame - buffer_position;
+				media_foundation_file_container->isSeeking = false;
+			}
+			else
+			{
+				// we need to keep going forward
+				goto releaseRawBuffer;
+			}
+		}
+
+		// If the buffer_length is larger than the leftover buffer, re-allocate
+		// it with 2x the space.
+		if (buffer_length * num_channels > media_foundation_file_container->leftoverBufferSize)
+		{
+			int new_size = media_foundation_file_container->leftoverBufferSize;
+
+			while(new_size < buffer_length * num_channels)
+			{
+				new_size *= 2;
+			}
+			short* new_buffer = (short*)calloc(new_size, sizeof(short));
+			memcpy(new_buffer, media_foundation_file_container->leftoverBuffer,
+				sizeof(media_foundation_file_container->leftoverBuffer[0]) * media_foundation_file_container->leftoverBufferSize);
+			free(media_foundation_file_container->leftoverBuffer);
+			media_foundation_file_container->leftoverBuffer = new_buffer;
+			media_foundation_file_container->leftoverBufferSize = new_size;
+		}
+		MediaFoundation_CopyFrames(dest_buffer + (requested_sample_size - frames_needed * num_channels),
+			&frames_needed, the_buffer, buffer_length, num_channels, media_foundation_file_container);
+
+releaseRawBuffer:
+		hr = media_buffer->Unlock();
+		// I'm ignoring this, MSDN for IMFMediaBuffer::Unlock stipulates
+		// nothing about the state of the instance if this fails so might as
+		// well just let it be released.
+		//if (FAILED(hr)) break;
+releaseMBuffer:
+		SafeRelease(&media_buffer);
+releaseSample:
+		SafeRelease(&current_sample);
+		if(the_error)
+		{
+			break;
+		}
+    }
+
+    media_foundation_file_container->nextFrame += frames_requested - frames_needed;
+    if(media_foundation_file_container->leftoverBufferLength > 0)
+	{
+        if(frames_needed != 0)
+		{
+			SNDDBG(("WindowsMediaFoundation read: Expected frames needed to be 0. Abandoning this file.\n"));
+            media_foundation_file_container->isDead = true;
+        }
+        media_foundation_file_container->leftoverBufferPosition = media_foundation_file_container->nextFrame;
+    }
+    long samples_read = requested_sample_size - frames_needed * num_channels;
+    media_foundation_file_container->currentPosition += samples_read;
+	SNDDBG(("WindowsMediaFoundation read for requested_sample_size:%d returning %d samples_read.\n", requested_sample_size, samples_read));
+	
+	/* // I don't want float samples
+	const int sample_max = 1 << (media_foundation_file_container->bitsPerSample-1);
+	//Convert to float samples
+	if (num_channels == 2)
+	{
+		SAMPLE *destBufferFloat(const_cast<SAMPLE*>(destination));
+		for (unsigned long i = 0; i < samples_read; i++)
+		{
+			destBufferFloat[i] = destBuffer[i] / (float)sample_max;
 		}
 	}
-	
-	if( (!(sample->flags & SOUND_SAMPLEFLAG_EOF)) && (total_bytes_read < max_buffer_size))
+	else //Assuming mono, duplicate into stereo frames...
 	{
-		SNDDBG(("Core Audio: ExtAudioFileReadfailed SOUND_SAMPLEFLAG_EAGAIN, reason: [total_bytes_read < max_buffer_size], %d, %d.\n", total_bytes_read , max_buffer_size));
-		
-		/* Don't know what to do here. */
-		sample->flags |= SOUND_SAMPLEFLAG_EAGAIN;
+		SAMPLE *destBufferFloat(const_cast<SAMPLE*>(destination));
+		for (unsigned long i = 0; i < samples_read; i++)
+		{
+			destBufferFloat[i] = destBuffer[i] / (float)sample_max;
+		}
 	}
-#endif
+	*/
+	/* convert samples_read to bytes */
+	/*
+	samples_read (samples)   	bits 				1 byte
+	----------------------- * 	-------------- * 	--------------
+								sample				8 bits
+	*/
+	total_bytes_read = samples_read / 8 * media_foundation_file_container->bitsPerSample;
 	return total_bytes_read;
 } /* MediaFoundation_read */
 
 
-static int MediaFoundation_rewind(Sound_Sample *sample)
-{
-/*
-	OSStatus error_result = noErr;	
-	Sound_SampleInternal *internal = (Sound_SampleInternal *) sample->opaque;
-	MediaFoundationFileContainer* media_foundation_file_container = (MediaFoundationFileContainer *) internal->decoder_private;
-	
-	error_result = ExtAudioFileSeek(media_foundation_file_container->extAudioFileRef, 0);
-	if(error_result != noErr)
-	{
-		sample->flags |= SOUND_SAMPLEFLAG_ERROR;
-	}
-	*/
-	return(1);
-} /* MediaFoundation_rewind */
-
-/* Note: I found this tech note:
- http://developer.apple.com/library/mac/#qa/qa2009/qa1678.html
- I don't know if this applies to us. So far, I haven't noticed the problem,
- so I haven't applied any of the techniques.
- */
 static int MediaFoundation_seek(Sound_Sample *sample, size_t ms)
 {
-#if 0
-	OSStatus error_result = noErr;	
 	Sound_SampleInternal *internal = (Sound_SampleInternal *) sample->opaque;
-	MediaFoundationFileContainer* media_foundation_file_container = (MediaFoundationFileContainer *) internal->decoder_private;
-	SInt64 frame_offset = 0;
+	MediaFoundationFileContainer* media_foundation_file_container = (MediaFoundationFileContainer*)internal->decoder_private;
 
-	/* I'm confused. The Apple documentation says this:
-	 "Seek position is specified in the sample rate and frame count of the file’s audio data format
-	 — not your application’s audio data format."
-	 My interpretation is that I want to get the "actual format of the file and compute the frame offset.
-	 But when I try that, seeking goes to the wrong place.
-	 When I use outputFormat, things seem to work correctly.
-	 I must be misinterpreting the documentation or doing something wrong.
-	 */
-#if 0 /* not working */
-	AudioStreamBasicDescription	actual_format;
-	UInt32 format_size;
-    format_size = sizeof(AudioStreamBasicDescription);
-    error_result = AudioFileGetProperty(
-		*media_foundation_file_container->audioFileID,
-		kAudioFilePropertyDataFormat,
-		&format_size,
-		&actual_format
-	);
-    if(error_result != noErr)
+	// our seek (ms) is in milliseconds.
+	// Windows wants units of 100 nanoseconds
+	// 0.001 = millisecond
+	// 0.0000001 = nanosecond
+	// 1/10,000,000
+    PROPVARIANT prop_variant;
+    HRESULT hr = S_OK;
+    __int64 mf_seek_target = MediaFoundation_MsecToMFTime(ms);
+
+	int sample_rate = sample->actual.rate;
+	// libaudiodecoder assumed a sample_index as the input. I have milliseconds. I need to figure out how to convert.
+	// Does this work?
+	int sample_index = MediaFoundation_FrameFromMF(mf_seek_target, sample_rate);
+	// Need the above to work for this to be right
+    __int64 seek_target_frame = sample_index / sample->actual.channels;
+
+
+	if(mf_seek_target >= 1)
 	{
-		sample->flags |= SOUND_SAMPLEFLAG_ERROR;
-		BAIL_MACRO("Core Audio: Could not GetProperty for kAudioFilePropertyDataFormat.", 0);
-	} /* if */
-
-	// packetIndex = (pos * sampleRate) / framesPerPacket
-	frame_offset = (SInt64)((ms/1000.0 * actual_format.mSampleRate) / actual_format.mFramesPerPacket);
-	// computed against actual format and not the client format
-
-	// packetIndex = (pos * sampleRate) / framesPerPacket
-	//	frame_offset = (SInt64)((ms/1000.0 * actual_format.mSampleRate) / actual_format.mFramesPerPacket);
-#else /* seems to work, but I'm confused */
-	// packetIndex = (pos * sampleRate) / framesPerPacket
-	frame_offset = (SInt64)((ms/1000.0 * media_foundation_file_container->outputFormat->mSampleRate) / media_foundation_file_container->outputFormat->mFramesPerPacket);	
-#endif
-	
-	// computed against actual format and not the client format
-	error_result = ExtAudioFileSeek(media_foundation_file_container->extAudioFileRef, frame_offset);
-	if(error_result != noErr)
-	{
-		sample->flags |= SOUND_SAMPLEFLAG_ERROR;
+		mf_seek_target = mf_seek_target - 1;
 	}
-#endif
+    // minus 1 here seems to make our seeking work properly, otherwise we will
+    // (more often than not, maybe always) seek a bit too far (although not
+    // enough for our calculatedFrameFromMF <= nextFrame assertion in ::read).
+    // Has something to do with 100ns MF units being much smaller than most
+    // frame offsets (in seconds) -bkgood
+    long the_result = media_foundation_file_container->currentPosition;
+
+    if(media_foundation_file_container->isDead)
+	{
+		SNDDBG(("WindowsMediaFoundation in seek(), isDead\n"));
+//		sample->flags |= SOUND_SAMPLEFLAG_ERROR;
+		// more C++ BS
+		sample->flags = (SoundDecoder_SampleFlags)(sample->flags | SOUND_SAMPLEFLAG_ERROR);
+		return 1;
+    }
+
+    // this doesn't fail, see MS's implementation
+    hr = InitPropVariantFromInt64(mf_seek_target, &prop_variant);
+
+
+    hr = media_foundation_file_container->sourceReader->Flush(MF_SOURCE_READER_FIRST_AUDIO_STREAM);
+    if(FAILED(hr))
+	{
+		SNDDBG(("WindowsMediaFoundation failed to flush before seek\n"));
+//		sample->flags |= SOUND_SAMPLEFLAG_ERROR;
+		// more C++ BS
+		sample->flags = (SoundDecoder_SampleFlags)(sample->flags | SOUND_SAMPLEFLAG_ERROR);
+	}
+
+    // http://msdn.microsoft.com/en-us/library/dd374668(v=VS.85).aspx
+    hr = media_foundation_file_container->sourceReader->SetCurrentPosition(GUID_NULL, prop_variant);
+    if(FAILED(hr))
+	{
+        // nothing we can do here as we can't fail (no facility to other than
+        // crashing mixxx)
+//		sample->flags |= SOUND_SAMPLEFLAG_ERROR;
+		// more C++ BS
+		sample->flags = (SoundDecoder_SampleFlags)(sample->flags | SOUND_SAMPLEFLAG_ERROR);
+		if (hr == MF_E_INVALIDREQUEST)
+		{
+			SNDDBG(("WindowsMediaFoundation failed to seek: Sample requests still pending\n"));
+		}
+		else
+		{
+			SNDDBG(("WindowsMediaFoundation failed to seek\n"));
+		}
+    }
+	else
+	{
+		the_result = sample_index;
+    }
+    PropVariantClear(&prop_variant);
+
+    // record the next frame so that we can make sure we're there the next
+    // time we get a buffer from MFSourceReader
+    media_foundation_file_container->nextFrame = seek_target_frame;
+    media_foundation_file_container->isSeeking = true;
+    media_foundation_file_container->currentPosition = the_result;
 	return(1);
 } /* MediaFoundation_seek */
 
-#endif /* __APPLE__ */
+static int MediaFoundation_rewind(Sound_Sample* sample)
+{
+	MediaFoundation_seek(sample, 0);
+	return(1);
+} /* MediaFoundation_rewind */
+
+
+
+#endif /* _WIN32 */
 
 
 #endif /* ALMIXER_COMPILE_WITHOUT_SDL */

@@ -14,13 +14,27 @@ FIND_PACKAGE(OpenAL)
 # Note: SDL_sound needs to be updated for 2.6+. You'll get annoying warnings.
 #FIND_PACKAGE(SDL_sound)
 
-# FIXME: Make OpenSLES optional for Android
+#FIXME: Make CoreAudio optional for Apple (though I can't think of a good reasoon not to use it)
+IF(APPLE)
+	FIND_LIBRARY(APPLE_AUDIOTOOLBOX_LIBRARY AudioToolbox)
+ENDIF(APPLE)
+# FIXME: Make OpenSLES optional for Android (requires 4.0 and RWops won't work)
 IF(ANDROID)
 	FIND_LIBRARY( ANDROID_LOG_LIBRARY log )
 	FIND_LIBRARY( ANDROID_ANDROID_LIBRARY android )
 	FIND_LIBRARY( OPENSLES_LIBRARY OpenSLES )
 ENDIF(ANDROID)
-
+#FIXME: Make Windows Media Foundation optional for Windows (requires Windows 7+, might work on Vista)
+IF(WIN32)
+	# Experimentally, I found that I don't need mf, evr for linking
+	# But I don't know if that affects backwards compatibility (e.g. Vista)
+	#evr.lib;mf.lib;mfplat.lib;mfreadwrite.lib;mfuuid.lib;
+#	FIND_LIBRARY(WINDOWS_MEDIAFOUNDATION_MF_LIBRARY mf)
+#	FIND_LIBRARY(WINDOWS_MEDIAFOUNDATION_MFPLAT_LIBRARY mfplat)
+#	FIND_LIBRARY(WINDOWS_MEDIAFOUNDATION_MFREADWRITE_LIBRARY mfreadwrite)
+#	FIND_LIBRARY(WINDOWS_MEDIAFOUNDATION_MFUUID_LIBRARY mfuuid)
+#	FIND_LIBRARY(WINDOWS_MEDIAFOUNDATION_EVR_LIBRARY evr)
+ENDIF(WIN32)
 
 SET(ALMIXER_MAJOR_VERSION 0)
 SET(ALMIXER_MINOR_VERSION 1)
@@ -117,10 +131,10 @@ ELSEIF(WIN32)
 	SET(SOUNDDECODER_SOURCE
 		${SOUNDDECODER_SOURCE}
 		${ALmixer_SOURCE_DIR}/Isolated/SimpleThreadWindows.c
-#		${ALmixer_SOURCE_DIR}/Isolated/WindowsMediaFoundation.cpp
-		${ALmixer_SOURCE_DIR}/Isolated/LGPL/SDL_endian_minimal.h
-		${ALmixer_SOURCE_DIR}/Isolated/LGPL/SDL_sound_minimal.c
-		${ALmixer_SOURCE_DIR}/Isolated/LGPL/wav.c
+		${ALmixer_SOURCE_DIR}/Isolated/WindowsMediaFoundation.cpp
+#		${ALmixer_SOURCE_DIR}/Isolated/LGPL/SDL_endian_minimal.h
+#		${ALmixer_SOURCE_DIR}/Isolated/LGPL/SDL_sound_minimal.c
+#		${ALmixer_SOURCE_DIR}/Isolated/LGPL/wav.c
 	)
 ENDIF()
 
@@ -280,8 +294,25 @@ IF(ALMIXER_USE_SDLSOUND)
 	TARGET_LINK_LIBRARIES(ALmixer ${OPENAL_LIBRARY} ${SDL_SOUND_LIBRARIES} ${SDL_LIBRARY}) 
 ELSE()
 	INCLUDE_DIRECTORIES(${ALmixer_SOURCE_DIR} ${OPENAL_INCLUDE_DIR} ${ALmixer_SOURCE_DIR}/Isolated)
-	IF(ANDROID)
+	IF(APPLE)
+		TARGET_LINK_LIBRARIES(ALmixer ${OPENAL_LIBRARY} ${APPLE_AUDIOTOOLBOX_LIBRARY}) 
+	ELSEIF(ANDROID)
 		TARGET_LINK_LIBRARIES(ALmixer ${OPENAL_LIBRARY} ${OPENSLES_LIBRARY} ${ANDROID_LOG_LIBRARY} ${ANDROID_ANDROID_LIBRARY}) 
+	ELSEIF(WIN32)
+		SET(WINDOWS_MEDIAFOUNDATION_MF_LIBRARY mf.lib)
+		SET(WINDOWS_MEDIAFOUNDATION_MFPLAT_LIBRARY mfplat.lib)
+		SET(WINDOWS_MEDIAFOUNDATION_MFREADWRITE_LIBRARY mfreadwrite.lib)
+		SET(WINDOWS_MEDIAFOUNDATION_MFUUID_LIBRARY mfuuid.lib)
+		SET(WINDOWS_MEDIAFOUNDATION_EVR_LIBRARY evr.lib)
+#	evr.lib;mf.lib;mfplat.lib;mfreadwrite.lib;mfuuid.lib;
+		TARGET_LINK_LIBRARIES(ALmixer 
+			${OPENAL_LIBRARY} 
+			${WINDOWS_MEDIAFOUNDATION_MF_LIBRARY}
+			${WINDOWS_MEDIAFOUNDATION_MFPLAT_LIBRARY}
+			${WINDOWS_MEDIAFOUNDATION_MFREADWRITE_LIBRARY}
+			${WINDOWS_MEDIAFOUNDATION_MFUUID_LIBRARY}
+			${WINDOWS_MEDIAFOUNDATION_EVR_LIBRARY}
+		) 
 	ELSE()
 		TARGET_LINK_LIBRARIES(ALmixer ${OPENAL_LIBRARY}) 
 	ENDIF()
