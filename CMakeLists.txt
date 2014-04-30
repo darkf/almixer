@@ -132,6 +132,8 @@ ELSEIF(WIN32)
 		${SOUNDDECODER_SOURCE}
 		${ALmixer_SOURCE_DIR}/Isolated/SimpleThreadWindows.c
 		${ALmixer_SOURCE_DIR}/Isolated/WindowsMediaFoundation.cpp
+		${ALmixer_SOURCE_DIR}/Isolated/WindowsMediaFoundation_IMFByteStreamRWops.cpp
+		${ALmixer_SOURCE_DIR}/Isolated/WindowsMediaFoundation_IMFByteStreamRWops.hpp
 #		${ALmixer_SOURCE_DIR}/Isolated/LGPL/SDL_endian_minimal.h
 #		${ALmixer_SOURCE_DIR}/Isolated/LGPL/SDL_sound_minimal.c
 #		${ALmixer_SOURCE_DIR}/Isolated/LGPL/wav.c

@@ -4,21 +4,21 @@
 
 /*
  * Windows Media Foundation backend
- * Copyright (C) 2012 Eric Wing <ewing . public @ playcontrol.net>
+ * Copyright (C) 2014 Eric Wing <ewing . public @ playcontrol.net>
  *
- * This library is free software; you can redistribute it and/or
- * modify it under the terms of the GNU Lesser General Public
- * License as published by the Free Software Foundation; either
- * version 2.1 of the License, or (at your option) any later version.
- *
- * This library is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
- * Lesser General Public License for more details.
- *
- * You should have received a copy of the GNU Lesser General Public
- * License along with this library; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ * The read and seek functions come from libaudiodecoder under the MIT license:
+ Copyright (c) 2010-2012 Albert Santoni, Bill Good, RJ Ryan
+
+ Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
+
+ The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
+
+ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+
+ The text above constitutes the entire libaudiodecoder license; however, the Oscillicious community also makes the following non-binding requests:
+
+ Any person wishing to distribute modifications to the Software is requested to send the modifications to the original developer so that they can be incorporated into the canonical version. It is also requested that these non-binding requests be included along with the license above.
+
  */
 
 #if HAVE_CONFIG_H
@@ -36,17 +36,6 @@
 #include <stdio.h>
 #include <mferror.h>
 
-/*
-#include <iostream>
-#include <string.h>
-#include <windows.h>
-#include <mfapi.h>
-#include <mfidl.h>
-#include <mfreadwrite.h>
-#include <mferror.h>
-#include <assert.h>
-*/
-
 #include <propvarutil.h>
 
 #include <stddef.h> /* NULL */
@@ -56,6 +45,7 @@
 #include "SoundDecoder.h"
 
 #include "SoundDecoder_Internal.h"
+#include "WindowsMediaFoundation_IMFByteStreamRWops.hpp"
 
 template <class T> void SafeRelease(T **ppT)
 {
@@ -70,6 +60,7 @@ typedef struct MediaFoundationFileContainer
 {
 	IMFSourceReader* sourceReader;
 	IMFMediaType* uncompressedAudioType;
+	IMFByteStreamRWops* byteStreamRWops;
 	int nextFrame;
 	short* leftoverBuffer;
     UINT32 leftoverBufferSize;
@@ -82,6 +73,7 @@ typedef struct MediaFoundationFileContainer
 	short destBufferShort[8192];
 } MediaFoundationFileContainer;
 
+// This BS dance is to get around the C++ name mangling which leads to linking problems.
 extern "C"
 {
 	static int MediaFoundation_init(void);
@@ -129,28 +121,26 @@ static const char* extensions_MediaFoundation[] =
 	NULL 
 };
 
-//extern Sound_DecoderFunctions __Sound_DecoderFunctions_MediaFoundation;
+// This BS dance is to get around the C++ name mangling which leads to linking problems.
 extern "C" const Sound_DecoderFunctions __Sound_DecoderFunctions_MediaFoundation;
-
-	const Sound_DecoderFunctions __Sound_DecoderFunctions_MediaFoundation =
-//	__Sound_DecoderFunctions_MediaFoundation =
+const Sound_DecoderFunctions __Sound_DecoderFunctions_MediaFoundation =
+{
 	{
-		{
-			extensions_MediaFoundation,
-			"Decode audio through Windows Media Foundation",
-			"Eric Wing <ewing . public @ playcontrol.net>",
-			"http://playcontrol.net"
-		},
+		extensions_MediaFoundation,
+		"Decode audio through Windows Media Foundation",
+		"Eric Wing <ewing . public @ playcontrol.net>",
+		"http://playcontrol.net"
+	},
 
-		MediaFoundation_init,       /*   init() method */
-		MediaFoundation_quit,       /*   quit() method */
-		MediaFoundation_open,       /*   open() method */
-		MediaFoundation_close,      /*  close() method */
-		MediaFoundation_read,       /*   read() method */
-		MediaFoundation_rewind,     /* rewind() method */
-		MediaFoundation_seek        /*   seek() method */
+	MediaFoundation_init,       /*   init() method */
+	MediaFoundation_quit,       /*   quit() method */
+	MediaFoundation_open,       /*   open() method */
+	MediaFoundation_close,      /*  close() method */
+	MediaFoundation_read,       /*   read() method */
+	MediaFoundation_rewind,     /* rewind() method */
+	MediaFoundation_seek        /*   seek() method */
 
-	};
+};
 
 
 static int MediaFoundation_init(void)
@@ -186,194 +176,35 @@ static void MediaFoundation_quit(void)
     CoUninitialize();	
 } /* MediaFoundation_quit */
 
-/*
-   http://developer.apple.com/library/ios/#documentation/MusicAudio/Reference/AudioFileConvertRef/Reference/reference.html
-   kAudioFileAIFFType = 'AIFF',
-   kAudioFileAIFCType            = 'AIFC',
-   kAudioFileWAVEType            = 'WAVE',
-   kAudioFileSoundDesigner2Type  = 'Sd2f',
-   kAudioFileNextType            = 'NeXT',
-   kAudioFileMP3Type             = 'MPG3',
-   kAudioFileMP2Type             = 'MPG2',
-   kAudioFileMP1Type             = 'MPG1',
-   kAudioFileAC3Type             = 'ac-3',
-   kAudioFileAAC_ADTSType        = 'adts',
-   kAudioFileMPEG4Type           = 'mp4f',
-   kAudioFileM4AType             = 'm4af',
-   kAudioFileCAFType             = 'caff',
-   kAudioFile3GPType             = '3gpp',
-   kAudioFile3GP2Type            = '3gp2',
-   kAudioFileAMRType             = 'amrf'
-*/
-#if 0
-static AudioFileTypeID MediaFoundation_GetAudioTypeForExtension(const char* file_extension)
-{
-	if( (__Sound_strcasecmp(file_extension, "aif") == 0)
-		|| (__Sound_strcasecmp(file_extension, "aiff") == 0)
-		|| (__Sound_strcasecmp(file_extension, "aifc") == 0)
-	)
-	{
-		return kAudioFileAIFCType;
-	}
-	else if( (__Sound_strcasecmp(file_extension, "wav") == 0)
-		|| (__Sound_strcasecmp(file_extension, "wave") == 0)
-	)
-	{
-		return kAudioFileWAVEType;
-	}
-	else if( (__Sound_strcasecmp(file_extension, "mp3") == 0)
-	)
-	{
-		return kAudioFileMP3Type;
-	}
-	else if( (__Sound_strcasecmp(file_extension, "mp4") == 0)
-	)
-	{
-		return kAudioFileMPEG4Type;
-	}
-	else if( (__Sound_strcasecmp(file_extension, "m4a") == 0)
-	)
-	{
-		return kAudioFileM4AType;
-	}
-	else if( (__Sound_strcasecmp(file_extension, "aac") == 0)
-	)
-	{
-		return kAudioFileAAC_ADTSType;
-	}
-	else if( (__Sound_strcasecmp(file_extension, "adts") == 0)
-	)
-	{
-		return kAudioFileAAC_ADTSType;
-	}
-	else if( (__Sound_strcasecmp(file_extension, "caf") == 0)
-		|| (__Sound_strcasecmp(file_extension, "caff") == 0)
-	)
-	{
-		return kAudioFileCAFType;
-	}
-	else if( (__Sound_strcasecmp(file_extension, "Sd2f") == 0)
-		|| (__Sound_strcasecmp(file_extension, "sd2") == 0)
-	)
-	{
-		return kAudioFileSoundDesigner2Type;
-	}
-	else if( (__Sound_strcasecmp(file_extension, "au") == 0)
-		|| (__Sound_strcasecmp(file_extension, "snd") == 0)
-		|| (__Sound_strcasecmp(file_extension, "next") == 0)
-	)
-	{
-		return kAudioFileNextType;
-	}
-	else if( (__Sound_strcasecmp(file_extension, "mp2") == 0)
-	)
-	{
-		return kAudioFileMP2Type;
-	}
-	else if( (__Sound_strcasecmp(file_extension, "mp1") == 0)
-	)
-	{
-		return kAudioFileMP1Type;
-	}
-	else if( (__Sound_strcasecmp(file_extension, "ac3") == 0)
-	)
-	{
-		return kAudioFileAC3Type;
-	}
-	else if( (__Sound_strcasecmp(file_extension, "3gpp") == 0)
-			|| (__Sound_strcasecmp(file_extension, "3gp") == 0)
-	)
-	{
-		return kAudioFile3GPType;
-	}
-	else if( (__Sound_strcasecmp(file_extension, "3gp2") == 0)
-			|| (__Sound_strcasecmp(file_extension, "3g2") == 0)
-	)
-	{
-		return kAudioFile3GP2Type;
-	}
-	else if( (__Sound_strcasecmp(file_extension, "amrf") == 0)
-		|| (__Sound_strcasecmp(file_extension, "amr") == 0)
-	)
-	{
-		return kAudioFileAMRType;
-	}
-	else if( (__Sound_strcasecmp(file_extension, "ima4") == 0)
-		|| (__Sound_strcasecmp(file_extension, "ima") == 0)
-	)
-	{
-		/* not sure about this one */
-		return kAudioFileCAFType;
-	}
-	else
-	{
-		return 0;
-	}
-
-}
-#endif
-
-
-/*
-
-SInt64 MediaFoundation_SizeCallback(void* inClientData)
-{
-	ALmixer_RWops* rw_ops = (ALmixer_RWops*)inClientData;
-	SInt64 current_position = ALmixer_RWtell(rw_ops);
-	SInt64 end_position = ALmixer_RWseek(rw_ops, 0, SEEK_END);
-	ALmixer_RWseek(rw_ops, current_position, SEEK_SET);
-//	fprintf(stderr, "MediaFoundation_SizeCallback:%d\n", end_position);
-
-	return end_position;
-}
-*/
-/*
-OSStatus MediaFoundation_ReadCallback(
-	void* inClientData,
-	SInt64 inPosition,
-	UInt32 requestCount,
-	void* data_buffer,
-	UInt32* actualCount
-)
-{
-	ALmixer_RWops* rw_ops = (ALmixer_RWops*)inClientData;
-	ALmixer_RWseek(rw_ops, inPosition, SEEK_SET);
-	size_t bytes_actually_read = ALmixer_RWread(rw_ops, data_buffer, 1, requestCount);
-	// Not sure how to test for a read error with ALmixer_RWops
-//	fprintf(stderr, "MediaFoundation_ReadCallback:%d, %d\n", requestCount, bytes_actually_read);
-
-	*actualCount = bytes_actually_read;
-	return noErr;
-}
-*/
 
 static int MediaFoundation_open(Sound_Sample *sample, const char *ext)
 {
 	MediaFoundationFileContainer* media_foundation_file_container;
 	Sound_SampleInternal* internal = (Sound_SampleInternal*)sample->opaque;
-	//Float64 estimated_duration;
-	//UInt32 format_size;
 	HRESULT hresult;
 	IMFSourceReader* source_reader = NULL;
-//	const WCHAR* source_file = L"C:\\Users\\pinky\\Documents\\Mario_Jumping.wav";
-//	const WCHAR* source_file = L"C:\\Users\\pinky\\Documents\\battle_hymn_of_the_republic.mp3";
-	const WCHAR* source_file = L"C:\\Users\\pinky\\Documents\\TheDeclarationOfIndependencePreambleJFK.m4a";
+	// Since the byte stream stuff is so complicated, if you need to test without it, 
+	// you can hard code loading a file and use MFCreateSourceReaderFromURL.
+//	const WCHAR* source_file = L"C:\\Users\\username\\Documents\\crystal.wav";
+//	const WCHAR* source_file = L"C:\\Users\\username\\Documents\\battle_hymn_of_the_republic.mp3";
+//	const WCHAR* source_file = L"C:\\Users\\username\\Documents\\TheDeclarationOfIndependencePreambleJFK.m4a";
 	
-	media_foundation_file_container = (MediaFoundationFileContainer*)calloc(1, sizeof(MediaFoundationFileContainer));
-	BAIL_IF_MACRO(media_foundation_file_container == NULL, ERR_OUT_OF_MEMORY, 0);
 
-//hresult = MFCreateSourceReaderFromByteStream();
-	hresult = MFCreateSourceReaderFromURL(source_file, NULL, &source_reader);
-	if(FAILED(hresult))
+	IMFByteStreamRWops* byte_stream = new IMFByteStreamRWops(internal->rw, sample);
+//	hresult = MFCreateSourceReaderFromURL(source_file, NULL, &source_reader);
+	hresult = MFCreateSourceReaderFromByteStream(byte_stream, NULL, &source_reader);
+	if (FAILED(hresult))
     {
 		SNDDBG(("Error opening input file"));
-//		fprintf(stderr, "Error opening input file: %S\n", source_file, hresult);
-		free(media_foundation_file_container);
 		return 0;
 	}
 
+	media_foundation_file_container = (MediaFoundationFileContainer*)calloc(1, sizeof(MediaFoundationFileContainer));
+	BAIL_IF_MACRO(media_foundation_file_container == NULL, ERR_OUT_OF_MEMORY, 0);
+
 	internal->decoder_private = media_foundation_file_container;
 	media_foundation_file_container->sourceReader = source_reader;
+	media_foundation_file_container->byteStreamRWops = byte_stream;
 
 	{
 		HRESULT hr = hresult;
@@ -587,9 +418,6 @@ static int MediaFoundation_open(Sound_Sample *sample, const char *ext)
 
 	}
 		
-	
-
-
 	return(1);
 } /* MediaFoundation_open */
 
@@ -600,6 +428,8 @@ static void MediaFoundation_close(Sound_Sample *sample)
 	MediaFoundationFileContainer* media_foundation_file_container = (MediaFoundationFileContainer *)internal->decoder_private;
 
 	SafeRelease(&media_foundation_file_container->sourceReader);
+//	delete media_foundation_file_container->byteStreamRWops;
+	media_foundation_file_container->byteStreamRWops->Release();
 	free(media_foundation_file_container->leftoverBuffer);
 	free(media_foundation_file_container);
 } /* MediaFoundation_close */
@@ -776,17 +606,12 @@ static size_t MediaFoundation_read(Sound_Sample* sample)
 		}
 
 		/*
-		   std::cout << "ReadSample timestamp: " << timestamp
-		   << "frame: " << frameFromMF(timestamp)
-		   << "dwflags: " << stream_flags
-		   << std::endl;
-		   */
 		SNDDBG(("WindowsMediaFoundation: ReadSample timestamp:%ld, frame:%ld, stream_flags:%d\n", 
 				timestamp,
 				MediaFoundation_FrameFromMF(timestamp, sample_rate),
 				stream_flags
 		));
-
+		*/
 		if (stream_flags & MF_SOURCE_READERF_ERROR)
 		{
 			// our source reader is now dead, according to the docs
@@ -852,13 +677,9 @@ static size_t MediaFoundation_read(Sound_Sample* sample)
 			__int64 buffer_position = MediaFoundation_FrameFromMF(timestamp, sample_rate);
 			SNDDBG(("WindowsMediaFoundation read: While seeking to nextFrame:%d, WMF put us at buffer_position:%ld\n", 
 				media_foundation_file_container->nextFrame,
-				buffer_position,
+				buffer_position
 			));
-			/*
-			   std::cout << "While seeking to "
-			   << m_nextFrame << "WMF put us at " << buffer_position
-			   << std::endl;
-*/
+
             if (media_foundation_file_container->nextFrame < buffer_position)
 			{
                 // Uh oh. We are farther forward than our seek target. Emit
@@ -871,12 +692,8 @@ static size_t MediaFoundation_read(Sound_Sample* sample)
 
                 if(offshoot_frames <= frames_needed)
 				{
-					SNDDBG(("WindowsMediaFoundation read: Working around inaccurate seeking. Writing silence for:%ld offshoot frames\n", offshootFrames));				
-					/*
-					   std::cerr << __FILE__ << __LINE__
-					   << "Working around inaccurate seeking. Writing silence for"
-					   << offshootFrames << "frames";
-					   */
+					SNDDBG(("WindowsMediaFoundation read: Working around inaccurate seeking. Writing silence for:%ld offshoot frames\n", offshoot_frames));
+
 					// Set offshoot_frames * num_channels samples to zero.
 					memset(buffer_current_position, 0,
 						sizeof(*buffer_current_position) * offshoot_frames *
@@ -894,10 +711,6 @@ static size_t MediaFoundation_read(Sound_Sample* sample)
 					media_foundation_file_container->isSeeking = false;
 					media_foundation_file_container->nextFrame = buffer_position;
 					SNDDBG(("WindowsMediaFoundation read: Seek offshoot is too drastic. Cutting losses and pretending the current decoded audio buffer is the right seek point.\n"));
-					/*
-					   std::cerr << __FILE__ << __LINE__
-					   << "Seek offshoot is too drastic. Cutting losses and pretending the current decoded audio buffer is the right seek point.";
-					   */
 				}
 			}
 
