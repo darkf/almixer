@@ -23,12 +23,12 @@ static TErrorPool* s_errorPool = NULL;
 
 static const SoundDecoder_DecoderInfo** s_availableDecoders = NULL;
 
-#ifdef __APPLE__ /* I'm making Apple use the Core Audio backend. */
+#if defined(__APPLE__) && defined(SOUND_SUPPORTS_COREAUDIO)
 	//extern const SoundDecoder_DecoderFunctions __SoundDecoder_DecoderFunctions_CoreAudio;
 	extern const Sound_DecoderFunctions __Sound_DecoderFunctions_CoreAudio;
-#elif defined(__ANDROID__)
+#elif defined(__ANDROID__)  && defined(SOUND_SUPPORTS_ANDROID_OPENSLES)
 	extern const Sound_DecoderFunctions __Sound_DecoderFunctions_OpenSLES;
-#elif defined(_WIN32)
+#elif defined(_WIN32) && defined(SOUND_SUPPORTS_WINDOWSMEDIAFOUNDATION)
 	extern const Sound_DecoderFunctions __Sound_DecoderFunctions_MediaFoundation;
 #endif
 #ifdef SOUND_SUPPORTS_AAC
@@ -54,11 +54,11 @@ typedef struct
 
 static SoundElement s_linkedDecoders[] =
 {
-#if defined(__APPLE__)
+#if defined(__APPLE__) && !defined(SOUND_DISABLE_COREAUDIO)
 		{ 0, &__Sound_DecoderFunctions_CoreAudio },
-#elif defined(__ANDROID__)
+#elif defined(__ANDROID__)  && defined(SOUND_SUPPORTS_ANDROID_OPENSLES)
 		{ 0, &__Sound_DecoderFunctions_OpenSLES },
-#elif defined(_WIN32)
+#elif defined(_WIN32) && defined(SOUND_SUPPORTS_WINDOWSMEDIAFOUNDATION)
 		{ 0, &__Sound_DecoderFunctions_MediaFoundation },
 #endif
 #ifdef SOUND_SUPPORTS_AAC

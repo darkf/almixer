@@ -199,7 +199,7 @@ extern "C" {
 /* Printable format: "%d.%d.%d", MAJOR, MINOR, PATCHLEVEL
  */
 #define ALMIXER_MAJOR_VERSION		0
-#define ALMIXER_MINOR_VERSION		3
+#define ALMIXER_MINOR_VERSION		4
 #define ALMIXER_PATCHLEVEL			0
 
 
