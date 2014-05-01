@@ -1,6 +1,6 @@
 
 
-#ifdef ALMIXER_COMPILE_WITHOUT_SDL
+#ifndef ALMIXER_COMPILE_WITH_SDLSOUND
 
 /*
  * Windows Media Foundation backend
@@ -908,5 +908,5 @@ static int MediaFoundation_rewind(Sound_Sample* sample)
 #endif /* _WIN32 */
 
 
-#endif /* ALMIXER_COMPILE_WITHOUT_SDL */
+#endif /* ALMIXER_COMPILE_WITH_SDLSOUND */
 

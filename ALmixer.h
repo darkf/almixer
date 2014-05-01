@@ -131,8 +131,6 @@
  * the DOXYGEN_SHOULD_IGNORE_THIS blocks.
  * PREDEFINED = DOXYGEN_SHOULD_IGNORE_THIS=1 ALMIXER_DECLSPEC= ALMIXER_CALL=
  */
-
-#ifdef ALMIXER_COMPILE_WITHOUT_SDL
 	#if defined(_WIN32)
 		#if defined(ALMIXER_BUILD_LIBRARY)
 			#define ALMIXER_DECLSPEC __declspec(dllexport)
@@ -156,12 +154,6 @@
 	#else
 		#define ALMIXER_CALL
 	#endif
-#else
-	#include "SDL_types.h" /* will include begin_code.h which is what I really want */
-	#define ALMIXER_DECLSPEC DECLSPEC
-	#define ALMIXER_CALL SDLCALL
-#endif
-
 /** @endcond DOXYGEN_SHOULD_IGNORE_THIS */
 #endif /* DOXYGEN_SHOULD_IGNORE_THIS */
 
@@ -175,26 +167,22 @@
 extern "C" {
 #endif
 
-#ifdef ALMIXER_COMPILE_WITHOUT_SDL
-	/**
-	 * Struct that contains the version information of this library.
-	 * This represents the library's version as three levels: major revision
-	 * (increments with massive changes, additions, and enhancements),
-	 * minor revision (increments with backwards-compatible changes to the
-	 * major revision), and patchlevel (increments with fixes to the minor
-	 * revision).
-	 * @see ALMIXER_VERSION, ALmixer_GetLinkedVersion
-	 */
-	typedef struct ALmixer_version
-	{
-		ALubyte major;
-		ALubyte minor;
-		ALubyte patch;
-	} ALmixer_version;
-#else
-	#include "SDL_version.h"
-	#define ALmixer_version SDL_version
-#endif
+/**
+ * Struct that contains the version information of this library.
+ * This represents the library's version as three levels: major revision
+ * (increments with massive changes, additions, and enhancements),
+ * minor revision (increments with backwards-compatible changes to the
+ * major revision), and patchlevel (increments with fixes to the minor
+ * revision).
+ * @see ALMIXER_VERSION, ALmixer_GetLinkedVersion
+ */
+typedef struct ALmixer_version
+{
+	ALubyte major;
+	ALubyte minor;
+	ALubyte patch;
+} ALmixer_version;
+
 
 /* Printable format: "%d.%d.%d", MAJOR, MINOR, PATCHLEVEL
  */
@@ -257,56 +245,33 @@ extern "C" {
  */
 extern ALMIXER_DECLSPEC const ALmixer_version* ALMIXER_CALL ALmixer_GetLinkedVersion(void);
 
-#ifdef ALMIXER_COMPILE_WITHOUT_SDL
-	/**
-	 * Gets the last error string that was set by the system and clears the error.
-	 *
-	 * @note When compiled with SDL, this directly uses SDL_GetError.
-	 * 
-	 * @return Returns a string containing the last error or "" when no error is set.
-	 */
-	extern ALMIXER_DECLSPEC const char* ALMIXER_CALL ALmixer_GetError(void);
-	/**
-	 * Sets an error string that can be retrieved by ALmixer_GetError.
-	 *
-	 * @note When compiled with SDL, this directly uses SDL_SetError.
-	 * 
-	 * param The error string to set.
-	 */
-	extern ALMIXER_DECLSPEC void ALMIXER_CALL ALmixer_SetError(const char *fmt, ...);
-#else
-	#include "SDL_error.h"
-	/**
-	 * Gets the last error string that was set by the system and clears the error.
-	 *
-	 * @note When compiled with SDL, this directly uses SDL_GetError.
-	 * 
-	 * @return Returns a string containing the last error or "" when no error is set.
-	 */
-	#define ALmixer_GetError 	SDL_GetError
-	/**
-	 * Sets an error string that can be retrieved by ALmixer_GetError.
-	 *
-	 * @note When compiled with SDL, this directly uses SDL_SetError.
-	 * 
-	 * param The error string to set.
-	 */
-	#define ALmixer_SetError 	SDL_SetError
-#endif
+/**
+ * Gets the last error string that was set by the system and clears the error.
+ *
+ * @note When compiled with SDL, this directly uses SDL_GetError.
+ * 
+ * @return Returns a string containing the last error or "" when no error is set.
+ */
+extern ALMIXER_DECLSPEC const char* ALMIXER_CALL ALmixer_GetError(void);
+/**
+ * Sets an error string that can be retrieved by ALmixer_GetError.
+ *
+ * @note When compiled with SDL, this directly uses SDL_SetError.
+ * 
+ * param The error string to set.
+ */
+extern ALMIXER_DECLSPEC void ALMIXER_CALL ALmixer_SetError(const char *fmt, ...);
+
+extern ALMIXER_DECLSPEC ALuint ALMIXER_CALL ALmixer_GetTicks(void);
+extern ALMIXER_DECLSPEC void ALMIXER_CALL ALmixer_Delay(ALuint milliseconds_delay);
 
 
-#ifdef ALMIXER_COMPILE_WITHOUT_SDL
-	#include "ALmixer_RWops.h"
-#else
-	#include "SDL_rwops.h"
-	/**
-	 * A struct that mimicks the SDL_RWops structure.
-	 *
-	 * @note When compiled with SDL, this directly uses SDL_RWops.
-	 */
-	#define ALmixer_RWops 	SDL_RWops
-#endif
-
+/**
+ * A struct that mimicks the SDL_RWops structure.
+ *
+ * @note When compiled with SDL, this directly uses SDL_RWops.
+ */
+struct ALmixer_RWops;
 
 #define ALMIXER_DEFAULT_FREQUENCY 	0
 #define ALMIXER_DEFAULT_REFRESH 	0
@@ -650,7 +615,7 @@ struct ALmixer_AudioInfo
  * using this feature, so if you don't need data callbacks, you should pass false to this function.
  * @return Returns an ALmixer_Data* of the loaded sample or NULL if failed.
  */
-extern ALMIXER_DECLSPEC ALmixer_Data* ALMIXER_CALL ALmixer_LoadSample_RW(ALmixer_RWops* rw_ops, const char* file_ext, ALuint buffer_size, ALboolean decode_mode_is_predecoded, ALuint max_queue_buffers, ALuint num_startup_buffers, ALuint suggested_number_of_buffers_to_queue_per_update_pass, ALuint access_data);
+extern ALMIXER_DECLSPEC ALmixer_Data* ALMIXER_CALL ALmixer_LoadSample_RW(struct ALmixer_RWops* rw_ops, const char* file_ext, ALuint buffer_size, ALboolean decode_mode_is_predecoded, ALuint max_queue_buffers, ALuint num_startup_buffers, ALuint suggested_number_of_buffers_to_queue_per_update_pass, ALuint access_data);
 
 #ifdef DOXYGEN_ONLY
 /**
@@ -672,7 +637,7 @@ extern ALMIXER_DECLSPEC ALmixer_Data* ALMIXER_CALL ALmixer_LoadSample_RW(ALmixer
  * using this feature, so if you don't need data callbacks, you should pass false to this function.
  * @return Returns an ALmixer_Data* of the loaded sample or NULL if failed.
  */
-ALmixer_Data* ALmixer_LoadStream_RW(ALmixer_RWops* rw_ops, const char* file_ext, ALuint buffer_size, ALuint max_queue_buffers, ALuint num_startup_buffers, ALuint suggested_number_of_buffers_to_queue_per_update_pass, ALuint access_data);
+ALmixer_Data* ALmixer_LoadStream_RW(struct ALmixer_RWops* rw_ops, const char* file_ext, ALuint buffer_size, ALuint max_queue_buffers, ALuint num_startup_buffers, ALuint suggested_number_of_buffers_to_queue_per_update_pass, ALuint access_data);
 #else
 #define ALmixer_LoadStream_RW(rw_ops, file_ext, buffer_size, max_queue_buffers, num_startup_buffers, suggested_number_of_buffers_to_queue_per_update_pass, access_data) ALmixer_LoadSample_RW(rw_ops,file_ext, buffer_size, AL_FALSE, max_queue_buffers, num_startup_buffers, suggested_number_of_buffers_to_queue_per_update_pass, access_data)
 #endif
@@ -690,7 +655,7 @@ ALmixer_Data* ALmixer_LoadStream_RW(ALmixer_RWops* rw_ops, const char* file_ext,
  * using this feature, so if you don't need data callbacks, you should pass false to this function.
  * @return Returns an ALmixer_Data* of the loaded sample or NULL if failed.
  */
-ALmixer_Data* ALmixer_LoadAll_RW(ALmixer_RWops* rw_ops, const char* file_ext, ALuint access_data);
+ALmixer_Data* ALmixer_LoadAll_RW(struct ALmixer_RWops* rw_ops, const char* file_ext, ALuint access_data);
 #else
 #define ALmixer_LoadAll_RW(rw_ops, file_ext, access_data) ALmixer_LoadSample_RW(rw_ops, file_ext, ALMIXER_DEFAULT_PREDECODED_BUFFERSIZE, AL_TRUE, 0, 0, 0, access_data)
 #endif
@@ -783,7 +748,7 @@ ALmixer_Data* ALmixer_LoadAll(const char* file_name, ALuint access_data);
  * using this feature, so if you don't need data callbacks, you should pass false to this function.
  * @return Returns an ALmixer_Data* of the loaded sample or NULL if failed.
  */
-extern ALMIXER_DECLSPEC ALmixer_Data * ALMIXER_CALL ALmixer_LoadSample_RAW_RW(ALmixer_RWops* rw_ops, const char* file_ext, ALmixer_AudioInfo* desired_format, ALuint buffer_size, ALboolean decode_mode_is_predecoded, ALuint max_queue_buffers, ALuint num_startup_buffers, ALuint suggested_number_of_buffers_to_queue_per_update_pass, ALuint access_data);
+extern ALMIXER_DECLSPEC ALmixer_Data * ALMIXER_CALL ALmixer_LoadSample_RAW_RW(struct ALmixer_RWops* rw_ops, const char* file_ext, ALmixer_AudioInfo* desired_format, ALuint buffer_size, ALboolean decode_mode_is_predecoded, ALuint max_queue_buffers, ALuint num_startup_buffers, ALuint suggested_number_of_buffers_to_queue_per_update_pass, ALuint access_data);
 
 #ifdef DOXYGEN_ONLY
 /**
@@ -808,7 +773,7 @@ extern ALMIXER_DECLSPEC ALmixer_Data * ALMIXER_CALL ALmixer_LoadSample_RAW_RW(AL
  * using this feature, so if you don't need data callbacks, you should pass false to this function.
  * @return Returns an ALmixer_Data* of the loaded sample or NULL if failed.
  */
-ALmixer_Data* ALmixer_LoadStream_RAW_RW(ALmixer_RWops* rw_ops, const char* file_ext, ALmixer_AudioInfo* desired_format, ALuint buffer_size, ALuint max_queue_buffers, ALuint num_startup_buffers, ALuint suggested_number_of_buffers_to_queue_per_update_pass, ALuint access_data);
+ALmixer_Data* ALmixer_LoadStream_RAW_RW(struct ALmixer_RWops* rw_ops, const char* file_ext, ALmixer_AudioInfo* desired_format, ALuint buffer_size, ALuint max_queue_buffers, ALuint num_startup_buffers, ALuint suggested_number_of_buffers_to_queue_per_update_pass, ALuint access_data);
 #else
 #define ALmixer_LoadStream_RAW_RW(rw_ops, file_ext, desired_format, buffer_size, max_queue_buffers, num_startup_buffers, suggested_number_of_buffers_to_queue_per_update_pass, access_data) ALmixer_LoadSample_RAW_RW(rw_ops, file_ext, desired_format, buffer_size, AL_FALSE, max_queue_buffers, num_startup_buffers, suggested_number_of_buffers_to_queue_per_update_pass, access_data)
 #endif
@@ -828,7 +793,7 @@ ALmixer_Data* ALmixer_LoadStream_RAW_RW(ALmixer_RWops* rw_ops, const char* file_
  * using this feature, so if you don't need data callbacks, you should pass false to this function.
  * @return Returns an ALmixer_Data* of the loaded sample or NULL if failed.
  */
-ALmixer_Data* ALmixer_LoadAll_RAW_RW(ALmixer_RWops* rw_ops, const char* file_ext, ALmixer_AudioInfo* desired_format, ALuint access_data);
+ALmixer_Data* ALmixer_LoadAll_RAW_RW(struct ALmixer_RWops* rw_ops, const char* file_ext, ALmixer_AudioInfo* desired_format, ALuint access_data);
 #else
 #define ALmixer_LoadAll_RAW_RW(rw_ops, file_ext, desired_format, access_data) ALmixer_LoadSample_RAW_RW(rw_ops, file_ext, desired_format, ALMIXER_DEFAULT_PREDECODED_BUFFERSIZE, AL_TRUE, 0, 0, 0, access_data)
 #endif
@@ -1683,7 +1648,8 @@ extern ALMIXER_DECLSPEC ALboolean ALMIXER_CALL ALmixer_CompiledWithThreadBackend
 
 /** This function is experimental. If compiled with threads, returns the current thread ID. If not compiled with threads, returns 0. 
  * We have since solved these problems in different ways and the need for this seems mitigated, so it could be removed in the future.
- */ 
+ */
+#if 0
 extern ALMIXER_DECLSPEC size_t ALMIXER_CALL ALmixer_GetCurrentThreadID(void);
 
 #define ALMIXER_THREAD_TYPE_ORIGINATING 1
@@ -1697,7 +1663,8 @@ extern ALMIXER_DECLSPEC size_t ALMIXER_CALL ALmixer_GetCurrentThreadID(void);
  * @return If compiled with threads, returns the thread ID for the specified type. If not compiled with threads, returns 0.
  */
 extern ALMIXER_DECLSPEC size_t ALMIXER_CALL ALmixer_GetThreadIDForType(int almixer_thread_type);
-
+#endif
+	
 /**
  * @}
  */

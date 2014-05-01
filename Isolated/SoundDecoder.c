@@ -23,7 +23,7 @@ static TErrorPool* s_errorPool = NULL;
 
 static const SoundDecoder_DecoderInfo** s_availableDecoders = NULL;
 
-#if defined(__APPLE__) && defined(SOUND_SUPPORTS_COREAUDIO)
+#if defined(__APPLE__) && !defined(SOUND_DISABLE_COREAUDIO)
 	//extern const SoundDecoder_DecoderFunctions __SoundDecoder_DecoderFunctions_CoreAudio;
 	extern const Sound_DecoderFunctions __Sound_DecoderFunctions_CoreAudio;
 #elif defined(__ANDROID__)  && defined(SOUND_SUPPORTS_ANDROID_OPENSLES)
@@ -496,11 +496,11 @@ SoundDecoder_Sample* SoundDecoder_NewSample(ALmixer_RWops* rw_ops, const char* f
 
 	internal_sample->rw = rw_ops;
 	new_sample->opaque = internal_sample;
-
+/*
 	if (rw_ops->file_name != NULL) {
 		SoundDecoderInternal_SetOptionalFileName(new_sample->opaque, rw_ops->file_name);
 	}
-
+*/
     if(NULL != file_extension)
     {
         for(current_decoder = &s_linkedDecoders[0]; current_decoder->funcs != NULL; current_decoder++)
@@ -730,6 +730,7 @@ ptrdiff_t SoundDecoder_GetDuration(SoundDecoder_Sample* sound_sample)
     return internal_sample->total_time;
 }
 
+#if 0
 const char* SoundDecoderInternal_GetOptionalFileName(SoundDecoder_SampleInternal* sample_internal)
 {
 	return sample_internal->optional_file_name; 
@@ -739,6 +740,6 @@ void SoundDecoderInternal_SetOptionalFileName(SoundDecoder_SampleInternal* sampl
 {
 	sample_internal->optional_file_name = file_name;	
 }
-
+#endif
 
 #endif

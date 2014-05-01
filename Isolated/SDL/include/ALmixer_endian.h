@@ -20,109 +20,129 @@
 */
 
 /**
- *  \file SDL_endian.h
+ *  \file ALmixer_endian.h
  *
  *  Functions for reading and writing endian-specific values
  */
 
-#ifndef _SDL_endian_h
-#define _SDL_endian_h
+#ifndef _ALmixer_endian_h
+#define _ALmixer_endian_h
 
-#include "SDL_stdinc.h"
+//#include "ALmixer_stdinc.h"
 
 /**
  *  \name The two types of endianness
  */
 /* @{ */
-#define SDL_LIL_ENDIAN  1234
-#define SDL_BIG_ENDIAN  4321
+#define ALmixer_LIL_ENDIAN  1234
+#define ALmixer_BIG_ENDIAN  4321
 /* @} */
 
-#ifndef SDL_BYTEORDER           /* Not defined in SDL_config.h? */
+#ifndef ALmixer_BYTEORDER           /* Not defined in ALmixer_config.h? */
 #ifdef __linux__
 #include <endian.h>
-#define SDL_BYTEORDER  __BYTE_ORDER
+#define ALmixer_BYTEORDER  __BYTE_ORDER
 #else /* __linux __ */
 #if defined(__hppa__) || \
     defined(__m68k__) || defined(mc68000) || defined(_M_M68K) || \
     (defined(__MIPS__) && defined(__MISPEB__)) || \
     defined(__ppc__) || defined(__POWERPC__) || defined(_M_PPC) || \
     defined(__sparc__)
-#define SDL_BYTEORDER   SDL_BIG_ENDIAN
+#define ALmixer_BYTEORDER   ALmixer_BIG_ENDIAN
 #else
-#define SDL_BYTEORDER   SDL_LIL_ENDIAN
+#define ALmixer_BYTEORDER   ALmixer_LIL_ENDIAN
 #endif
 #endif /* __linux __ */
-#endif /* !SDL_BYTEORDER */
+#endif /* !ALmixer_BYTEORDER */
 
 
-#include "begin_code.h"
+#include "ALmixer_begin_code.h"
+
+
+
+/* Most everything except Visual Studio 2008 and earlier has stdint.h now */
+#if defined(_MSC_VER) && (_MSC_VER < 1600)
+/* Here are some reasonable defaults */
+typedef unsigned int size_t;
+typedef signed char int8_t;
+typedef unsigned char uint8_t;
+typedef signed short int16_t;
+typedef unsigned short uint16_t;
+typedef signed int int32_t;
+typedef unsigned int uint32_t;
+typedef signed long long int64_t;
+typedef unsigned long long uint64_t;
+typedef unsigned long uintptr_t;
+#else
+#include <stdint.h>
+#endif /* Visual Studio 2008 */
+
 /* Set up for C function definitions, even when using C++ */
 #ifdef __cplusplus
 extern "C" {
 #endif
 
 /**
- *  \file SDL_endian.h
+ *  \file ALmixer_endian.h
  */
 #if defined(__GNUC__) && defined(__i386__) && \
    !(__GNUC__ == 2 && __GNUC_MINOR__ == 95 /* broken gcc version */)
-SDL_FORCE_INLINE Uint16
-SDL_Swap16(Uint16 x)
+ALMIXER_FORCE_INLINE uint16_t
+ALmixer_Swap16(uint16_t x)
 {
   __asm__("xchgb %b0,%h0": "=q"(x):"0"(x));
     return x;
 }
 #elif defined(__GNUC__) && defined(__x86_64__)
-SDL_FORCE_INLINE Uint16
-SDL_Swap16(Uint16 x)
+ALMIXER_FORCE_INLINE uint16_t
+ALmixer_Swap16(uint16_t x)
 {
   __asm__("xchgb %b0,%h0": "=Q"(x):"0"(x));
     return x;
 }
 #elif defined(__GNUC__) && (defined(__powerpc__) || defined(__ppc__))
-SDL_FORCE_INLINE Uint16
-SDL_Swap16(Uint16 x)
+ALMIXER_FORCE_INLINE uint16_t
+ALmixer_Swap16(uint16_t x)
 {
     int result;
 
   __asm__("rlwimi %0,%2,8,16,23": "=&r"(result):"0"(x >> 8), "r"(x));
-    return (Uint16)result;
+    return (uint16_t)result;
 }
 #elif defined(__GNUC__) && (defined(__M68000__) || defined(__M68020__)) && !defined(__mcoldfire__)
-SDL_FORCE_INLINE Uint16
-SDL_Swap16(Uint16 x)
+ALMIXER_FORCE_INLINE uint16_t
+ALmixer_Swap16(uint16_t x)
 {
   __asm__("rorw #8,%0": "=d"(x): "0"(x):"cc");
     return x;
 }
 #else
-SDL_FORCE_INLINE Uint16
-SDL_Swap16(Uint16 x)
+ALMIXER_FORCE_INLINE uint16_t
+ALmixer_Swap16(uint16_t x)
 {
-    return SDL_static_cast(Uint16, ((x << 8) | (x >> 8)));
+    return ALmixer_static_cast(uint16_t, ((x << 8) | (x >> 8)));
 }
 #endif
 
 #if defined(__GNUC__) && defined(__i386__)
-SDL_FORCE_INLINE Uint32
-SDL_Swap32(Uint32 x)
+ALMIXER_FORCE_INLINE uint32_t
+ALmixer_Swap32(uint32_t x)
 {
   __asm__("bswap %0": "=r"(x):"0"(x));
     return x;
 }
 #elif defined(__GNUC__) && defined(__x86_64__)
-SDL_FORCE_INLINE Uint32
-SDL_Swap32(Uint32 x)
+ALMIXER_FORCE_INLINE uint32_t
+ALmixer_Swap32(uint32_t x)
 {
   __asm__("bswapl %0": "=r"(x):"0"(x));
     return x;
 }
 #elif defined(__GNUC__) && (defined(__powerpc__) || defined(__ppc__))
-SDL_FORCE_INLINE Uint32
-SDL_Swap32(Uint32 x)
+ALMIXER_FORCE_INLINE uint32_t
+ALmixer_Swap32(uint32_t x)
 {
-    Uint32 result;
+    uint32_t result;
 
   __asm__("rlwimi %0,%2,24,16,23": "=&r"(result):"0"(x >> 24), "r"(x));
   __asm__("rlwimi %0,%2,8,8,15": "=&r"(result):"0"(result), "r"(x));
@@ -130,32 +150,32 @@ SDL_Swap32(Uint32 x)
     return result;
 }
 #elif defined(__GNUC__) && (defined(__M68000__) || defined(__M68020__)) && !defined(__mcoldfire__)
-SDL_FORCE_INLINE Uint32
-SDL_Swap32(Uint32 x)
+ALMIXER_FORCE_INLINE uint32_t
+ALmixer_Swap32(uint32_t x)
 {
   __asm__("rorw #8,%0\n\tswap %0\n\trorw #8,%0": "=d"(x): "0"(x):"cc");
     return x;
 }
 #else
-SDL_FORCE_INLINE Uint32
-SDL_Swap32(Uint32 x)
+ALMIXER_FORCE_INLINE uint32_t
+ALmixer_Swap32(uint32_t x)
 {
-    return SDL_static_cast(Uint32, ((x << 24) | ((x << 8) & 0x00FF0000) |
+    return ALmixer_static_cast(uint32_t, ((x << 24) | ((x << 8) & 0x00FF0000) |
                                     ((x >> 8) & 0x0000FF00) | (x >> 24)));
 }
 #endif
 
 #if defined(__GNUC__) && defined(__i386__)
-SDL_FORCE_INLINE Uint64
-SDL_Swap64(Uint64 x)
+ALMIXER_FORCE_INLINE uint64_t
+ALmixer_Swap64(uint64_t x)
 {
     union
     {
         struct
         {
-            Uint32 a, b;
+            uint32_t a, b;
         } s;
-        Uint64 u;
+        uint64_t u;
     } v;
     v.u = x;
   __asm__("bswapl %0 ; bswapl %1 ; xchgl %0,%1": "=r"(v.s.a), "=r"(v.s.b):"0"(v.s.a),
@@ -164,40 +184,40 @@ SDL_Swap64(Uint64 x)
     return v.u;
 }
 #elif defined(__GNUC__) && defined(__x86_64__)
-SDL_FORCE_INLINE Uint64
-SDL_Swap64(Uint64 x)
+ALMIXER_FORCE_INLINE uint64_t
+ALmixer_Swap64(uint64_t x)
 {
   __asm__("bswapq %0": "=r"(x):"0"(x));
     return x;
 }
 #else
-SDL_FORCE_INLINE Uint64
-SDL_Swap64(Uint64 x)
+ALMIXER_FORCE_INLINE uint64_t
+ALmixer_Swap64(uint64_t x)
 {
-    Uint32 hi, lo;
+    uint32_t hi, lo;
 
     /* Separate into high and low 32-bit values and swap them */
-    lo = SDL_static_cast(Uint32, x & 0xFFFFFFFF);
+    lo = ALmixer_static_cast(uint32_t, x & 0xFFFFFFFF);
     x >>= 32;
-    hi = SDL_static_cast(Uint32, x & 0xFFFFFFFF);
-    x = SDL_Swap32(lo);
+    hi = ALmixer_static_cast(uint32_t, x & 0xFFFFFFFF);
+    x = ALmixer_Swap32(lo);
     x <<= 32;
-    x |= SDL_Swap32(hi);
+    x |= ALmixer_Swap32(hi);
     return (x);
 }
 #endif
 
 
-SDL_FORCE_INLINE float
-SDL_SwapFloat(float x)
+ALMIXER_FORCE_INLINE float
+ALmixer_SwapFloat(float x)
 {
     union
     {
         float f;
-        Uint32 ui32;
+        uint32_t ui32;
     } swapper;
     swapper.f = x;
-    swapper.ui32 = SDL_Swap32(swapper.ui32);
+    swapper.ui32 = ALmixer_Swap32(swapper.ui32);
     return swapper.f;
 }
 
@@ -207,24 +227,24 @@ SDL_SwapFloat(float x)
  *  Byteswap item from the specified endianness to the native endianness.
  */
 /* @{ */
-#if SDL_BYTEORDER == SDL_LIL_ENDIAN
-#define SDL_SwapLE16(X) (X)
-#define SDL_SwapLE32(X) (X)
-#define SDL_SwapLE64(X) (X)
-#define SDL_SwapFloatLE(X)  (X)
-#define SDL_SwapBE16(X) SDL_Swap16(X)
-#define SDL_SwapBE32(X) SDL_Swap32(X)
-#define SDL_SwapBE64(X) SDL_Swap64(X)
-#define SDL_SwapFloatBE(X)  SDL_SwapFloat(X)
+#if ALmixer_BYTEORDER == ALmixer_LIL_ENDIAN
+#define ALmixer_SwapLE16(X) (X)
+#define ALmixer_SwapLE32(X) (X)
+#define ALmixer_SwapLE64(X) (X)
+#define ALmixer_SwapFloatLE(X)  (X)
+#define ALmixer_SwapBE16(X) ALmixer_Swap16(X)
+#define ALmixer_SwapBE32(X) ALmixer_Swap32(X)
+#define ALmixer_SwapBE64(X) ALmixer_Swap64(X)
+#define ALmixer_SwapFloatBE(X)  ALmixer_SwapFloat(X)
 #else
-#define SDL_SwapLE16(X) SDL_Swap16(X)
-#define SDL_SwapLE32(X) SDL_Swap32(X)
-#define SDL_SwapLE64(X) SDL_Swap64(X)
-#define SDL_SwapFloatLE(X)  SDL_SwapFloat(X)
-#define SDL_SwapBE16(X) (X)
-#define SDL_SwapBE32(X) (X)
-#define SDL_SwapBE64(X) (X)
-#define SDL_SwapFloatBE(X)  (X)
+#define ALmixer_SwapLE16(X) ALmixer_Swap16(X)
+#define ALmixer_SwapLE32(X) ALmixer_Swap32(X)
+#define ALmixer_SwapLE64(X) ALmixer_Swap64(X)
+#define ALmixer_SwapFloatLE(X)  ALmixer_SwapFloat(X)
+#define ALmixer_SwapBE16(X) (X)
+#define ALmixer_SwapBE32(X) (X)
+#define ALmixer_SwapBE64(X) (X)
+#define ALmixer_SwapFloatBE(X)  (X)
 #endif
 /* @} *//* Swap to native */
 
@@ -232,8 +252,8 @@ SDL_SwapFloat(float x)
 #ifdef __cplusplus
 }
 #endif
-#include "close_code.h"
+#include "ALmixer_close_code.h"
 
-#endif /* _SDL_endian_h */
+#endif /* _ALmixer_endian_h */
 
 /* vi: set ts=4 sw=4 expandtab: */

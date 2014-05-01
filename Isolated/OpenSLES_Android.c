@@ -421,6 +421,7 @@ static int OpenSLES_open(Sound_Sample *sample, const char *ext) {
         decSource.pLocator = &loc_src;
         decSource.pFormat   = &format_srcMime;
     } else {
+#if 0
         /* Setup the data source for Asset if file_name is relative path */
         AAssetManager* asmgr = asset_manager;
         if (asmgr == NULL) {
@@ -439,6 +440,14 @@ static int OpenSLES_open(Sound_Sample *sample, const char *ext) {
             SNDDBG("AAsset_openFileDescriptor failed");
             return(0);
         }
+#endif
+        int fd;
+		off_t start;
+		off_t length;
+		fd = internal->rw->hidden.androidio.fd;
+		/* I'm not sure if it is position or offset */
+		start = internal->rw->hidden.androidio.position;
+		length = internal->rw->hidden.androidio.size;
 
         SLDataLocator_AndroidFD loc_src = {SL_DATALOCATOR_ANDROIDFD, fd, start, length};
         decSource.pLocator = &loc_src;

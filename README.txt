@@ -1,13 +1,16 @@
 Introduction:
 
-ALmixer (which I sometimes call "SDL-OpenAL-Mixer" or "SDL_ALmixer") is a cross-platform audio library built on top of OpenAL to make playing and managing sounds easier. 
+ALmixer is a cross-platform audio library built on top of OpenAL to make playing and managing sounds easier. 
 
 ALmixer provides a simple API inspired by SDL_mixer to make playing sounds easy with having to worry about directly dealing with OpenAL sources, buffers, 
 and buffer queuing directly.
 
-ALmixer currently utilizes SDL_sound behind the scenes to decode 
-various audio formats such as WAV, MP3, AAC, MP4, OGG, etc.
+While its origins come from the SDL universe, ALmixer no longer requires SDL and can be built completely standalone, with the only dependendcy being OpenAL.
+This means you can use ALmixer in any environment you wish.
 
+ALmixer provides native decoders for Mac, iOS (CoreAudio), Android (OpenSLES), and Windows (Windows Media Foundation).
+This yields the best performance, best battery life, and minimal binary size when leveraging the native backends, while providing WAV, MP3, and the ever elusive AAC/MP4 formats.
+Additional decoders may be compiled in with ALmixer either directly, or optionally through the use of SDL_sound, such as OGG. 
 This library is targeted towards two major groups:
 
 - People who just want an easy, high performance, way to play audio (don't care if its OpenAL or not)
@@ -30,11 +33,15 @@ Why would you want to use ALmixer over SDL_mixer?
 - Uses OpenAL as the audio engine instead of SDL.
 - Not subject to known SDL and SDL_mixer bugs/limitations
 - ALmixer was designed to work cooperatively with OpenAL features and effects.
-- ALmixer has been used by millions of users as the sound engine behind the Corona SDK.
+- ALmixer has been battle hardened since 2011, as the core audio engine of the Corona SDK by thousands of developers and millions of players (iOS, Android, Mac, Windows)
 - ALmixer has successfully been binded for use in Lua and JavaScript.
+- ALmixer has been around for over a decade.
+- ALmixer owned Apple's bug list on OpenAL for many years, and helped work out many problems on Mac and iOS.
+- Thanks to commercial interests, a lot more attention has been focused on mobile (iOS/Android) than most other cross platform audio libraries.
+
 
 Why would you want to use SDL_mixer over ALmixer?
-- SDL_mixer has been around longer and audited by more developers.
+- Despite ALmixer's age, SDL_mixer has still been around longer and audited by more developers.
 - OpenAL while an industry cross-platform standard, is still not as ubiquitous as SDL.
 - OpenAL may have a different set of bugs and there are different implementations of OpenAL which may have different bugs.
 - SDL_mixer effects are not ported. (You should utilize OpenAL effects instead.)
@@ -60,6 +67,9 @@ Having Update run in a separate thread has some advantages, particularly for str
 I still consider this refer to this feature as experimental, but this feature has been in active use in the Corona SDK for many years now and used by millions of users, so it is shippable.
 
 
+By default, ALmixer compiles for standalone mode. Optionally, you may change this so SDL is a dependency. This will shrink the binary size slightly. (I measure 26KB with -Os on Mac.) 
+Another option is to compile with SDL_sound as a dependency. This assumes SDL is a dependency and will disable all the built-in ALmixer decoders. In this mode, ALmixer will defer to SDL_sound and the decoders it provides.
+
 
 Building:
 
@@ -77,6 +87,12 @@ Or use the ccmake or the CMake GUI to make it easier to configure options like E
 
 Android developers should refer to the HelloAndroidALmixer sample project which contains a complete example of how to build OpenAL, ALmixer, and how to integrate into a native Android project.
 https://bitbucket.org/ewing/hello-android-almixer
+
+Mac and iOS:
+I have Xcode projects in addition to CMake. These enable ENABLE_ALMIXER_THREADS and do not have SDL dependencies.
+If you use CMake, there is a currently a bug/limitation in CMake that looks in /System/Library/Frameworks for built-in frameworks. This used to be the correct thing, but is no longer the case because Apple does not put header files in there any more. To fix the OPENAL_INCLUDE_DIR option, you need to point it to the correct location inside the Xcode.app, e.g.
+/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.9.sdk/System/Library/Frameworks/OpenAL.framework/Headers
+
 
 
 Backstory:
@@ -105,6 +121,10 @@ So I have decided to finally release ALmixer, even without the clean ups. My hop
 Technical Notes:
 ================
 
+Public Headers:
+ALmixer.h
+ALmixer_RWops.h
+
 Threads: 
 If you compile with threads enabled, you must understand that most callbacks fire on a background thread. (One exceptions is that HaltChannel callbacks will fire on the calling thread.) 
 You are responsible for dealing with thread safety issues.
@@ -113,22 +133,34 @@ A wishlist item is to switch to spin locks (for speed) instead of recursive lock
 
 
 Platform Decoders and minimal depedencies:
-ALmixer can be compiled to use SDL+SDL_sound to get the benefit of a mature codebase and vast number of codecs.
-However, ALmixer has been developing native platform decoders to eliminate external dependencies (i.e. no SDL and no SDL_sound) and avoid patent and royalty issues, which formats like MP3 and AAC are encumbered with.
-ALmixer currently has a mature Core Audio backend (Mac/iOS).
-ALmixer has also introduced an Android OpenSL ES backend.
-A Windows Media Foundation backend is on the wish list.
-
+ALmixer can be compiled to use SDL to minimize some code duplication.
+You may additionally use SDL_sound to gain access to different decoders.
+However, ALmixer has been developing native platform decoders to eliminate external dependencies (i.e. no SDL and no SDL_sound) and avoid patent and royalty issues, which formats like MP3 and AAC/MP4 are encumbered with.
+ALmixer currently has a Core Audio backend (Mac/iOS), Android OpenSL ES backend, and a Windows Media Foundation backend, all of which support MP3 and AAC/MP4 with the platform vendors providing protection for patents/royalties.
+(Be aware, for MP3, you may be subject to royalties if you distribute MP3 files. AAC/MP4 typically does not share this restriction. Please consult your legal counsel.)
 
 Additional Android Notes:
 The Android OpenSL ES backend uses Google's decoder API extensions which are introduced in Android 4.0 (API 14). This is the minimum requirement for this backend.
 However, Android audio latency problems are infamous (search for Android bug #3434), and things are generally terrible. Android 4.1 improves things significantly (though they still are terrible.
 For the sake of avoiding bad reviews, you may want to consider requiring 4.1 as your minimum.
 
-Additionally, the OpenSL ES API extensions fail to provide a classic API that uses function pointers for the fopen/fread/fseek/fclose family to allow abstraction layers to exist. As a consequence, SDL_RWops does not work with the native Android decoder backend. Please file feature requests with Android to convince them to correct this.
+Additionally, the OpenSL ES API extensions fail to provide a classic API that uses function pointers for the fopen/fread/fseek/fclose family to allow abstraction layers to exist. As a consequence, only physical files are supported and reading sources from memory will not work with the native Android decoder backend. Please file feature requests with Android to convince them to correct this.
 
 See the HelloAndroidALmixer example.
 https://bitbucket.org/ewing/hello-android-almixer
+
+
+Windows Media Foundation:
+A native Windows Media Foundation implementation is available. Microsoft introduced the APIs in Vista. However, due to bugs and limitations in Vista with respect to WMF, everybody says assume Windows 7 is the minimum requirement.
+Now that Microsoft has officially ended XP support, and the fact that nobody runs Vista, and the lion's share of users now run Windows 7, this seems like a reasonable minimum system requirement.
+
+
+
+RWops:
+ALmixer_RWops is a direct copy from SDL_RWops. In fact, its intent is to behave identically and be binary compatible with SDL_RWops. 
+When compiled with SDL as a dependency, ALmixer actually uses SDL_rwops directly and casts the pointer behind the scenes.
+When compiled as standalone, source code was copied from SDL and then stripped down to remove everything but the parts needed for RWops. 
+The ALmixer_RWops header should have the same fields and sizes and alignments as SDL_RWops, and the implementation is supposed to be the same, so in theory, these are still interchangable via pointer casting.
 
 
 LGPL issues:

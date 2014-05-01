@@ -1,26 +1,7 @@
 #include "ALmixer.h"
 #include <stdio.h>
+#include <stdlib.h>
 
-#ifdef ALMIXER_COMPILE_WITHOUT_SDL
-	#if defined(_WIN32)
-		#define WIN32_LEAN_AND_MEAN
-		#include <windows.h>
-	#else
-   	  	#include <unistd.h>
-	#endif
-
-	static void Internal_Delay(ALuint milliseconds_delay)
-	{
-		#if defined(_WIN32)
-		Sleep(milliseconds_delay);
-		#else
-		usleep(milliseconds_delay*1000);
-		#endif
-	}
-#else
-	#include "SDL.h"
-	#define Internal_Delay SDL_Delay
-#endif
 #define MAX_SOURCES 16
 
 ALboolean g_PlayingAudio[MAX_SOURCES];
@@ -73,7 +54,7 @@ int main(int argc, char* argv[])
 			still_playing |= g_PlayingAudio[i-1];
 		}
 		ALmixer_Update();
-		Internal_Delay(10);
+		ALmixer_Delay(10);
 	}
 		
 	for(i=1; i<argc; i++)

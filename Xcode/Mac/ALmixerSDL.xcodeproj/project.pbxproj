@@ -7,7 +7,6 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		00003F32180B7CAF005C5A7B /* ALmixer-Info.plist in Resources */ = {isa = PBXBuildFile; fileRef = 00003F31180B7CAF005C5A7B /* ALmixer-Info.plist */; };
 		004707EB1694EF57008D5B45 /* ALmixer.c in Sources */ = {isa = PBXBuildFile; fileRef = 004707CA1694EF57008D5B45 /* ALmixer.c */; };
 		004707EC1694EF57008D5B45 /* ALmixer.h in Headers */ = {isa = PBXBuildFile; fileRef = 004707CB1694EF57008D5B45 /* ALmixer.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		004707ED1694EF57008D5B45 /* CircularQueue.c in Sources */ = {isa = PBXBuildFile; fileRef = 004707CC1694EF57008D5B45 /* CircularQueue.c */; };
@@ -38,9 +37,10 @@
 		0047083E1694F3ED008D5B45 /* battle_hymn_of_the_republic.mp3 in Resources */ = {isa = PBXBuildFile; fileRef = 0047083D1694F3ED008D5B45 /* battle_hymn_of_the_republic.mp3 */; };
 		006C974B1912026A008B0A48 /* ALmixer_begin_code.h in Headers */ = {isa = PBXBuildFile; fileRef = 006C974919120269008B0A48 /* ALmixer_begin_code.h */; };
 		006C974C1912026A008B0A48 /* ALmixer_close_code.h in Headers */ = {isa = PBXBuildFile; fileRef = 006C974A1912026A008B0A48 /* ALmixer_close_code.h */; };
+		006C975019123B97008B0A48 /* SDL2.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 006C974D19123A78008B0A48 /* SDL2.framework */; };
+		006C975119123B98008B0A48 /* SDL2.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 006C974D19123A78008B0A48 /* SDL2.framework */; };
 		00CAA426191114C300B050E5 /* ALmixer_RWops.c in Sources */ = {isa = PBXBuildFile; fileRef = 00CAA41C191114C300B050E5 /* ALmixer_RWops.c */; };
 		00CAA427191114C300B050E5 /* ALmixer_rwopsbundlesupport.h in Headers */ = {isa = PBXBuildFile; fileRef = 00CAA41E191114C300B050E5 /* ALmixer_rwopsbundlesupport.h */; };
-		00CAA428191114C300B050E5 /* ALmixer_rwopsbundlesupport.m in Sources */ = {isa = PBXBuildFile; fileRef = 00CAA41F191114C300B050E5 /* ALmixer_rwopsbundlesupport.m */; };
 		00CAA42B1911161C00B050E5 /* ALmixer_endian.h in Headers */ = {isa = PBXBuildFile; fileRef = 00CAA4291911161C00B050E5 /* ALmixer_endian.h */; };
 		00CAA436191117A900B050E5 /* ALmixer_stdinc.h in Headers */ = {isa = PBXBuildFile; fileRef = 00CAA435191117A900B050E5 /* ALmixer_stdinc.h */; };
 		00CAA4421911B1E300B050E5 /* ALmixer_config_android.h in Headers */ = {isa = PBXBuildFile; fileRef = 00CAA4371911B1E300B050E5 /* ALmixer_config_android.h */; };
@@ -55,10 +55,7 @@
 		00CAA44B1911B1E300B050E5 /* ALmixer_config.h in Headers */ = {isa = PBXBuildFile; fileRef = 00CAA4401911B1E300B050E5 /* ALmixer_config.h */; };
 		00CAA44C1911B1E300B050E5 /* ALmixer_platform.h in Headers */ = {isa = PBXBuildFile; fileRef = 00CAA4411911B1E300B050E5 /* ALmixer_platform.h */; };
 		00CAA4551911BC3B00B050E5 /* ALmixer_internal.h in Headers */ = {isa = PBXBuildFile; fileRef = 00CAA44D1911BC3B00B050E5 /* ALmixer_internal.h */; };
-		00CAA4591911BC3B00B050E5 /* ALmixer_malloc.c in Sources */ = {isa = PBXBuildFile; fileRef = 00CAA4521911BC3B00B050E5 /* ALmixer_malloc.c */; };
-		00CAA45A1911BC3B00B050E5 /* ALmixer_stdlib.c in Sources */ = {isa = PBXBuildFile; fileRef = 00CAA4531911BC3B00B050E5 /* ALmixer_stdlib.c */; };
-		00CAA45B1911BC3B00B050E5 /* ALmixer_string.c in Sources */ = {isa = PBXBuildFile; fileRef = 00CAA4541911BC3B00B050E5 /* ALmixer_string.c */; };
-		00D635D519125525004F6671 /* ALmixer_RWops.h in Headers */ = {isa = PBXBuildFile; fileRef = 00D635D419125525004F6671 /* ALmixer_RWops.h */; settings = {ATTRIBUTES = (Public, ); }; };
+		00D635D3191246AC004F6671 /* ALmixer_RWops.h in Headers */ = {isa = PBXBuildFile; fileRef = 00D635D2191246AC004F6671 /* ALmixer_RWops.h */; settings = {ATTRIBUTES = (Public, ); }; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -122,6 +119,7 @@
 		0047083D1694F3ED008D5B45 /* battle_hymn_of_the_republic.mp3 */ = {isa = PBXFileReference; lastKnownFileType = audio.mp3; name = battle_hymn_of_the_republic.mp3; path = ../../../EXAMPLES/Resources/battle_hymn_of_the_republic.mp3; sourceTree = "<group>"; };
 		006C974919120269008B0A48 /* ALmixer_begin_code.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = ALmixer_begin_code.h; sourceTree = "<group>"; };
 		006C974A1912026A008B0A48 /* ALmixer_close_code.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = ALmixer_close_code.h; sourceTree = "<group>"; };
+		006C974D19123A78008B0A48 /* SDL2.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = SDL2.framework; path = "../../../../../../../Library/Developer/Xcode/DerivedData/SDL-bewofwcxfwgkpidfmadjwahyhbvy/Build/Products/Debug/SDL2.framework"; sourceTree = "<group>"; };
 		00CAA41C191114C300B050E5 /* ALmixer_RWops.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = ALmixer_RWops.c; sourceTree = "<group>"; };
 		00CAA41E191114C300B050E5 /* ALmixer_rwopsbundlesupport.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = ALmixer_rwopsbundlesupport.h; sourceTree = "<group>"; };
 		00CAA41F191114C300B050E5 /* ALmixer_rwopsbundlesupport.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = ALmixer_rwopsbundlesupport.m; sourceTree = "<group>"; };
@@ -146,7 +144,7 @@
 		00CAA4521911BC3B00B050E5 /* ALmixer_malloc.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = ALmixer_malloc.c; sourceTree = "<group>"; };
 		00CAA4531911BC3B00B050E5 /* ALmixer_stdlib.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = ALmixer_stdlib.c; sourceTree = "<group>"; };
 		00CAA4541911BC3B00B050E5 /* ALmixer_string.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = ALmixer_string.c; sourceTree = "<group>"; };
-		00D635D419125525004F6671 /* ALmixer_RWops.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = ALmixer_RWops.h; sourceTree = "<group>"; };
+		00D635D2191246AC004F6671 /* ALmixer_RWops.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = ALmixer_RWops.h; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -157,6 +155,7 @@
 				0047081B1694F142008D5B45 /* QuartzCore.framework in Frameworks */,
 				004708191694F128008D5B45 /* AudioToolbox.framework in Frameworks */,
 				004708171694F122008D5B45 /* OpenAL.framework in Frameworks */,
+				006C975019123B97008B0A48 /* SDL2.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -164,6 +163,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				006C975119123B98008B0A48 /* SDL2.framework in Frameworks */,
 				004708381694F340008D5B45 /* ALmixer.framework in Frameworks */,
 				004708221694F2B2008D5B45 /* Cocoa.framework in Frameworks */,
 			);
@@ -175,6 +175,7 @@
 		004707631694EDE8008D5B45 = {
 			isa = PBXGroup;
 			children = (
+				006C974D19123A78008B0A48 /* SDL2.framework */,
 				0047081A1694F142008D5B45 /* QuartzCore.framework */,
 				004708181694F128008D5B45 /* AudioToolbox.framework */,
 				004708161694F122008D5B45 /* OpenAL.framework */,
@@ -217,7 +218,7 @@
 		004707C91694EF35008D5B45 /* ALmixer */ = {
 			isa = PBXGroup;
 			children = (
-				00D635D419125525004F6671 /* ALmixer_RWops.h */,
+				00D635D2191246AC004F6671 /* ALmixer_RWops.h */,
 				004707CA1694EF57008D5B45 /* ALmixer.c */,
 				004707CB1694EF57008D5B45 /* ALmixer.h */,
 				004707CC1694EF57008D5B45 /* CircularQueue.c */,
@@ -385,7 +386,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				00CAA4431911B1E300B050E5 /* ALmixer_config_iphoneos.h in Headers */,
-				00D635D519125525004F6671 /* ALmixer_RWops.h in Headers */,
+				00D635D3191246AC004F6671 /* ALmixer_RWops.h in Headers */,
 				00CAA4471911B1E300B050E5 /* ALmixer_config_psp.h in Headers */,
 				00CAA4491911B1E300B050E5 /* ALmixer_config_winrt.h in Headers */,
 				004707EC1694EF57008D5B45 /* ALmixer.h in Headers */,
@@ -459,10 +460,10 @@
 		004707651694EDE8008D5B45 /* Project object */ = {
 			isa = PBXProject;
 			attributes = {
-				LastUpgradeCheck = 0450;
+				LastUpgradeCheck = 0510;
 				ORGANIZATIONNAME = "PlayControl Software LLC";
 			};
-			buildConfigurationList = 004707681694EDE8008D5B45 /* Build configuration list for PBXProject "ALmixer" */;
+			buildConfigurationList = 004707681694EDE8008D5B45 /* Build configuration list for PBXProject "ALmixerSDL" */;
 			compatibilityVersion = "Xcode 3.2";
 			developmentRegion = English;
 			hasScannedForEncodings = 0;
@@ -485,7 +486,6 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				00003F32180B7CAF005C5A7B /* ALmixer-Info.plist in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -509,17 +509,13 @@
 			files = (
 				004707EB1694EF57008D5B45 /* ALmixer.c in Sources */,
 				00CAA426191114C300B050E5 /* ALmixer_RWops.c in Sources */,
-				00CAA428191114C300B050E5 /* ALmixer_rwopsbundlesupport.m in Sources */,
-				00CAA4591911BC3B00B050E5 /* ALmixer_malloc.c in Sources */,
 				004707ED1694EF57008D5B45 /* CircularQueue.c in Sources */,
 				004707F11694EF57008D5B45 /* coreaudio.c in Sources */,
 				004707FA1694EF57008D5B45 /* SimpleMutex.c in Sources */,
 				004707FD1694EF57008D5B45 /* SimpleThreadPosix.c in Sources */,
 				004707FF1694EF57008D5B45 /* SoundDecoder.c in Sources */,
-				00CAA45A1911BC3B00B050E5 /* ALmixer_stdlib.c in Sources */,
 				004708021694EF57008D5B45 /* tErrorLib.c in Sources */,
 				004708061694EF57008D5B45 /* LinkedList.c in Sources */,
-				00CAA45B1911BC3B00B050E5 /* ALmixer_string.c in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -573,7 +569,6 @@
 		004707821694EDE8008D5B45 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				ARCHS = "$(ARCHS_STANDARD_64_BIT)";
 				CLANG_CXX_LANGUAGE_STANDARD = "gnu++0x";
 				CLANG_CXX_LIBRARY = "libc++";
 				CLANG_WARN_EMPTY_BODY = YES;
@@ -585,6 +580,7 @@
 				GCC_OPTIMIZATION_LEVEL = 0;
 				GCC_PREPROCESSOR_DEFINITIONS = (
 					"DEBUG=1",
+					ALMIXER_COMPILE_WITH_SDL,
 					ENABLE_ALMIXER_THREADS,
 					"$(inherited)",
 				);
@@ -596,14 +592,13 @@
 				MACOSX_DEPLOYMENT_TARGET = 10.6;
 				ONLY_ACTIVE_ARCH = YES;
 				SDKROOT = macosx;
-				USER_HEADER_SEARCH_PATHS = "$(SDKROOT)/System/Library/Frameworks/OpenAL.framework/Headers \"$(SRCROOT)/../../Isolated/SDL/include\" \"$(SRCROOT)/../../Isolated/SDL/src\"/**";
+				USER_HEADER_SEARCH_PATHS = "$(SDKROOT)/System/Library/Frameworks/OpenAL.framework/Headers \"$(SRCROOT)/../../Isolated/SDL/include\" \"$(SRCROOT)/../../Isolated/SDL/src\"/** /Library/Frameworks/SDL2.framework/Headers";
 			};
 			name = Debug;
 		};
 		004707831694EDE8008D5B45 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				ARCHS = "$(ARCHS_STANDARD_64_BIT)";
 				CLANG_CXX_LANGUAGE_STANDARD = "gnu++0x";
 				CLANG_CXX_LIBRARY = "libc++";
 				CLANG_WARN_EMPTY_BODY = YES;
@@ -612,14 +607,17 @@
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				GCC_C_LANGUAGE_STANDARD = gnu99;
 				GCC_ENABLE_OBJC_EXCEPTIONS = YES;
-				GCC_PREPROCESSOR_DEFINITIONS = ENABLE_ALMIXER_THREADS;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					ALMIXER_COMPILE_WITH_SDL,
+					ENABLE_ALMIXER_THREADS,
+				);
 				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
 				GCC_WARN_ABOUT_RETURN_TYPE = YES;
 				GCC_WARN_UNINITIALIZED_AUTOS = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				MACOSX_DEPLOYMENT_TARGET = 10.6;
 				SDKROOT = macosx;
-				USER_HEADER_SEARCH_PATHS = "$(SDKROOT)/System/Library/Frameworks/OpenAL.framework/Headers \"$(SRCROOT)/../../Isolated/SDL/include\" \"$(SRCROOT)/../../Isolated/SDL/src\"/**";
+				USER_HEADER_SEARCH_PATHS = "$(SDKROOT)/System/Library/Frameworks/OpenAL.framework/Headers \"$(SRCROOT)/../../Isolated/SDL/include\" \"$(SRCROOT)/../../Isolated/SDL/src\"/** /Library/Frameworks/SDL2.framework/Headers";
 			};
 			name = Release;
 		};
@@ -629,9 +627,14 @@
 				COMBINE_HIDPI_IMAGES = YES;
 				DYLIB_COMPATIBILITY_VERSION = 1;
 				DYLIB_CURRENT_VERSION = 1;
+				FRAMEWORK_SEARCH_PATHS = (
+					"$(inherited)",
+					"$(USER_LIBRARY_DIR)/Developer/Xcode/DerivedData/SDL-bewofwcxfwgkpidfmadjwahyhbvy/Build/Products/Debug",
+				);
 				FRAMEWORK_VERSION = A;
 				INFOPLIST_FILE = "ALmixer/ALmixer-Info.plist";
 				INSTALL_PATH = "@rpath";
+				LD_RUNPATH_SEARCH_PATHS = "@loader_path/../Frameworks";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				WRAPPER_EXTENSION = framework;
 			};
@@ -643,9 +646,14 @@
 				COMBINE_HIDPI_IMAGES = YES;
 				DYLIB_COMPATIBILITY_VERSION = 1;
 				DYLIB_CURRENT_VERSION = 1;
+				FRAMEWORK_SEARCH_PATHS = (
+					"$(inherited)",
+					"$(USER_LIBRARY_DIR)/Developer/Xcode/DerivedData/SDL-bewofwcxfwgkpidfmadjwahyhbvy/Build/Products/Debug",
+				);
 				FRAMEWORK_VERSION = A;
 				INFOPLIST_FILE = "ALmixer/ALmixer-Info.plist";
 				INSTALL_PATH = "@rpath";
+				LD_RUNPATH_SEARCH_PATHS = "@loader_path/../Frameworks";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				WRAPPER_EXTENSION = framework;
 			};
@@ -656,6 +664,10 @@
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
 				COMBINE_HIDPI_IMAGES = YES;
+				FRAMEWORK_SEARCH_PATHS = (
+					"$(inherited)",
+					"$(USER_LIBRARY_DIR)/Developer/Xcode/DerivedData/SDL-bewofwcxfwgkpidfmadjwahyhbvy/Build/Products/Debug",
+				);
 				GCC_PRECOMPILE_PREFIX_HEADER = YES;
 				GCC_PREFIX_HEADER = "playstream/playstream-Prefix.pch";
 				GCC_PREPROCESSOR_DEFINITIONS = (
@@ -675,6 +687,10 @@
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
 				COMBINE_HIDPI_IMAGES = YES;
+				FRAMEWORK_SEARCH_PATHS = (
+					"$(inherited)",
+					"$(USER_LIBRARY_DIR)/Developer/Xcode/DerivedData/SDL-bewofwcxfwgkpidfmadjwahyhbvy/Build/Products/Debug",
+				);
 				GCC_PRECOMPILE_PREFIX_HEADER = YES;
 				GCC_PREFIX_HEADER = "playstream/playstream-Prefix.pch";
 				INFOPLIST_FILE = "playstream/playstream-Info.plist";
@@ -688,7 +704,7 @@
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
-		004707681694EDE8008D5B45 /* Build configuration list for PBXProject "ALmixer" */ = {
+		004707681694EDE8008D5B45 /* Build configuration list for PBXProject "ALmixerSDL" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				004707821694EDE8008D5B45 /* Debug */,

@@ -1,4 +1,4 @@
-#ifdef ALMIXER_COMPILE_WITHOUT_SDL
+#ifndef ALMIXER_COMPILE_WITH_SDLSOUND
 
 /*
  * SDL_sound Core Audio backend
@@ -780,5 +780,5 @@ static int CoreAudio_seek(Sound_Sample *sample, size_t ms)
 #endif /* __APPLE__ */
 
 
-#endif /* ALMIXER_COMPILE_WITHOUT_SDL */
+#endif /* #ifndef ALMIXER_COMPILE_WITH_SDLSOUND */
 

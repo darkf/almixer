@@ -53,7 +53,7 @@ WIN_SetError(const char *prefix)
 {
     return WIN_SetErrorFromHRESULT(prefix, GetLastError());
 }
-
+#if 0
 HRESULT
 WIN_CoInitialize(void)
 {
@@ -123,7 +123,7 @@ BOOL WIN_IsWindowsVistaOrGreater()
     return IsWindowsVersionOrGreater(HIBYTE(_WIN32_WINNT_VISTA), LOBYTE(_WIN32_WINNT_VISTA), 0);
 #endif
 }
-
+#endif /* #if 0 */
 #endif /* __WIN32__ */
 
 /* vi: set ts=4 sw=4 expandtab: */

@@ -7,7 +7,7 @@
 
 #include "ALmixer.h"
 
-#ifdef ALMIXER_COMPILE_WITHOUT_SDL
+#ifndef ALMIXER_COMPILE_WITH_SDLSOUND
 	#include "ALmixer_RWops.h"
 	#include "SoundDecoder.h"
 #else
@@ -71,7 +71,7 @@
 
 #ifdef ENABLE_ALMIXER_THREADS
 /* Needed for the Mutex locks (and threads if enabled) */
-	#ifdef ALMIXER_COMPILE_WITHOUT_SDL
+	#ifndef ALMIXER_COMPILE_WITH_SDL
 		#include "SimpleMutex.h"
 		#include "SimpleThread.h"
 		typedef struct SimpleMutex SDL_mutex;
@@ -80,7 +80,7 @@
 		#define SDL_DestroyMutex SimpleMutex_DestroyMutex
 		#define SDL_LockMutex SimpleMutex_LockMutex
 		#define SDL_UnlockMutex SimpleMutex_UnlockMutex
-		#define SDL_CreateThread SimpleThread_CreateThread
+		#define SDL_CreateThread(fn,name,ud) SimpleThread_CreateThread(fn,ud)
 		#define SDL_WaitThread SimpleThread_WaitThread
 		#define SDL_ThreadID SimpleThread_GetCurrentThreadID
 		#define SDL_GetThreadID SimpleThread_GetThreadID
@@ -214,10 +214,8 @@
 #endif
 /************ END REMOVE  ME (Don't need anymore) ********/
 
-#ifdef ALMIXER_COMPILE_WITHOUT_SDL
-	#include "tErrorLib.h"
-	static TErrorPool* s_ALmixerErrorPool = NULL;
-#endif
+#include "tErrorLib.h"
+static TErrorPool* s_ALmixerErrorPool = NULL;
 
 static ALboolean ALmixer_Initialized = AL_FALSE;
 /* This should be set correctly by Init */
@@ -282,7 +280,7 @@ ALdouble Internal_alcMacOSXGetMixerOutputRate()
 }
 #endif
 
-#ifdef ALMIXER_COMPILE_WITHOUT_SDL
+#ifndef ALMIXER_COMPILE_WITH_SDL
 
 	#if defined(__APPLE__)
 		#include <QuartzCore/QuartzCore.h>
@@ -324,7 +322,7 @@ ALdouble Internal_alcMacOSXGetMixerOutputRate()
 		#endif
 
 	}
-	static ALuint ALmixer_GetTicks()
+	ALuint ALmixer_GetTicks()
 	{
 		#if defined(__APPLE__)
 			return (ALuint)((CACurrentMediaTime()-s_ticksBaseTime)*1000.0);
@@ -339,7 +337,7 @@ ALdouble Internal_alcMacOSXGetMixerOutputRate()
 			return (ALuint)((current_time.tv_sec - s_ticksBaseTime.tv_sec)*1000.0 + (current_time.tv_nsec - s_ticksBaseTime.tv_nsec) / 1000000);
 		#endif
 	}
-	static void ALmixer_Delay(ALuint milliseconds_delay)
+	void ALmixer_Delay(ALuint milliseconds_delay)
 	{
 		#if defined(_WIN32)
 		Sleep(milliseconds_delay);
@@ -349,8 +347,17 @@ ALdouble Internal_alcMacOSXGetMixerOutputRate()
 	}
 #else
 	#include "SDL.h" /* For SDL_GetTicks(), SDL_Delay */
-	#define ALmixer_GetTicks SDL_GetTicks
-	#define ALmixer_Delay SDL_Delay
+	static void ALmixer_InitTime()
+	{
+	}
+	ALuint ALmixer_GetTicks()
+	{
+		return SDL_static_cast(ALuint, SDL_GetTicks());
+	}
+	void ALmixer_Delay(ALuint milliseconds_delay)
+	{
+		SDL_Delay(SDL_static_cast(Uint32, milliseconds_delay));
+	}
 #endif
 
 /* On iOS, usleep() of small numbers (say less than 100, very pronounced from 0-50)
@@ -366,14 +373,14 @@ ALdouble Internal_alcMacOSXGetMixerOutputRate()
  */
 #if 0 /* Internal_LowerThreadPriority */
 #ifdef ENABLE_ALMIXER_THREADS
-#if defined(__APPLE__) && !defined(ALMIXER_COMPILE_WITHOUT_SDL) && ( (TARGET_OS_IPHONE == 1) || (TARGET_IPHONE_SIMULATOR == 1) )
+#if defined(__APPLE__) && defined(ALMIXER_COMPILE_WITH_SDL) && ( (TARGET_OS_IPHONE == 1) || (TARGET_IPHONE_SIMULATOR == 1) )
 #include <pthread.h>
 #endif
 static void Internal_LowerThreadPriority(SDL_Thread* simple_thread)
 {
 	/* Might open to other platforms as needed */
 #if defined(__APPLE__) && ( (TARGET_OS_IPHONE == 1) || (TARGET_IPHONE_SIMULATOR == 1) )
-	#ifdef ALMIXER_COMPILE_WITHOUT_SDL
+	#ifndef ALMIXER_COMPILE_WITH_SDL
 		SimpleThread_SetThreadPriority(Stream_Thread_global, 0);
 	#else
 		struct sched_param schedule_param;
@@ -6559,7 +6566,7 @@ ALboolean ALmixer_Init(ALuint frequency, ALuint num_sources, ALuint refresh)
 		return AL_FALSE;
 	}
 
-#ifdef ALMIXER_COMPILE_WITHOUT_SDL
+
 	ALmixer_InitTime();
 
 	/* Note: The pool may have been created on previous Init's */
@@ -6581,8 +6588,8 @@ ALboolean ALmixer_Init(ALuint frequency, ALuint num_sources, ALuint refresh)
 		fprintf(stderr, "tError Test1: %s\n", ALmixer_GetError());
 		fprintf(stderr, "tError Test2: %s\n", ALmixer_GetError());
 */
-#endif
 
+	
 	/* Set the defaults */
 /*
 	attrlist[0] = ALC_FREQUENCY;
@@ -6672,7 +6679,7 @@ ALboolean ALmixer_Init(ALuint frequency, ALuint num_sources, ALuint refresh)
 	}
 #endif
 
-#ifndef ALMIXER_COMPILE_WITHOUT_SDL
+#ifdef ALMIXER_COMPILE_WITH_SDL
 	/* Weirdness: It seems that SDL_Init(SDL_INIT_AUDIO)
 	 * causes OpenAL and SMPEG to conflict. For some reason
 	 * if SDL_Init on audio is active, then all the SMPEG
@@ -6991,7 +6998,7 @@ ALboolean ALmixer_Init(ALuint frequency, ALuint num_sources, ALuint refresh)
 	}
 		
 	g_StreamThreadEnabled = AL_TRUE;
-	Stream_Thread_global = SDL_CreateThread(Stream_Data_Thread_Callback, NULL);
+	Stream_Thread_global = SDL_CreateThread(Stream_Data_Thread_Callback, "ALmixerUpdate", NULL);
 	if(NULL == Stream_Thread_global)
 	{
 		/* SDL sets the error message already? */
@@ -7229,7 +7236,7 @@ ALboolean ALmixer_InitContext(ALuint frequency, ALuint refresh)
 	}
 #endif
 
-#ifndef ALMIXER_COMPILE_WITHOUT_SDL
+#ifdef ALMIXER_COMPILE_WITH_SDL
 	/* Weirdness: It seems that SDL_Init(SDL_INIT_AUDIO)
 	 * causes OpenAL and SMPEG to conflict. For some reason
 	 * if SDL_Init on audio is active, then all the SMPEG
@@ -7409,7 +7416,7 @@ ALboolean ALmixer_InitMixer(ALuint num_sources)
 	ALmixer_Initialized = AL_TRUE;
 
 
-#ifdef ALMIXER_COMPILE_WITHOUT_SDL
+
 	ALmixer_InitTime();
 
 	/* Note: The pool may have been created on previous Init's */
@@ -7431,8 +7438,8 @@ ALboolean ALmixer_InitMixer(ALuint num_sources)
 		fprintf(stderr, "tError Test1: %s\n", ALmixer_GetError());
 		fprintf(stderr, "tError Test2: %s\n", ALmixer_GetError());
 	 */
-#endif
 
+	
 	if(num_sources == 0)
 	{
 		Number_of_Channels_global = ALMIXER_DEFAULT_NUM_CHANNELS;
@@ -7556,7 +7563,7 @@ ALboolean ALmixer_InitMixer(ALuint num_sources)
 		
 
 	g_StreamThreadEnabled = AL_TRUE;
-	Stream_Thread_global = SDL_CreateThread(Stream_Data_Thread_Callback, NULL);
+	Stream_Thread_global = SDL_CreateThread(Stream_Data_Thread_Callback, "ALmixerUpdate", NULL);
 	if(NULL == Stream_Thread_global)
 	{
 		/* SDL sets the error message already? */
@@ -7807,7 +7814,7 @@ void ALmixer_ResumeUpdates()
 	/* This must be set before the thread is created to prevent the thread from exiting. */
 	g_StreamThreadEnabled = AL_TRUE;
 	
-	Stream_Thread_global = SDL_CreateThread(Stream_Data_Thread_Callback, NULL);
+	Stream_Thread_global = SDL_CreateThread(Stream_Data_Thread_Callback, "ALmixerUpdate", NULL);
 	if(NULL == Stream_Thread_global)
 	{
 		fprintf(stderr, "Critical Error: Could not create bookkeeping thread in EndInterruption\n");
@@ -7952,11 +7959,11 @@ void ALmixer_Quit()
 	
 	Sound_Quit();
 
-#ifdef ALMIXER_COMPILE_WITHOUT_SDL
+
 	/* Remember: ALmixer_SetError/GetError calls will not work while this is gone. */
 	TError_FreeErrorPool(s_ALmixerErrorPool);
 	s_ALmixerErrorPool = NULL;
-#endif
+
 	return;
 }
 
@@ -8103,11 +8110,11 @@ void ALmixer_QuitWithoutFreeData()
 	
 	Sound_Quit();
 
-#ifdef ALMIXER_COMPILE_WITHOUT_SDL
+
 	/* Remember: ALmixer_SetError/GetError calls will not work while this is gone. */
 	TError_FreeErrorPool(s_ALmixerErrorPool);
 	s_ALmixerErrorPool = NULL;
-#endif
+
 	return;
 }
 
@@ -8129,7 +8136,7 @@ const ALmixer_version* ALmixer_GetLinkedVersion()
 	return(&linked_mixver);
 }
 
-#ifdef ALMIXER_COMPILE_WITHOUT_SDL
+
 
 const char* ALmixer_GetError()
 {
@@ -8164,7 +8171,7 @@ void ALmixer_SetError(const char* err_str, ...)
 	va_end(argp);
 }
 
-#endif
+
 
 
 
@@ -10266,6 +10273,7 @@ ALboolean ALmixer_CompiledWithThreadBackend()
 #endif
 }
 
+#if 0
 size_t ALmixer_GetCurrentThreadID()
 {
 #ifdef ENABLE_ALMIXER_THREADS
@@ -10295,5 +10303,6 @@ size_t ALmixer_GetThreadIDForType(int almixer_thread_type)
 	return 0;
 #endif
 }
+#endif /* #if 0 */
 
 

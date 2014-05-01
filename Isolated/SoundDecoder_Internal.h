@@ -34,8 +34,10 @@ typedef struct SoundDecoder_SampleInternal
     size_t buffer_size;
     void *decoder_private;
     ptrdiff_t total_time;
+#if 0
 	FILE* optional_file_handle; /* needed for Android OpenSL ES decoder backend */
 	const char* optional_file_name;  /* needed for Android OpenSL ES decoder backend */
+#endif
 
 } SoundDecoder_SampleInternal;
 

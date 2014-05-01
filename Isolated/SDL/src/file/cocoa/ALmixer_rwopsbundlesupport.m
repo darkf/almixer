@@ -18,12 +18,12 @@
      misrepresented as being the original software.
   3. This notice may not be removed or altered from any source distribution.
 */
-#include "../../SDL_internal.h"
+//#include "../../SDL_internal.h"
 
 #ifdef __APPLE__
 #import <Foundation/Foundation.h>
 
-#include "SDL_rwopsbundlesupport.h"
+#include "ALmixer_rwopsbundlesupport.h"
 
 /* For proper OS X applications, the resources are contained inside the application bundle.
  So the strategy is to first check the application bundle for the file, then fallback to the current working directory.
@@ -32,7 +32,7 @@
  but we would somehow need to know what the bundle identifiers we need to search are.
  Also, note the bundle layouts are different for iPhone and Mac.
 */
-FILE* SDL_OpenFPFromBundleOrFallback(const char *file, const char *mode)
+FILE* ALmixer_OpenFPFromBundleOrFallback(const char *file, const char *mode)
 {
     FILE* fp = NULL;
 

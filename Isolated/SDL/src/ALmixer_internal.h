@@ -18,13 +18,23 @@
      misrepresented as being the original software.
   3. This notice may not be removed or altered from any source distribution.
 */
+#ifndef _ALmixer_internal_h
+#define _ALmixer_internal_h
 
-#ifdef __APPLE__
+#if 0
+#include "dynapi/ALmixer_dynapi.h"
 
-#include <stdio.h>
-
-#ifndef ALmixer_rwopsbundlesupport_h
-#define ALmixer_rwopsbundlesupport_h
-FILE* ALmixer_OpenFPFromBundleOrFallback(const char *file, const char *mode);
+#if ALmixer_DYNAMIC_API
+#include "dynapi/ALmixer_dynapi_overrides.h"
+/* force DECLSPEC and ALmixerCALL off...it's all internal symbols now.
+   These will have actual #defines during ALmixer_dynapi.c only */
+#define DECLSPEC
+#define ALmixerCALL
 #endif
 #endif
+
+#include "ALmixer_config.h"
+
+#endif
+
+/* vi: set ts=4 sw=4 expandtab: */
