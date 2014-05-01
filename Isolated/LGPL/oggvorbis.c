@@ -49,12 +49,15 @@
 #include "SDL_endian_minimal.h"
 #include "ALmixer_RWops.h"
 
-//#include <vorbis/codec.h>
+/*
+#include <vorbis/codec.h>
 #ifdef _WIN32
 #include <vorbis/vorbisfile.h>
 #else
-#include <ivorbisfile.h>
+#include <vorbisfile.h>
 #endif //_WIN32
+*/
+#include "vorbisfile.h"
 
 #define ERR_IO_ERROR "I/O error"
 

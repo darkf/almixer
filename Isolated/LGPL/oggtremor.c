@@ -46,10 +46,10 @@
 #include "SoundDecoder.h"
 
 #include "SoundDecoder_Internal.h"
-#include "SDL_endian_minimal.h"
 #include "ALmixer_RWops.h"
-
-//#include <vorbis/codec.h>
+/*
+#include <vorbis/codec.h>
+*/
 #include <ivorbisfile.h>
 #define ERR_IO_ERROR "I/O error"
 

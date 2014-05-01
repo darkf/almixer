@@ -56,7 +56,14 @@
 #include "SoundDecoder.h"
 
 #include "SoundDecoder_Internal.h"
-#include "SDL_endian_minimal.h"
+#ifdef ALMIXER_COMPILE_WITH_SDL
+	#include "SDL_endian.h"
+	#define SDL_ReadLE32 ALmixer_ReadLE32
+	#define SDL_SwapLE16 ALmixer_SwapLE16
+	#define SDL_SwapLE32 ALmixer_SwapLE32
+#else
+	#include "ALmixer_endian.h"
+#endif
 #include "ALmixer_RWops.h"
 
 #define ERR_IO_ERROR "I/O error"
@@ -95,7 +102,7 @@ static __inline__ int read_le16(ALmixer_RWops *rw, uint16_t *ui16)
 {
     int rc = ALmixer_RWread(rw, ui16, sizeof (uint16_t), 1);
     BAIL_IF_MACRO(rc != 1, ERR_IO_ERROR, 0);
-    *ui16 = SDL_SwapLE16(*ui16);
+    *ui16 = ALmixer_SwapLE16(*ui16);
     return(1);
 } /* read_le16 */
 
@@ -105,7 +112,7 @@ static __inline__ int read_le32(ALmixer_RWops *rw, uint32_t *ui32)
 {
     int rc = ALmixer_RWread(rw, ui32, sizeof (uint32_t), 1);
     BAIL_IF_MACRO(rc != 1, ERR_IO_ERROR, 0);
-    *ui32 = SDL_SwapLE32(*ui32);
+    *ui32 = ALmixer_SwapLE32(*ui32);
     return(1);
 } /* read_le32 */
 
@@ -735,9 +742,9 @@ static int WAV_open_internal(Sound_Sample *sample, const char *ext, fmt_t *fmt)
     wav_t *w;
     uint32_t pos;
 
-    BAIL_IF_MACRO(SDL_ReadLE32(rw) != riffID, "WAV: Not a RIFF file.", 0);
-    SDL_ReadLE32(rw);  /* throw the length away; we get this info later. */
-    BAIL_IF_MACRO(SDL_ReadLE32(rw) != waveID, "WAV: Not a WAVE file.", 0);
+    BAIL_IF_MACRO(ALmixer_ReadLE32(rw) != riffID, "WAV: Not a RIFF file.", 0);
+    ALmixer_ReadLE32(rw);  /* throw the length away; we get this info later. */
+    BAIL_IF_MACRO(ALmixer_ReadLE32(rw) != waveID, "WAV: Not a WAVE file.", 0);
     BAIL_IF_MACRO(!find_chunk(rw, fmtID), "WAV: No format chunk.", 0);
     BAIL_IF_MACRO(!read_fmt_chunk(rw, fmt), "WAV: Can't read format chunk.", 0);
 

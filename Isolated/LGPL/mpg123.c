@@ -45,7 +45,7 @@
 
 #include "mpg123.h"
 
-#ifndef ALMIXER_COMPILE_WITH_SDLSOUND
+#ifndef ALMIXER_COMPILE_WITH_SDL
 #include "SoundDecoder.h"
 #include "SoundDecoder_Internal.h"
 #include "SimpleMutex.h"
