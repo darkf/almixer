@@ -407,7 +407,6 @@ ALmixer_strlen(const char *string)
 #endif /* HAVE_STRLEN */
 }
 
-#if 0
 size_t
 ALmixer_wcslen(const wchar_t * string)
 {
@@ -421,6 +420,8 @@ ALmixer_wcslen(const wchar_t * string)
     return len;
 #endif /* HAVE_WCSLEN */
 }
+
+#if 0
 
 size_t
 ALmixer_wcslcpy(wchar_t *dst, const wchar_t *src, size_t maxlen)
@@ -934,7 +935,6 @@ ALmixer_strncmp(const char *str1, const char *str2, size_t maxlen)
 #endif /* HAVE_STRNCMP */
 }
 
-#if 0
 int
 ALmixer_strcasecmp(const char *str1, const char *str2)
 {
@@ -958,6 +958,8 @@ ALmixer_strcasecmp(const char *str1, const char *str2)
     return (int) ((unsigned char) a - (unsigned char) b);
 #endif /* HAVE_STRCASECMP */
 }
+
+#if 0
 
 int
 ALmixer_strncasecmp(const char *str1, const char *str2, size_t maxlen)

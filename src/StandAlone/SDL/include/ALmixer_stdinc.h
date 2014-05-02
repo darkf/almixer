@@ -322,8 +322,8 @@ extern DECLSPEC void *ALMIXER_CALL ALmixer_memmove(void *dst, const void *src, s
 extern DECLSPEC int ALMIXER_CALL ALmixer_memcmp(const void *s1, const void *s2, size_t len);
 #endif /* #if 0 */
 
-#if 0
 extern DECLSPEC size_t ALMIXER_CALL ALmixer_wcslen(const wchar_t *wstr);
+#if 0
 extern DECLSPEC size_t ALMIXER_CALL ALmixer_wcslcpy(wchar_t *dst, const wchar_t *src, size_t maxlen);
 extern DECLSPEC size_t ALMIXER_CALL ALmixer_wcslcat(wchar_t *dst, const wchar_t *src, size_t maxlen);
 #endif /* #if 0 */
@@ -366,8 +366,8 @@ extern DECLSPEC double ALMIXER_CALL ALmixer_strtod(const char *str, char **endp)
 extern DECLSPEC int ALMIXER_CALL ALmixer_strcmp(const char *str1, const char *str2);
 extern DECLSPEC int ALMIXER_CALL ALmixer_strncmp(const char *str1, const char *str2, size_t maxlen);
 
-#if 0
 extern DECLSPEC int ALMIXER_CALL ALmixer_strcasecmp(const char *str1, const char *str2);
+#if 0
 extern DECLSPEC int ALMIXER_CALL ALmixer_strncasecmp(const char *str1, const char *str2, size_t len);
 
 extern DECLSPEC int ALMIXER_CALL ALmixer_sscanf(const char *text, const char *fmt, ...);
@@ -401,6 +401,7 @@ extern DECLSPEC double ALMIXER_CALL ALmixer_sin(double x);
 extern DECLSPEC float ALMIXER_CALL ALmixer_sinf(float x);
 extern DECLSPEC double ALMIXER_CALL ALmixer_sqrt(double x);
 
+#endif /* #if 0 */
 
 /* ALmixer: Only Windows uses this function for WIN_UTF8ToString. 
 	This has a lot of code dependencies and size so I'm making it Windows only.
@@ -420,7 +421,6 @@ extern DECLSPEC int ALMIXER_CALL ALmixer_iconv_close(ALmixer_iconv_t cd);
 extern DECLSPEC size_t ALMIXER_CALL ALmixer_iconv(ALmixer_iconv_t cd, const char **inbuf,
                                          size_t * inbytesleft, char **outbuf,
                                          size_t * outbytesleft);
-#endif /* #if 0 */
 
 
 /**
