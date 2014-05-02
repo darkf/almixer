@@ -131,89 +131,97 @@ ENDIF()
 
 
 SET(ALMIXER_CORE_SOURCE
-	${ALmixer_SOURCE_DIR}/ALmixer.c
-	${ALmixer_SOURCE_DIR}/CircularQueue.c
-	${ALmixer_SOURCE_DIR}/CircularQueue.h
-	${ALmixer_SOURCE_DIR}/LinkedList.c
-	${ALmixer_SOURCE_DIR}/LinkedList.h
-	${ALmixer_SOURCE_DIR}/Isolated/tErrorLib.c
-	${ALmixer_SOURCE_DIR}/Isolated/tErrorLib.h
+	${ALmixer_SOURCE_DIR}/src/ALmixer.c
+	${ALmixer_SOURCE_DIR}/src/CircularQueue.c
+	${ALmixer_SOURCE_DIR}/src/CircularQueue.h
+	${ALmixer_SOURCE_DIR}/src/LinkedList.c
+	${ALmixer_SOURCE_DIR}/src/LinkedList.h
+	${ALmixer_SOURCE_DIR}/src/tErrorLib.c
+	${ALmixer_SOURCE_DIR}/src/tErrorLib.h
 )
 IF(ANDROID)
 	SET(ALMIXER_CORE_SOURCE
 		${ALMIXER_CORE_SOURCE}
-		${ALmixer_SOURCE_DIR}/ALmixer_AndroidExtensions.c
-		${ALmixer_SOURCE_DIR}/ALmixer_AndroidExtensions.h
+		${ALmixer_SOURCE_DIR}/src/ALmixer_AndroidExtensions.c
+		${ALmixer_SOURCE_DIR}/src/ALmixer_AndroidExtensions.h
 	)
 ENDIF()
 
 SET(ALMIXER_WITHOUT_SDL_SOURCE
-	${ALmixer_SOURCE_DIR}/Isolated/SimpleThread.h
-	${ALmixer_SOURCE_DIR}/Isolated/SimpleMutex.h
-	${ALmixer_SOURCE_DIR}/Isolated/SimpleMutex.c
-	${ALmixer_SOURCE_DIR}/Isolated/SDL/src/file/ALmixer_RWops.c
-	${ALmixer_SOURCE_DIR}/Isolated/SDL/src/stdlib/ALmixer_malloc.c
-	${ALmixer_SOURCE_DIR}/Isolated/SDL/src/stdlib/ALmixer_stdlib.c
-	${ALmixer_SOURCE_DIR}/Isolated/SDL/src/stdlib/ALmixer_string.c
+	${ALmixer_SOURCE_DIR}/src/StandAlone/SimpleThread.h
+	${ALmixer_SOURCE_DIR}/src/StandAlone/SimpleMutex.h
+	${ALmixer_SOURCE_DIR}/src/StandAlone/SimpleMutex.c
+	${ALmixer_SOURCE_DIR}/src/StandAlone/SDL/src/file/ALmixer_RWops.c
+	${ALmixer_SOURCE_DIR}/src/StandAlone/SDL/src/stdlib/ALmixer_malloc.c
+	${ALmixer_SOURCE_DIR}/src/StandAlone/SDL/src/stdlib/ALmixer_stdlib.c
+	${ALmixer_SOURCE_DIR}/src/StandAlone/SDL/src/stdlib/ALmixer_string.c
 )
 SET(ALMIXER_WITHOUT_SDL_SOURCE_INCLUDE_PATHS
-	${ALmixer_SOURCE_DIR}/Isolated/SDL/include
-	${ALmixer_SOURCE_DIR}/Isolated/SDL/src
+	${ALmixer_SOURCE_DIR}/src/StandAlone
+	${ALmixer_SOURCE_DIR}/src/StandAlone/SDL/include
+	${ALmixer_SOURCE_DIR}/src/StandAlone/SDL/src
 )
 
 IF(APPLE)
 	SET(ALMIXER_WITHOUT_SDL_SOURCE
 		${ALMIXER_WITHOUT_SDL_SOURCE}
-		${ALmixer_SOURCE_DIR}/Isolated/SDL/src/file/cocoa/ALmixer_rwopsbundlesupport.h
-		${ALmixer_SOURCE_DIR}/Isolated/SDL/src/file/cocoa/ALmixer_rwopsbundlesupport.m
+		${ALmixer_SOURCE_DIR}/src/StandAlone/SDL/src/file/cocoa/ALmixer_rwopsbundlesupport.h
+		${ALmixer_SOURCE_DIR}/src/StandAlone/SDL/src/file/cocoa/ALmixer_rwopsbundlesupport.m
 	)
 	SET(ALMIXER_WITHOUT_SDL_SOURCE_INCLUDE_PATHS
 		${ALMIXER_WITHOUT_SDL_SOURCE_INCLUDE_PATHS}
-		${ALmixer_SOURCE_DIR}/Isolated/SDL/src/file/cocoa
+		${ALmixer_SOURCE_DIR}/src/StandAlone/SDL/src/file/cocoa
 	)
 ELSEIF(ANDROID)
 	SET(ALMIXER_WITHOUT_SDL_SOURCE
 		${ALMIXER_WITHOUT_SDL_SOURCE}
-		${ALmixer_SOURCE_DIR}/Isolated/SDL/src/core/android/ALmixer_android.c
-		${ALmixer_SOURCE_DIR}/Isolated/SDL/src/core/android/ALmixer_android.h
+		${ALmixer_SOURCE_DIR}/src/StandAlone/SDL/src/core/android/ALmixer_android.c
+		${ALmixer_SOURCE_DIR}/src/StandAlone/SDL/src/core/android/ALmixer_android.h
 	)
 	SET(ALMIXER_WITHOUT_SDL_SOURCE_INCLUDE_PATHS
 		${ALMIXER_WITHOUT_SDL_SOURCE_INCLUDE_PATHS}
-		${ALmixer_SOURCE_DIR}/Isolated/SDL/src/core/android
+		${ALmixer_SOURCE_DIR}/src/StandAlone/SDL/src/core/android
 	)
 ENDIF()
 
 SET(PUBLIC_HEADERS
-	${ALmixer_SOURCE_DIR}/ALmixer.h
-	${ALmixer_SOURCE_DIR}/ALmixer_RWops.h
-	${ALmixer_SOURCE_DIR}/ALmixer_PlatformExtensions.h
+	${ALmixer_SOURCE_DIR}/include/ALmixer.h
+	${ALmixer_SOURCE_DIR}/include/ALmixer_RWops.h
+	${ALmixer_SOURCE_DIR}/include/ALmixer_PlatformExtensions.h
 )
 
 SET(SOUNDDECODER_SOURCE
-	${ALmixer_SOURCE_DIR}/Isolated/SoundDecoder.c
-	${ALmixer_SOURCE_DIR}/Isolated/SoundDecoder.h
-	${ALmixer_SOURCE_DIR}/Isolated/SoundDecoder_Internal.h
+	${ALmixer_SOURCE_DIR}/src/StandAlone/SoundDecoder/SoundDecoder.c
+	${ALmixer_SOURCE_DIR}/src/StandAlone/SoundDecoder/SoundDecoder.h
+	${ALmixer_SOURCE_DIR}/src/StandAlone/SoundDecoder/SoundDecoder_Internal.h
 )
+
+SET(SOUNDDECODER_INCLUDE_PATHS
+	${ALmixer_SOURCE_DIR}/src/StandAlone/SoundDecoder
+)
+
+
+
 IF(APPLE)
 	SET(ALMIXER_WITHOUT_SDL_SOURCE
 		${ALMIXER_WITHOUT_SDL_SOURCE}
-		${ALmixer_SOURCE_DIR}/Isolated/SimpleThreadPosix.c
+		${ALmixer_SOURCE_DIR}/src/StandAlone/SimpleThreadPosix.c
 	)
 ELSEIF(ANDROID)
 	SET(ALMIXER_WITHOUT_SDL_SOURCE
 		${ALMIXER_WITHOUT_SDL_SOURCE}
-		${ALmixer_SOURCE_DIR}/Isolated/SimpleThreadPosix.c
+		${ALmixer_SOURCE_DIR}/src/StandAlone/SimpleThreadPosix.c
 		
 	)
 ELSEIF(UNIX)
 	SET(ALMIXER_WITHOUT_SDL_SOURCE
 		${ALMIXER_WITHOUT_SDL_SOURCE}
-		${ALmixer_SOURCE_DIR}/Isolated/SimpleThreadPosix.c
+		${ALmixer_SOURCE_DIR}/src/StandAlone/SimpleThreadPosix.c
 	)
 ELSEIF(WIN32)
 	SET(ALMIXER_WITHOUT_SDL_SOURCE
 		${ALMIXER_WITHOUT_SDL_SOURCE}
-		${ALmixer_SOURCE_DIR}/Isolated/SimpleThreadWindows.c
+		${ALmixer_SOURCE_DIR}/src/StandAlone/SimpleThreadWindows.c
 	)
 ENDIF()
 
@@ -221,45 +229,45 @@ SET(ALMIXER_SELECTED_SOURCE_DECODERS "")
 IF(APPLE AND NOT ALMIXER_DISABLE_COREAUDIO_DECODER)
 	SET(ALMIXER_SELECTED_SOURCE_DECODERS
 		${ALMIXER_SELECTED_SOURCE_DECODERS} 
-		${ALmixer_SOURCE_DIR}/Isolated/coreaudio.c
+		${ALmixer_SOURCE_DIR}/src/StandAlone/SoundDecoder/coreaudio.c
 	)
 ELSEIF(ANDROID AND ALMIXER_USE_ANDROID_OPENSLES_DECODER)
 	SET(ALMIXER_SELECTED_SOURCE_DECODERS
 		${ALMIXER_SELECTED_SOURCE_DECODERS} 
-		${ALmixer_SOURCE_DIR}/Isolated/OpenSLES_Android.c
+		${ALmixer_SOURCE_DIR}/src/StandAlone/SoundDecoder/OpenSLES_Android.c
 	)
 ELSEIF(WIN32 AND ALMIXER_USE_WINDOWS_MEDIA_FOUNDATION_DECODER)
 	SET(ALMIXER_SELECTED_SOURCE_DECODERS
 		${ALMIXER_SELECTED_SOURCE_DECODERS} 
-		${ALmixer_SOURCE_DIR}/Isolated/WindowsMediaFoundation.cpp
-		${ALmixer_SOURCE_DIR}/Isolated/WindowsMediaFoundation_IMFByteStreamRWops.cpp
-		${ALmixer_SOURCE_DIR}/Isolated/WindowsMediaFoundation_IMFByteStreamRWops.hpp
+		${ALmixer_SOURCE_DIR}/src/StandAlone/SoundDecoder/WindowsMediaFoundation.cpp
+		${ALmixer_SOURCE_DIR}/src/StandAlone/SoundDecoder/WindowsMediaFoundation_IMFByteStreamRWops.cpp
+		${ALmixer_SOURCE_DIR}/src/StandAlone/SoundDecoder/WindowsMediaFoundation_IMFByteStreamRWops.hpp
 	)
 ENDIF()
 
 IF(ALMIXER_USE_OGG_VORBIS_DECODER)
 	SET(ALMIXER_SELECTED_SOURCE_DECODERS
 		${ALMIXER_SELECTED_SOURCE_DECODERS} 
-		${ALmixer_SOURCE_DIR}/Isolated/LGPL/oggvorbis.c
+		${ALmixer_SOURCE_DIR}/src/StandAlone/SoundDecoder/LGPL/oggvorbis.c
 	)
 ELSEIF(ALMIXER_USE_OGG_TREMOR_DECODER)
 	SET(ALMIXER_SELECTED_SOURCE_DECODERS
 		${ALMIXER_SELECTED_SOURCE_DECODERS} 
-		${ALmixer_SOURCE_DIR}/Isolated/LGPL/oggtremor.c
+		${ALmixer_SOURCE_DIR}/src/StandAlone/SoundDecoder/LGPL/oggtremor.c
 	)
 ENDIF()
 
 IF(ALMIXER_USE_WAV_DECODER)
 	SET(ALMIXER_SELECTED_SOURCE_DECODERS
 		${ALMIXER_SELECTED_SOURCE_DECODERS} 
-		${ALmixer_SOURCE_DIR}/Isolated/LGPL/SDL_sound_minimal.c
-		${ALmixer_SOURCE_DIR}/Isolated/LGPL/wav.c
+		${ALmixer_SOURCE_DIR}/src/StandAlone/SoundDecoder/LGPL/SDL_sound_minimal.c
+		${ALmixer_SOURCE_DIR}/src/StandAlone/SoundDecoder/LGPL/wav.c
 	)
 ENDIF()
 IF(ALMIXER_USE_MPG123_DECODER)
 	SET(ALMIXER_SELECTED_SOURCE_DECODERS
 		${ALMIXER_SELECTED_SOURCE_DECODERS} 
-		${ALmixer_SOURCE_DIR}/Isolated/LGPL/mpg123.c
+		${ALmixer_SOURCE_DIR}/src/StandAlone/SoundDecoder/LGPL/mpg123.c
 	)
 ENDIF()
 
@@ -283,7 +291,7 @@ IF(NOT ALMIXER_OPTION_COMPILE_WITH_SDLSOUND)
 		)
 	ENDIF()	
 
-	MESSAGE("ALMIXER_FILES ${ALMIXER_FILES}")
+#	MESSAGE("ALMIXER_FILES ${ALMIXER_FILES}")
 
 	CHECK_FUNCTION_EXISTS(vasprintf HAVE_VASPRINTF)
 	IF(NOT HAVE_VASPRINTF)
@@ -487,7 +495,7 @@ ELSEIF(WANTS_BUILD_SHARED_LIBRARY)
 ENDIF(WANTS_BUILD_SHARED_LIBRARY AND WANTS_BUILD_FRAMEWORK)
 
 IF(ALMIXER_OPTION_COMPILE_WITH_SDLSOUND)
-	INCLUDE_DIRECTORIES(${ALmixer_SOURCE_DIR} ${OPENAL_INCLUDE_DIR} ${SDL_INCLUDE_DIR} ${SDL_SOUND_INCLUDE_DIR})
+	INCLUDE_DIRECTORIES(${ALmixer_SOURCE_DIR}/include ${ALmixer_SOURCE_DIR}/src ${OPENAL_INCLUDE_DIR} ${SDL_INCLUDE_DIR} ${SDL_SOUND_INCLUDE_DIR})
 	TARGET_LINK_LIBRARIES(ALmixer ${OPENAL_LIBRARY} ${SDL_SOUND_LIBRARIES} ${SDL_LIBRARY}) 
 ELSE()
 	SET(ALMIXER_SELECTED_INCLUDE_PATHS "")
@@ -548,25 +556,55 @@ ELSE()
 		SET(ALMIXER_SELECTED_LINKED_LIBRARIES ${ALMIXER_SELECTED_LINKED_LIBRARIES} ${MPG123_LIBRARY})
 	ENDIF()
 	
-	INCLUDE_DIRECTORIES(${ALmixer_SOURCE_DIR} 
-		${OPENAL_INCLUDE_DIR} 
-		${ALmixer_SOURCE_DIR}/Isolated 
-		${ALMIXER_WITHOUT_SDL_SOURCE_INCLUDE_PATHS}
-		${ALMIXER_SELECTED_INCLUDE_PATHS}
-	)
-MESSAGE("ALMIXER_SELECTED_LINKED_LIBRARIES ${ALMIXER_SELECTED_LINKED_LIBRARIES}")
-	IF(ANDROID)
-		TARGET_LINK_LIBRARIES(ALmixer 
-			${ALMIXER_SELECTED_LINKED_LIBRARIES}
-			${OPENAL_LIBRARY}
-			${ANDROID_LOG_LIBRARY}
+	IF(ALMIXER_OPTION_COMPILE_WITH_SDL)
+		INCLUDE_DIRECTORIES(
+			${OPENAL_INCLUDE_DIR}
+			${ALmixer_SOURCE_DIR}/include
+			${ALmixer_SOURCE_DIR}/src
+			${ALMIXER_SELECTED_INCLUDE_PATHS}
+			${SDL_INCLUDE_DIR}
 		)
+
+		IF(ANDROID)
+			TARGET_LINK_LIBRARIES(ALmixer 
+				${ALMIXER_SELECTED_LINKED_LIBRARIES}
+				${OPENAL_LIBRARY}
+				${ANDROID_LOG_LIBRARY}
+				${SDL_LIBRARY}
+			)
+		ELSE()
+			TARGET_LINK_LIBRARIES(ALmixer 
+				${ALMIXER_SELECTED_LINKED_LIBRARIES}
+				${OPENAL_LIBRARY}
+				${SDL_LIBRARY}				
+			)
+		ENDIF()
 	ELSE()
-		TARGET_LINK_LIBRARIES(ALmixer 
-			${ALMIXER_SELECTED_LINKED_LIBRARIES}
-			${OPENAL_LIBRARY}
+		INCLUDE_DIRECTORIES(
+			${OPENAL_INCLUDE_DIR} 
+			${ALmixer_SOURCE_DIR}/include
+			${ALmixer_SOURCE_DIR}/src
+			${SOUNDDECODER_INCLUDE_PATHS}
+			${ALMIXER_WITHOUT_SDL_SOURCE_INCLUDE_PATHS}
+			${ALMIXER_SELECTED_INCLUDE_PATHS}
 		)
+
+		IF(ANDROID)
+			TARGET_LINK_LIBRARIES(ALmixer 
+				${ALMIXER_SELECTED_LINKED_LIBRARIES}
+				${OPENAL_LIBRARY}
+				${ANDROID_LOG_LIBRARY}
+			)
+		ELSE()
+			TARGET_LINK_LIBRARIES(ALmixer 
+				${ALMIXER_SELECTED_LINKED_LIBRARIES}
+				${OPENAL_LIBRARY}
+			)
+		ENDIF()
+
 	ENDIF()
+
+#	MESSAGE("ALMIXER_SELECTED_LINKED_LIBRARIES ${ALMIXER_SELECTED_LINKED_LIBRARIES}")
 
 ENDIF()
 
@@ -675,37 +713,37 @@ ADD_SUBDIRECTORY(EXAMPLES)
 # Set defaults for Universal Binaries. We want 32-bit Intel/PPC on 10.4 
 # and 32/64-bit Intel/PPC on >= 10.5. Anything <= 10.3 doesn't support.
 IF(APPLE)
-    # These are just defaults/recommendations, but how we want to build
-    # out of the box. But the user needs to be able to change these options.
-    # So we must only set the values the first time CMake is run, or we 
-    # will overwrite any changes the user sets.
-    # FORCE is used because the options are not reflected in the UI otherwise.
-    # Seems like a good place to add version specific compiler flags too.
-    IF(NOT ALMIXER_CONFIG_HAS_BEEN_RUN_BEFORE)
-        # This is really fragile, but CMake doesn't provide the OS system 
-        # version information we need. (Darwin versions can be changed 
-        # independently of OS X versions.)
-        # It does look like CMake handles the CMAKE_OSX_SYSROOT automatically.
-        IF(EXISTS /Developer/SDKs/MacOSX10.5.sdk)
-            SET(CMAKE_OSX_ARCHITECTURES "ppc;i386;x86_64" CACHE STRING "Build architectures for OSX" FORCE)
-            SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -mmacosx-version-min=10.5" CACHE STRING "Flags used by the compiler during all build types." FORCE)
-        ELSE(EXISTS /Developer/SDKs/MacOSX10.5.sdk)
-            IF(EXISTS /Developer/SDKs/MacOSX10.4u.sdk)
-                SET(CMAKE_OSX_ARCHITECTURES "ppc;i386" CACHE STRING "Build architectures for OSX" FORCE)
-                SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -mmacosx-version-min=10.4" CACHE STRING "Flags used by the compiler during all build types." FORCE)
-            ELSE(EXISTS /Developer/SDKs/MacOSX10.4u.sdk)
-                # No Universal Binary support
-                # Should break down further to set the -mmacosx-version-min,
-                # but the SDK detection is too unreliable here.
-            ENDIF(EXISTS /Developer/SDKs/MacOSX10.4u.sdk)
-        ENDIF(EXISTS /Developer/SDKs/MacOSX10.5.sdk)
-    ENDIF(NOT ALMIXER_CONFIG_HAS_BEEN_RUN_BEFORE)
+	# These are just defaults/recommendations, but how we want to build
+	# out of the box. But the user needs to be able to change these options.
+	# So we must only set the values the first time CMake is run, or we 
+	# will overwrite any changes the user sets.
+	# FORCE is used because the options are not reflected in the UI otherwise.
+	# Seems like a good place to add version specific compiler flags too.
+	IF(NOT ALMIXER_CONFIG_HAS_BEEN_RUN_BEFORE)
+		# This is really fragile, but CMake doesn't provide the OS system 
+		# version information we need. (Darwin versions can be changed 
+		# independently of OS X versions.)
+		# It does look like CMake handles the CMAKE_OSX_SYSROOT automatically.
+#		IF(EXISTS /Developer/SDKs/MacOSX10.5.sdk)
+#			SET(CMAKE_OSX_ARCHITECTURES "ppc;i386;x86_64" CACHE STRING "Build architectures for OSX" FORCE)
+#			SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -mmacosx-version-min=10.5" CACHE STRING "Flags used by the compiler during all build types." FORCE)
+#		ELSE(EXISTS /Developer/SDKs/MacOSX10.5.sdk)
+#			IF(EXISTS /Developer/SDKs/MacOSX10.4u.sdk)
+#				SET(CMAKE_OSX_ARCHITECTURES "ppc;i386" CACHE STRING "Build architectures for OSX" FORCE)
+#				SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -mmacosx-version-min=10.4" CACHE STRING "Flags used by the compiler during all build types." FORCE)
+#			ELSE(EXISTS /Developer/SDKs/MacOSX10.4u.sdk)
+				# No Universal Binary support
+				# Should break down further to set the -mmacosx-version-min,
+				# but the SDK detection is too unreliable here.
+#			ENDIF(EXISTS /Developer/SDKs/MacOSX10.4u.sdk)
+#		ENDIF(EXISTS /Developer/SDKs/MacOSX10.5.sdk)
+	ENDIF(NOT ALMIXER_CONFIG_HAS_BEEN_RUN_BEFORE)
 ENDIF(APPLE)
 
 # This needs to be run very last so other parts of the scripts can take
 # advantage of this.
 IF(NOT ALMIXER_CONFIG_HAS_BEEN_RUN_BEFORE)
-    SET(ALMIXER_CONFIG_HAS_BEEN_RUN_BEFORE 1 CACHE INTERNAL "Flag to track whether this is the first time running CMake or if CMake has been configured before")
+	SET(ALMIXER_CONFIG_HAS_BEEN_RUN_BEFORE 1 CACHE INTERNAL "Flag to track whether this is the first time running CMake or if CMake has been configured before")
 ENDIF(NOT ALMIXER_CONFIG_HAS_BEEN_RUN_BEFORE)
 
 

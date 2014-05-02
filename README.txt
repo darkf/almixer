@@ -121,10 +121,6 @@ So I have decided to finally release ALmixer, even without the clean ups. My hop
 Technical Notes:
 ================
 
-Public Headers:
-ALmixer.h
-ALmixer_RWops.h
-
 Threads: 
 If you compile with threads enabled, you must understand that most callbacks fire on a background thread. (One exceptions is that HaltChannel callbacks will fire on the calling thread.) 
 You are responsible for dealing with thread safety issues.
@@ -165,6 +161,31 @@ The ALmixer_RWops header should have the same fields and sizes and alignments as
 
 LGPL issues:
 ALmixer is transitioning away from LGPL to a more liberal license. However, it's dependency on SDL_sound keeps it bound to LGPL. Currently the native Core Audio and Android backends avoid LGPL code as long as you don't compile in additional codecs (labeled under the folder LGPL).
+
+
+Repository Layout:
+
+include/
+Public Headers are in include/
+ALmixer.h
+ALmixer_RWops.h
+ALmixer_PlatformExtensions.h
+
+src/
+Files contained directly in src are considered "core" ALmixer files
+
+src/StandAlone
+Contains files needed to implement ALmixer when SDL is not used
+
+src/StandAlone/SDL
+Contains the ripped out SDL_RWops implementation from SDL for when SDL is not used
+
+src/StandAlone/SoundDecoder
+Contains the SoundDecoder interface and decoders for when SDL_sound is not used
+
+src/StandAlone/SoundDecoder/LGPL
+Contains additional decoders for use with SoundDecoder, but are under the LGPL license.
+
 
 
 Eric Wing <ewing . public @ playcontrol.net>
