@@ -23,6 +23,10 @@
 /* This file contains portable stdlib functions for ALmixer */
 
 #include "ALmixer_stdinc.h"
+
+/* Need stdint stuff */
+#include "ALmixer_config.h"
+
 #if 0
 #include "../libm/math_libm.h"
 
@@ -223,15 +227,15 @@ int ALmixer_abs(int x)
 #endif /* #if 0 */
 
 #ifdef HAVE_CTYPE_H
-/*
 int ALmixer_isdigit(int x) { return isdigit(x); }
+/*
 int ALmixer_isspace(int x) { return isspace(x); }
 */
 int ALmixer_toupper(int x) { return toupper(x); }
 int ALmixer_tolower(int x) { return tolower(x); }
 #else
-/*
 int ALmixer_isdigit(int x) { return ((x) >= '0') && ((x) <= '9'); }
+/*
 int ALmixer_isspace(int x) { return ((x) == ' ') || ((x) == '\t') || ((x) == '\r') || ((x) == '\n') || ((x) == '\f') || ((x) == '\v'); }
 */
 int ALmixer_toupper(int x) { return ((x) >= 'a') && ((x) <= 'z') ? ('A'+((x)-'a')) : (x); }
@@ -259,8 +263,8 @@ __declspec(selectany) int _fltused = 1;
 #pragma function(memcpy)
 void * memcpy ( void * destination, const void * source, size_t num )
 {
-    const Uint8 *src = (const Uint8 *)source;
-    Uint8 *dst = (Uint8 *)destination;
+	const uint8_t *src = (const uint8_t *)source;
+	uint8_t *dst = (uint8_t *)destination;
     size_t i;
     
     /* All WIN64 architectures have SSE, right? */

@@ -269,8 +269,8 @@ extern DECLSPEC int ALMIXER_CALL ALmixer_abs(int x);
 #define ALmixer_min(x, y) (((x) < (y)) ? (x) : (y))
 #define ALmixer_max(x, y) (((x) > (y)) ? (x) : (y))
 
-#if 0
 extern DECLSPEC int ALMIXER_CALL ALmixer_isdigit(int x);
+#if 0
 extern DECLSPEC int ALMIXER_CALL ALmixer_isspace(int x);
 #endif /* #if 0 */
 extern DECLSPEC int ALMIXER_CALL ALmixer_toupper(int x);
@@ -362,7 +362,11 @@ extern DECLSPEC Uint64 ALMIXER_CALL ALmixer_strtoull(const char *str, char **end
 extern DECLSPEC double ALMIXER_CALL ALmixer_strtod(const char *str, char **endp);
 
 extern DECLSPEC int ALMIXER_CALL ALmixer_strcmp(const char *str1, const char *str2);
+#endif /* #if 0 */
+
 extern DECLSPEC int ALMIXER_CALL ALmixer_strncmp(const char *str1, const char *str2, size_t maxlen);
+
+#if 0
 extern DECLSPEC int ALMIXER_CALL ALmixer_strcasecmp(const char *str1, const char *str2);
 extern DECLSPEC int ALMIXER_CALL ALmixer_strncasecmp(const char *str1, const char *str2, size_t len);
 
@@ -413,6 +417,10 @@ extern DECLSPEC size_t ALMIXER_CALL ALmixer_iconv(ALmixer_iconv_t cd, const char
                                          size_t * outbytesleft);
 #endif /* #if 0 */
 
+/* ALmixer: Only Windows uses this function for WIN_UTF8ToString. 
+	This has a lot of code dependencies and size so I'm making it Windows only.
+*/
+#if _WIN32
 /**
  *  This function converts a string between encodings in one pass, returning a
  *  string that must be freed with ALmixer_free() or NULL on error.
@@ -421,6 +429,8 @@ extern DECLSPEC char *ALMIXER_CALL ALmixer_iconv_string(const char *tocode,
                                                const char *fromcode,
                                                const char *inbuf,
                                                size_t inbytesleft);
+#endif /* _WIN32 */
+
 #if 0
 #define ALmixer_iconv_utf8_locale(S)    ALmixer_iconv_string("", "UTF-8", S, ALmixer_strlen(S)+1)
 #define ALmixer_iconv_utf8_ucs2(S)      (Uint16 *)ALmixer_iconv_string("UCS-2-INTERNAL", "UTF-8", S, ALmixer_strlen(S)+1)

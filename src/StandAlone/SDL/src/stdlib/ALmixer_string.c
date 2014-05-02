@@ -24,11 +24,13 @@
 
 #include "ALmixer_stdinc.h"
 
+/* Used for ALmixer_bool */
+#include "ALmixer_RWops.h"
 
-#if 0
 #define ALmixer_isupperhex(X)   (((X) >= 'A') && ((X) <= 'F'))
 #define ALmixer_islowerhex(X)   (((X) >= 'a') && ((X) <= 'f'))
 
+#if 0
 #define UTF8_IsLeadByte(c) ((c) >= 0xC0 && (c) <= 0xF4)
 #define UTF8_IsTrailingByte(c) ((c) >= 0x80 && (c) <= 0xBF)
 
@@ -43,6 +45,8 @@ static int UTF8_TrailingBytes(unsigned char c)
     else
         return 0;
 }
+
+#endif /* #if 0 */
 
 #if !defined(HAVE_VSSCANF) || !defined(HAVE_STRTOL)
 static size_t
@@ -85,6 +89,7 @@ ALmixer_ScanLong(const char *text, int radix, long *valuep)
 }
 #endif
 
+#if 0
 #if !defined(HAVE_VSSCANF) || !defined(HAVE_STRTOUL) || !defined(HAVE_STRTOD)
 static size_t
 ALmixer_ScanUnsignedLong(const char *text, int radix, unsigned long *valuep)
@@ -257,6 +262,7 @@ ALmixer_ScanFloat(const char *text, double *valuep)
     return (text - textstart);
 }
 #endif
+#endif /* #if 0 */
 
 void *
 ALmixer_memset(void *dst, int c, size_t len)
@@ -265,18 +271,18 @@ ALmixer_memset(void *dst, int c, size_t len)
     return memset(dst, c, len);
 #else
     size_t left = (len % 4);
-    Uint32 *dstp4;
-    Uint8 *dstp1;
-    Uint32 value4 = (c | (c << 8) | (c << 16) | (c << 24));
-    Uint8 value1 = (Uint8) c;
+    uint32_t *dstp4;
+    uint8_t *dstp1;
+    uint32_t value4 = (c | (c << 8) | (c << 16) | (c << 24));
+    uint8_t value1 = (uint8_t) c;
 
-    dstp4 = (Uint32 *) dst;
+    dstp4 = (uint32_t *) dst;
     len /= 4;
     while (len--) {
         *dstp4++ = value4;
     }
 
-    dstp1 = (Uint8 *) dstp4;
+    dstp1 = (uint8_t *) dstp4;
     switch (left) {
     case 3:
         *dstp1++ = value1;
@@ -289,7 +295,6 @@ ALmixer_memset(void *dst, int c, size_t len)
     return dst;
 #endif /* HAVE_MEMSET */
 }
-#endif /* #if 0 */
 
 void *
 ALmixer_memcpy(void *dst, const void *src, size_t len)
@@ -306,31 +311,31 @@ ALmixer_memcpy(void *dst, const void *src, size_t len)
     return dst;
 #else
     /* GCC 4.9.0 with -O3 will generate movaps instructions with the loop
-       using Uint32* pointers, so we need to make sure the pointers are
+       using uint32_t* pointers, so we need to make sure the pointers are
        aligned before we loop using them.
      */
     if (((intptr_t)src & 0x3) || ((intptr_t)dst & 0x3)) {
         /* Do an unaligned byte copy */
-        Uint8 *srcp1 = (Uint8 *)src;
-        Uint8 *dstp1 = (Uint8 *)dst;
+		uint8_t *srcp1 = (uint8_t *)src;
+        uint8_t *dstp1 = (uint8_t *)dst;
 
         while (len--) {
             *dstp1++ = *srcp1++;
         }
     } else {
         size_t left = (len % 4);
-        Uint32 *srcp4, *dstp4;
-        Uint8 *srcp1, *dstp1;
+        uint32_t *srcp4, *dstp4;
+        uint8_t *srcp1, *dstp1;
 
-        srcp4 = (Uint32 *) src;
-        dstp4 = (Uint32 *) dst;
+        srcp4 = (uint32_t *) src;
+        dstp4 = (uint32_t *) dst;
         len /= 4;
         while (len--) {
             *dstp4++ = *srcp4++;
         }
 
-        srcp1 = (Uint8 *) srcp4;
-        dstp1 = (Uint8 *) dstp4;
+        srcp1 = (uint8_t *) srcp4;
+        dstp1 = (uint8_t *) dstp4;
         switch (left) {
         case 3:
             *dstp1++ = *srcp1++;
@@ -770,6 +775,7 @@ double ALmixer_atof(const char *string)
     return ALmixer_strtod(string, NULL);
 #endif /* HAVE_ATOF */
 }
+#endif /* #if 0 */
 
 long
 ALmixer_strtol(const char *string, char **endp, int base)
@@ -796,6 +802,7 @@ ALmixer_strtol(const char *string, char **endp, int base)
 #endif /* HAVE_STRTOL */
 }
 
+#if 0
 unsigned long
 ALmixer_strtoul(const char *string, char **endp, int base)
 {

@@ -174,6 +174,15 @@ ALmixer_WriteBE64(ALmixer_RWops * dst, uint64_t value)
 #if defined(__WIN32__)
 #include "../core/windows/ALmixer_windows.h"
 #endif
+#else
+#define WIN32_LEAN_AND_MEAN
+#define STRICT
+#ifndef UNICODE
+#define UNICODE
+#endif
+#undef _WIN32_WINNT
+#define _WIN32_WINNT 0x501 /* Need 0x410 for AlphaBlend() and 0x500 for EnumDisplayDevices(), 0x501 for raw input */
+#include <windows.h>
 #endif /* #if 0 */
 
 /* This file provides a general interface for SDL to read and write
@@ -319,15 +328,17 @@ windows_file_size(ALmixer_RWops * context)
     LARGE_INTEGER size;
 
     if (!context || context->hidden.windowsio.h == INVALID_HANDLE_VALUE) {
-        return ALmixer_SetError("windows_file_size: invalid context/file not opened");
-    }
+        ALmixer_SetError("windows_file_size: invalid context/file not opened");
+		return -1;
+	}
 
     if (!GetFileSizeEx(context->hidden.windowsio.h, &size)) {
 #if 0
         return WIN_SetError("windows_file_size");
 #else
 		/* There are a lot of dependencies on iconv/UTF16 stuff just for WIN_SetError to print the HRESULT. I'd rather avoid it */
-		return ALmixer_SetError("windows_file_size failed calling GetFileSizeEx()");
+		ALmixer_SetError("windows_file_size failed calling GetFileSizeEx()");
+		return -1;
 #endif
     }
 
@@ -341,8 +352,9 @@ windows_file_seek(ALmixer_RWops * context, int64_t offset, int whence)
     LARGE_INTEGER windowsoffset;
 
     if (!context || context->hidden.windowsio.h == INVALID_HANDLE_VALUE) {
-        return ALmixer_SetError("windows_file_seek: invalid context/file not opened");
-    }
+        ALmixer_SetError("windows_file_seek: invalid context/file not opened");
+		return -1;
+	}
 
     /* FIXME: We may be able to satisfy the seek within buffered data */
     if (whence == RW_SEEK_CUR && context->hidden.windowsio.buffer.left) {
@@ -361,8 +373,9 @@ windows_file_seek(ALmixer_RWops * context, int64_t offset, int whence)
         windowswhence = FILE_END;
         break;
     default:
-        return ALmixer_SetError("windows_file_seek: Unknown value for 'whence'");
-    }
+        ALmixer_SetError("windows_file_seek: Unknown value for 'whence'");
+		return -1;
+	}
 
     windowsoffset.QuadPart = offset;
     if (!SetFilePointerEx(context->hidden.windowsio.h, windowsoffset, &windowsoffset, windowswhence)) {
@@ -370,7 +383,8 @@ windows_file_seek(ALmixer_RWops * context, int64_t offset, int whence)
         return WIN_SetError("windows_file_seek");
 #else
 		/* There are a lot of dependencies on iconv/UTF16 stuff just for WIN_SetError to print the HRESULT. I'd rather avoid it */
-		return ALmixer_SetError("windows_file_seek failed calling SetFilePointerEx()");
+		ALmixer_SetError("windows_file_seek failed calling SetFilePointerEx()");
+		return -1;
 #endif
     }
     return windowsoffset.QuadPart;
@@ -411,7 +425,7 @@ windows_file_read(ALmixer_RWops * context, void *ptr, size_t size, size_t maxnum
         if (!ReadFile
             (context->hidden.windowsio.h, context->hidden.windowsio.buffer.data,
              READAHEAD_BUFFER_SIZE, &byte_read, NULL)) {
-            ALmixer_Error(ALmixer_EFREAD);
+            ALmixer_Error(ALMIXER_EFREAD);
             return 0;
         }
         read_ahead = ALmixer_min(total_need, (int) byte_read);
@@ -422,7 +436,7 @@ windows_file_read(ALmixer_RWops * context, void *ptr, size_t size, size_t maxnum
     } else {
         if (!ReadFile
             (context->hidden.windowsio.h, ptr, (DWORD)total_need, &byte_read, NULL)) {
-            ALmixer_Error(ALmixer_EFREAD);
+            ALmixer_Error(ALMIXER_EFREAD);
             return 0;
         }
         total_read += byte_read;
@@ -456,14 +470,14 @@ windows_file_write(ALmixer_RWops * context, const void *ptr, size_t size,
     if (context->hidden.windowsio.append) {
         if (SetFilePointer(context->hidden.windowsio.h, 0L, NULL, FILE_END) ==
             INVALID_SET_FILE_POINTER) {
-            ALmixer_Error(ALmixer_EFWRITE);
+            ALmixer_Error(ALMIXER_EFWRITE);
             return 0;
         }
     }
 
     if (!WriteFile
         (context->hidden.windowsio.h, ptr, (DWORD)total_bytes, &byte_written, NULL)) {
-        ALmixer_Error(ALmixer_EFWRITE);
+		ALmixer_Error(ALMIXER_EFWRITE);
         return 0;
     }
 

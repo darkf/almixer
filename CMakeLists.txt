@@ -24,10 +24,12 @@ IF(NOT ALMIXER_OPTION_COMPILE_WITH_SDLSOUND)
 	IF(ALMIXER_OPTION_COMPILE_WITH_SDL)
 		FIND_PACKAGE(SDL2)
 	ELSE()
-		# Need Foundation for RWops backend because it touches NSFileManager, etc.
-		FIND_LIBRARY(APPLE_FOUNDATION_LIBRARY Foundation)
-		# Need QuartzCore for CACurrentMediaTime for ALmixer_GetTicks()
-		FIND_LIBRARY(APPLE_QUARTZCORE_LIBRARY QuartzCore)
+		IF(APPLE)
+			# Need Foundation for RWops backend because it touches NSFileManager, etc.
+			FIND_LIBRARY(APPLE_FOUNDATION_LIBRARY Foundation)
+			# Need QuartzCore for CACurrentMediaTime for ALmixer_GetTicks()
+			FIND_LIBRARY(APPLE_QUARTZCORE_LIBRARY QuartzCore)
+		ENDIF()
 	ENDIF()
 	# I can't think of a good reason not to use the native Core Audio decoder, but here's the option anyway.
 	# Logic is inverted so the code will compile it in if the switch is not defined for those not going through CMake.
