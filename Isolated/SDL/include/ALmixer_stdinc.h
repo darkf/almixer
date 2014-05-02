@@ -106,14 +106,14 @@
 #ifdef __cplusplus
 #if 0
 #define ALmixer_reinterpret_cast(type, expression) reinterpret_cast<type>(expression)
-#define ALmixer_static_cast(type, expression) static_cast<type>(expression)
 #endif /* #if 0 */
+#define ALmixer_static_cast(type, expression) static_cast<type>(expression)
 #define ALmixer_const_cast(type, expression) const_cast<type>(expression)
 #else
 #if 0
 #define ALmixer_reinterpret_cast(type, expression) ((type)(expression))
-#define ALmixer_static_cast(type, expression) ((type)(expression))
 #endif /* #if 0 */
+#define ALmixer_static_cast(type, expression) ((type)(expression))
 #define ALmixer_const_cast(type, expression) ((type)(expression))
 #endif
 /* @} *//* Cast operators */
@@ -333,9 +333,9 @@ extern DECLSPEC size_t ALMIXER_CALL ALmixer_strlcpy(char *dst, const char *src, 
 #if 0
 extern DECLSPEC size_t ALMIXER_CALL ALmixer_utf8strlcpy(char *dst, const char *src, size_t dst_bytes);
 extern DECLSPEC size_t ALMIXER_CALL ALmixer_strlcat(char *dst, const char *src, size_t maxlen);
-extern DECLSPEC char *ALMIXER_CALL ALmixer_strdup(const char *str);
 #endif /* #if 0 */
 
+extern DECLSPEC char *ALMIXER_CALL ALmixer_strdup(const char *str);
 extern DECLSPEC char *ALMIXER_CALL ALmixer_strrev(char *str);
 extern DECLSPEC char *ALMIXER_CALL ALmixer_strupr(char *str);
 extern DECLSPEC char *ALMIXER_CALL ALmixer_strlwr(char *str);

@@ -169,7 +169,6 @@ ALmixer_WriteBE64(ALmixer_RWops * dst, uint64_t value)
 /* Need this so Linux systems define fseek64o, ftell64o and off64_t */
 #define _LARGEFILE64_SOURCE
 #include "../ALmixer_internal.h"
-#include "ALmixer.h"
 
 #if 0
 #if defined(__WIN32__)
@@ -182,6 +181,9 @@ ALmixer_WriteBE64(ALmixer_RWops * dst, uint64_t value)
 */
 
 #include "../../include/ALmixer_endian.h"
+
+
+//#include "ALmixer.h"
 #include "ALmixer_RWops.h"
 
 typedef enum
@@ -697,15 +699,15 @@ ALmixer_RWFromFile(const char *file, const char *mode)
     rwops = ALmixer_AllocRW();
     if (!rwops)
         return NULL;            /* ALmixer_SetError already setup by ALmixer_AllocRW() */
-    if (Android_JNI_FileOpen(rwops, file, mode) < 0) {
+    if (ALmixer_Android_JNI_FileOpen(rwops, file, mode) < 0) {
         ALmixer_FreeRW(rwops);
         return NULL;
     }
-    rwops->size = Android_JNI_FileSize;
-    rwops->seek = Android_JNI_FileSeek;
-    rwops->read = Android_JNI_FileRead;
-    rwops->write = Android_JNI_FileWrite;
-    rwops->close = Android_JNI_FileClose;
+    rwops->size = ALmixer_Android_JNI_FileSize;
+    rwops->seek = ALmixer_Android_JNI_FileSeek;
+    rwops->read = ALmixer_Android_JNI_FileRead;
+    rwops->write = ALmixer_Android_JNI_FileWrite;
+    rwops->close = ALmixer_Android_JNI_FileClose;
     rwops->type = ALMIXER_RWOPS_JNIFILE;
 
 #elif defined(__WIN32__)

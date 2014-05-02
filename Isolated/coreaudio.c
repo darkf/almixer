@@ -84,7 +84,7 @@ const Sound_DecoderFunctions __Sound_DecoderFunctions_CoreAudio =
 {
     {
         extensions_coreaudio,
-        "Decode audio through Core Audio through",
+        "Decode audio through Core Audio",
         "Eric Wing <ewing . public @ playcontrol.net>",
         "http://playcontrol.net"
     },

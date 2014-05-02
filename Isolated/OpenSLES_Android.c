@@ -1,4 +1,4 @@
-#ifdef ALMIXER_COMPILE_WITHOUT_SDL
+#ifndef ALMIXER_COMPILE_WITH_SDLSOUND
 
 /*
  * SDL_sound Core Audio backend
@@ -44,12 +44,6 @@
 #include "SoundDecoder_Internal.h"
 
 #include <android/log.h>
-#include <android/asset_manager.h>
-
-static AAssetManager *asset_manager = NULL;
-void ALmixer_OpenSLES_Android_SetAssetManager(AAssetManager *manager) {
-    asset_manager = manager;
-}
 
 static int OpenSLES_init(void);
 static void OpenSLES_quit(void);
@@ -90,11 +84,12 @@ static const char *extensions_opensles[] =
 	"ima",
 	NULL 
 };
+
 const Sound_DecoderFunctions __Sound_DecoderFunctions_OpenSLES =
 {
     {
         extensions_opensles,
-        "Decode audio through Core Audio through",
+        "Decode audio through Android OpenSL ES",
         "Eric Wing <ewing . public @ playcontrol.net>",
         "http://playcontrol.net"
     },
@@ -162,7 +157,10 @@ typedef struct OpenSLESFileContainer {
     SLboolean decode_waiting;
     SLboolean eos;
 
+#if 0
     AAsset* asset;
+#endif /* #if 0 */
+	
 
 #if	SOUNDDECODER_OPENSLES_ANDROID_USE_DESTROY_DEADLOCK_WORKAROUND
 	_Bool destroySucceeded;
@@ -410,9 +408,13 @@ static int OpenSLES_open(Sound_Sample *sample, const char *ext) {
 
     SLDataSource decSource;
 
+#if 0
     AAsset* asset = NULL;
+#endif /* #if 0 */
 
     SLDataFormat_MIME format_srcMime = { SL_DATAFORMAT_MIME, NULL, SL_CONTAINERTYPE_UNSPECIFIED };
+#if 0
+	
     /* Setup the data source for URI if file_name starts with full path "/" */
     if (strncmp(internal->optional_file_name, "/", 1) == 0) {
         SLDataLocator_URI loc_src = {
@@ -421,7 +423,6 @@ static int OpenSLES_open(Sound_Sample *sample, const char *ext) {
         decSource.pLocator = &loc_src;
         decSource.pFormat   = &format_srcMime;
     } else {
-#if 0
         /* Setup the data source for Asset if file_name is relative path */
         AAssetManager* asmgr = asset_manager;
         if (asmgr == NULL) {
@@ -440,19 +441,27 @@ static int OpenSLES_open(Sound_Sample *sample, const char *ext) {
             SNDDBG("AAsset_openFileDescriptor failed");
             return(0);
         }
-#endif
-        int fd;
-		off_t start;
-		off_t length;
-		fd = internal->rw->hidden.androidio.fd;
-		/* I'm not sure if it is position or offset */
-		start = internal->rw->hidden.androidio.position;
-		length = internal->rw->hidden.androidio.size;
-
         SLDataLocator_AndroidFD loc_src = {SL_DATALOCATOR_ANDROIDFD, fd, start, length};
         decSource.pLocator = &loc_src;
         decSource.pFormat   = &format_srcMime;
     }
+#endif /* #if 0 */
+	int fd;
+	off_t start;
+	off_t length;
+	fd = internal->rw->hidden.androidio.fd;
+	/* Experimentally, use offset, not position or it will not work. */
+	start = internal->rw->hidden.androidio.offset;
+	length = internal->rw->hidden.androidio.size;
+	/*
+	__android_log_print(ANDROID_LOG_ERROR, "OpenSLES", "internal->rw->hidden.androidio.fd: %d", (int)fd);
+	__android_log_print(ANDROID_LOG_ERROR, "OpenSLES", "internal->rw->hidden.androidio.position: %d", (int)internal->rw->hidden.androidio.position);
+	__android_log_print(ANDROID_LOG_ERROR, "OpenSLES", "internal->rw->hidden.androidio.offset: %d", (int)internal->rw->hidden.androidio.offset);
+	__android_log_print(ANDROID_LOG_ERROR, "OpenSLES", "internal->rw->hidden.androidio.size: %d", (int)internal->rw->hidden.androidio.size);
+	*/
+	SLDataLocator_AndroidFD loc_src = {SL_DATALOCATOR_ANDROIDFD, fd, start, length};
+	decSource.pLocator = &loc_src;
+	decSource.pFormat   = &format_srcMime;
 
 
     /* Setup the data sink, a buffer queue for buffers of PCM data */
@@ -542,8 +551,12 @@ static int OpenSLES_open(Sound_Sample *sample, const char *ext) {
     file_container->available = SL_BOOLEAN_FALSE;
     file_container->eos       = SL_BOOLEAN_FALSE;
     file_container->decode_waiting = SL_BOOLEAN_FALSE;
+
+#if 0
     file_container->asset = asset;
-    pthread_mutex_init(&file_container->prefetch_mutex, NULL);
+#endif /* #if 0 */	
+    
+	pthread_mutex_init(&file_container->prefetch_mutex, NULL);
     pthread_mutex_init(&file_container->decoder_mutex, NULL);
     pthread_cond_init(&file_container->prefetch_cond, NULL);
     pthread_cond_init(&file_container->decoder_cond, NULL);
@@ -810,10 +823,14 @@ static void OpenSLES_close(Sound_Sample *sample) {
 			    (*file_container->player)->Destroy(file_container->player);
 			#endif
         }
+
+#if 0
         if (file_container->asset != NULL) {
             AAsset_close(file_container->asset);
             file_container->asset = NULL;
         }
+#endif /* #if 0 */
+		
         if (file_container->metadata != NULL) {
             free(file_container->metadata);
             file_container->metadata = NULL;
@@ -860,5 +877,5 @@ static int OpenSLES_seek(Sound_Sample *sample, size_t ms) {
 #endif /* __ANDROID__ */
 
 
-#endif /* ALMIXER_COMPILE_WITHOUT_SDL */
+#endif /* ALMIXER_COMPILE_WITH_SDLSOUND */
 

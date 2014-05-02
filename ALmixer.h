@@ -1615,14 +1615,6 @@ ALuint ALmixer_CountReservedChannels(void);
 #define ALmixer_CountReservedChannels() ALmixer_ReserveChannels(-1)
 #endif
 
-/*
- * Additional public function for Android OpenSL ES decoder
- */
-#ifdef __ANDROID__
-#include <android/asset_manager.h>
-extern ALMIXER_DECLSPEC void ALMIXER_CALL ALmixer_OpenSLES_Android_SetAssetManager(AAssetManager *manager);
-#endif
-
 /**
  * @}
  */

@@ -1,4 +1,4 @@
-#ifndef ALMIXER_COMPILED_WITH_SDL
+#ifndef ALMIXER_COMPILED_WITH_SDLSOUND
 
 #include "SoundDecoder.h"
 #include "SoundDecoder_Internal.h"
@@ -23,13 +23,18 @@ static TErrorPool* s_errorPool = NULL;
 
 static const SoundDecoder_DecoderInfo** s_availableDecoders = NULL;
 
-#if defined(__APPLE__) && !defined(SOUND_DISABLE_COREAUDIO)
-	//extern const SoundDecoder_DecoderFunctions __SoundDecoder_DecoderFunctions_CoreAudio;
-	extern const Sound_DecoderFunctions __Sound_DecoderFunctions_CoreAudio;
-#elif defined(__ANDROID__)  && defined(SOUND_SUPPORTS_ANDROID_OPENSLES)
-	extern const Sound_DecoderFunctions __Sound_DecoderFunctions_OpenSLES;
-#elif defined(_WIN32) && defined(SOUND_SUPPORTS_WINDOWSMEDIAFOUNDATION)
+#if defined(__APPLE__) 
+	#if !defined(SOUND_DISABLE_COREAUDIO)
+		extern const Sound_DecoderFunctions __Sound_DecoderFunctions_CoreAudio;
+	#endif
+#elif defined(__ANDROID__) 
+	#if defined(SOUND_SUPPORTS_ANDROID_OPENSLES)
+		extern const Sound_DecoderFunctions __Sound_DecoderFunctions_OpenSLES;
+	#endif
+#elif defined(_WIN32) 
+	#if defined(SOUND_SUPPORTS_WINDOWSMEDIAFOUNDATION)
 	extern const Sound_DecoderFunctions __Sound_DecoderFunctions_MediaFoundation;
+	#endif
 #endif
 #ifdef SOUND_SUPPORTS_AAC
 	extern const Sound_DecoderFunctions __Sound_DecoderFunctions_AAC;
@@ -54,12 +59,18 @@ typedef struct
 
 static SoundElement s_linkedDecoders[] =
 {
-#if defined(__APPLE__) && !defined(SOUND_DISABLE_COREAUDIO)
+#if defined(__APPLE__) 
+	#if !defined(SOUND_DISABLE_COREAUDIO)
 		{ 0, &__Sound_DecoderFunctions_CoreAudio },
-#elif defined(__ANDROID__)  && defined(SOUND_SUPPORTS_ANDROID_OPENSLES)
+	#endif
+#elif defined(__ANDROID__) 
+	#if defined(SOUND_SUPPORTS_ANDROID_OPENSLES)
 		{ 0, &__Sound_DecoderFunctions_OpenSLES },
-#elif defined(_WIN32) && defined(SOUND_SUPPORTS_WINDOWSMEDIAFOUNDATION)
+	#endif
+#elif defined(_WIN32)
+	#if defined(SOUND_SUPPORTS_WINDOWSMEDIAFOUNDATION)
 		{ 0, &__Sound_DecoderFunctions_MediaFoundation },
+	#endif
 #endif
 #ifdef SOUND_SUPPORTS_AAC
 	{ 0, &__Sound_DecoderFunctions_AAC },
@@ -169,12 +180,9 @@ void SoundDecoder_SetError(const char* err_str, ...)
 		return;
 	}
 	va_start(argp, err_str);
-	// SDL_SetError which I'm emulating has no number parameter.
+	/* SDL_SetError which I'm emulating has no number parameter. */
 	TError_SetErrorv(s_errorPool, 1, err_str, argp);
 	va_end(argp);
-#ifdef __ANDROID__
-	__android_log_print(ANDROID_LOG_INFO, "SoundDecoder_SetError", TError_GetLastErrorStr(s_errorPool));
-#endif
 }
 
 
@@ -432,16 +440,7 @@ SoundDecoder_Sample* SoundDecoder_NewSampleFromFile(const char* file_name,
 		file_extension++;
 	}
 
-#ifdef __ANDROID__
-	/* 
-	 * On Android & OpenSL ES, ALmixer_RWops doesn't have file pointer
-	 * because all file pointers are handled internally by Android framework.
-	 * It just holds file name for convenience.
-	 */
-	rw_ops = ALmixer_RW_NOOP(file_name);
-#else
 	rw_ops = ALmixer_RWFromFile(file_name, "rb");
-#endif
 
 	new_sample = SoundDecoder_NewSample(rw_ops, file_extension, desired_format, buffer_size);
 	return new_sample;

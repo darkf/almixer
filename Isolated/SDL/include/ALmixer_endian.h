@@ -28,7 +28,7 @@
 #ifndef _ALmixer_endian_h
 #define _ALmixer_endian_h
 
-//#include "ALmixer_stdinc.h"
+#include "ALmixer_stdinc.h"
 
 /**
  *  \name The two types of endianness

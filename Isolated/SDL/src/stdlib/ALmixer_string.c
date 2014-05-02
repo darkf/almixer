@@ -512,6 +512,7 @@ ALmixer_strlcat(char *dst, const char *src, size_t maxlen)
     return dstlen + srclen;
 #endif /* HAVE_STRLCAT */
 }
+#endif /* #if 0 */
 
 char *
 ALmixer_strdup(const char *string)
@@ -527,7 +528,6 @@ ALmixer_strdup(const char *string)
     return newstr;
 #endif /* HAVE_STRDUP */
 }
-#endif /* #if 0 */
 
 char *
 ALmixer_strrev(char *string)

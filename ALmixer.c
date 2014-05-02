@@ -66,6 +66,8 @@
 	#undef fprintf
 	#include <android/log.h>
 	#define fprintf(stderr, ...) __android_log_print(ANDROID_LOG_INFO, "ALmixer", __VA_ARGS__)
+
+	#include "ALmixer_AndroidExtensions.h"
 #endif
 
 
@@ -7964,6 +7966,10 @@ void ALmixer_Quit()
 	TError_FreeErrorPool(s_ALmixerErrorPool);
 	s_ALmixerErrorPool = NULL;
 
+#ifdef __ANDROID__
+	ALmixer_Android_Quit();
+#endif
+
 	return;
 }
 
@@ -8114,6 +8120,10 @@ void ALmixer_QuitWithoutFreeData()
 	/* Remember: ALmixer_SetError/GetError calls will not work while this is gone. */
 	TError_FreeErrorPool(s_ALmixerErrorPool);
 	s_ALmixerErrorPool = NULL;
+
+#ifdef __ANDROID__
+	ALmixer_Android_Quit();
+#endif
 
 	return;
 }
