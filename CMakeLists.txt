@@ -157,6 +157,8 @@ SET(ALMIXER_WITHOUT_SDL_SOURCE
 	${ALmixer_SOURCE_DIR}/src/StandAlone/SDL/src/stdlib/ALmixer_malloc.c
 	${ALmixer_SOURCE_DIR}/src/StandAlone/SDL/src/stdlib/ALmixer_stdlib.c
 	${ALmixer_SOURCE_DIR}/src/StandAlone/SDL/src/stdlib/ALmixer_string.c
+	# Note: Currently #ifdef'd only for Windows to save space since only Windows needs it.
+	${ALmixer_SOURCE_DIR}/src/StandAlone/SDL/src/stdlib/ALmixer_iconv.c
 )
 SET(ALMIXER_WITHOUT_SDL_SOURCE_INCLUDE_PATHS
 	${ALmixer_SOURCE_DIR}/src/StandAlone
@@ -183,6 +185,16 @@ ELSEIF(ANDROID)
 	SET(ALMIXER_WITHOUT_SDL_SOURCE_INCLUDE_PATHS
 		${ALMIXER_WITHOUT_SDL_SOURCE_INCLUDE_PATHS}
 		${ALmixer_SOURCE_DIR}/src/StandAlone/SDL/src/core/android
+	)
+ELSEIF(WIN32)
+	SET(ALMIXER_WITHOUT_SDL_SOURCE
+		${ALMIXER_WITHOUT_SDL_SOURCE}
+		${ALmixer_SOURCE_DIR}/src/StandAlone/SDL/src/core/windows/ALmixer_windows.c
+		${ALmixer_SOURCE_DIR}/src/StandAlone/SDL/src/core/windows/ALmixer_windows.h
+	)
+	SET(ALMIXER_WITHOUT_SDL_SOURCE_INCLUDE_PATHS
+		${ALMIXER_WITHOUT_SDL_SOURCE_INCLUDE_PATHS}
+		${ALmixer_SOURCE_DIR}/src/StandAlone/SDL/src/core/windows
 	)
 ENDIF()
 

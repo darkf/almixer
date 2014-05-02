@@ -170,7 +170,7 @@ ALmixer_WriteBE64(ALmixer_RWops * dst, uint64_t value)
 #define _LARGEFILE64_SOURCE
 #include "../ALmixer_internal.h"
 
-#if 0
+#if 1
 #if defined(__WIN32__)
 #include "../core/windows/ALmixer_windows.h"
 #endif
@@ -333,7 +333,7 @@ windows_file_size(ALmixer_RWops * context)
 	}
 
     if (!GetFileSizeEx(context->hidden.windowsio.h, &size)) {
-#if 0
+#if 1
         return WIN_SetError("windows_file_size");
 #else
 		/* There are a lot of dependencies on iconv/UTF16 stuff just for WIN_SetError to print the HRESULT. I'd rather avoid it */
@@ -379,7 +379,7 @@ windows_file_seek(ALmixer_RWops * context, int64_t offset, int whence)
 
     windowsoffset.QuadPart = offset;
     if (!SetFilePointerEx(context->hidden.windowsio.h, windowsoffset, &windowsoffset, windowswhence)) {
-#if 0
+#if 1
         return WIN_SetError("windows_file_seek");
 #else
 		/* There are a lot of dependencies on iconv/UTF16 stuff just for WIN_SetError to print the HRESULT. I'd rather avoid it */
