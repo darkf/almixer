@@ -1,3 +1,4 @@
+#ifdef __ANDROID__
 #include "ALmixer.h"
 #include "ALmixer_PlatformExtensions.h"
 #include <jni.h>
@@ -36,4 +37,7 @@ void ALmixer_Android_Quit()
 #endif
 
 }
+
+#endif /* #ifdef __ANDROID__ */
+
 

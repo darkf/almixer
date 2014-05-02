@@ -30,8 +30,9 @@
 #define _ALmixer_rwops_h
 
 #include "ALmixer.h"
+/*
 #include "ALmixer_stdinc.h"
-
+*/
 
 /*
 	I'm probably asking for trouble, but I don't want to have to ship all the SDL_config headers.
@@ -66,10 +67,10 @@ typedef enum
     ALMIXER_FALSE = 0,
     ALMIXER_TRUE = 1
 } ALmixer_bool;
-
-//#include "ALmixer_error.h"
-
-//#include "begin_code.h"
+/*
+#include "ALmixer_error.h"
+#include "begin_code.h"
+*/
 /* Force structure packing at 4 byte alignment.
  This is necessary if the header is included in code which has structure
  packing set to an alternate value, say for loading structures from disk.
@@ -283,7 +284,9 @@ extern ALMIXER_DECLSPEC size_t ALMIXER_CALL ALmixer_WriteBE64(ALmixer_RWops * ds
 #ifdef __cplusplus
 }
 #endif
-//#include "close_code.h"
+/*
+#include "close_code.h"
+*/
 #if defined(_MSC_VER) || defined(__MWERKS__) || defined(__WATCOMC__)  || defined(__BORLANDC__)
 #ifdef __BORLANDC__
 #pragma nopackwarning

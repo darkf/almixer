@@ -2,6 +2,8 @@
  * Windows Media Foundation backend
  * Copyright (C) 2014 Eric Wing <ewing . public @ playcontrol.net>
  */
+#ifdef _WIN32
+
 #ifndef WindowsMediaFoundation_IMFByteStreamRWops_h
 #define WindowsMediaFoundation_IMFByteStreamRWops_h
 
@@ -87,3 +89,6 @@ protected:
 // } // namespace ALmixer
 
 #endif
+
+#endif /* _WIN32 */
+

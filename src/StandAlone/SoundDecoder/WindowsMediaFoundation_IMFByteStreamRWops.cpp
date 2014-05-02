@@ -2,6 +2,8 @@
  * Windows Media Foundation backend
  * Copyright (C) 2014 Eric Wing <ewing . public @ playcontrol.net>
  */
+#ifdef _WIN32
+
 #include "WindowsMediaFoundation_IMFByteStreamRWops.hpp"
 
 //namespace ALmixer {
@@ -294,3 +296,6 @@ ULONG AsyncReadRWopsHelper::Release()
 
 
 // } // namespace ALmixer
+
+#endif /* _WIN32 */
+

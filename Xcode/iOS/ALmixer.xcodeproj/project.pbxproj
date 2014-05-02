@@ -10,24 +10,6 @@
 		0044F81F185F71B600E88278 /* AVFoundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 0044F81E185F71B600E88278 /* AVFoundation.framework */; };
 		00605C9F162550F600A479DE /* OpenAL.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 00605C9E162550F600A479DE /* OpenAL.framework */; };
 		00605CA1162550FF00A479DE /* AudioToolbox.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 00605CA0162550FF00A479DE /* AudioToolbox.framework */; };
-		00605CF01625555400A479DE /* ALmixer.c in Sources */ = {isa = PBXBuildFile; fileRef = 00605CCF1625555400A479DE /* ALmixer.c */; };
-		00605CF11625555400A479DE /* ALmixer.h in Headers */ = {isa = PBXBuildFile; fileRef = 00605CD01625555400A479DE /* ALmixer.h */; };
-		00605CF21625555400A479DE /* CircularQueue.c in Sources */ = {isa = PBXBuildFile; fileRef = 00605CD11625555400A479DE /* CircularQueue.c */; };
-		00605CF31625555400A479DE /* CircularQueue.h in Headers */ = {isa = PBXBuildFile; fileRef = 00605CD21625555400A479DE /* CircularQueue.h */; };
-		00605D6A162556C400A479DE /* ALmixer_RWops.c in Sources */ = {isa = PBXBuildFile; fileRef = 00605D50162556C400A479DE /* ALmixer_RWops.c */; };
-		00605D6B162556C400A479DE /* ALmixer_RWops.h in Headers */ = {isa = PBXBuildFile; fileRef = 00605D51162556C400A479DE /* ALmixer_RWops.h */; };
-		00605D6C162556C400A479DE /* coreaudio.c in Sources */ = {isa = PBXBuildFile; fileRef = 00605D52162556C400A479DE /* coreaudio.c */; };
-		00605D75162556C400A479DE /* SimpleMutex.c in Sources */ = {isa = PBXBuildFile; fileRef = 00605D5D162556C400A479DE /* SimpleMutex.c */; };
-		00605D76162556C400A479DE /* SimpleMutex.h in Headers */ = {isa = PBXBuildFile; fileRef = 00605D5E162556C400A479DE /* SimpleMutex.h */; };
-		00605D77162556C400A479DE /* SimpleThread.h in Headers */ = {isa = PBXBuildFile; fileRef = 00605D5F162556C400A479DE /* SimpleThread.h */; };
-		00605D78162556C400A479DE /* SimpleThreadPosix.c in Sources */ = {isa = PBXBuildFile; fileRef = 00605D60162556C400A479DE /* SimpleThreadPosix.c */; };
-		00605D7A162556C400A479DE /* SoundDecoder.c in Sources */ = {isa = PBXBuildFile; fileRef = 00605D62162556C400A479DE /* SoundDecoder.c */; };
-		00605D7B162556C400A479DE /* SoundDecoder.h in Headers */ = {isa = PBXBuildFile; fileRef = 00605D63162556C400A479DE /* SoundDecoder.h */; };
-		00605D7C162556C400A479DE /* SoundDecoder_Internal.h in Headers */ = {isa = PBXBuildFile; fileRef = 00605D64162556C400A479DE /* SoundDecoder_Internal.h */; };
-		00605D7D162556C400A479DE /* tErrorLib.c in Sources */ = {isa = PBXBuildFile; fileRef = 00605D65162556C400A479DE /* tErrorLib.c */; };
-		00605D7E162556C400A479DE /* tErrorLib.h in Headers */ = {isa = PBXBuildFile; fileRef = 00605D66162556C400A479DE /* tErrorLib.h */; };
-		00605D83162556F600A479DE /* LinkedList.c in Sources */ = {isa = PBXBuildFile; fileRef = 00605D81162556F600A479DE /* LinkedList.c */; };
-		00605D84162556F600A479DE /* LinkedList.h in Headers */ = {isa = PBXBuildFile; fileRef = 00605D82162556F600A479DE /* LinkedList.h */; };
 		00605D8B1625571E00A479DE /* UIKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 00605CAC1625522400A479DE /* UIKit.framework */; };
 		00605D8C1625571E00A479DE /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 00605CAE1625522400A479DE /* Foundation.framework */; };
 		00605D8D1625571E00A479DE /* CoreGraphics.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 00605CB01625522400A479DE /* CoreGraphics.framework */; };
@@ -46,6 +28,47 @@
 		00605DB01625573700A479DE /* AudioToolbox.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 00605CA0162550FF00A479DE /* AudioToolbox.framework */; };
 		00605DB31625582800A479DE /* libALmixer.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 00605C5416254FDF00A479DE /* libALmixer.a */; };
 		00D4D9E616255E6400B27F02 /* battle_hymn_of_the_republic.mp3 in Resources */ = {isa = PBXBuildFile; fileRef = 00D4D9E516255E6400B27F02 /* battle_hymn_of_the_republic.mp3 */; };
+		00D6374B1913B571004F6671 /* ALmixer.h in Headers */ = {isa = PBXBuildFile; fileRef = 00D637081913B570004F6671 /* ALmixer.h */; };
+		00D6374C1913B571004F6671 /* ALmixer_PlatformExtensions.h in Headers */ = {isa = PBXBuildFile; fileRef = 00D637091913B570004F6671 /* ALmixer_PlatformExtensions.h */; };
+		00D6374D1913B571004F6671 /* ALmixer_RWops.h in Headers */ = {isa = PBXBuildFile; fileRef = 00D6370A1913B570004F6671 /* ALmixer_RWops.h */; };
+		00D6374E1913B571004F6671 /* ALmixer.c in Sources */ = {isa = PBXBuildFile; fileRef = 00D6370C1913B571004F6671 /* ALmixer.c */; };
+		00D637511913B571004F6671 /* CircularQueue.c in Sources */ = {isa = PBXBuildFile; fileRef = 00D6370F1913B571004F6671 /* CircularQueue.c */; };
+		00D637521913B571004F6671 /* CircularQueue.h in Headers */ = {isa = PBXBuildFile; fileRef = 00D637101913B571004F6671 /* CircularQueue.h */; };
+		00D637531913B571004F6671 /* LinkedList.c in Sources */ = {isa = PBXBuildFile; fileRef = 00D637111913B571004F6671 /* LinkedList.c */; };
+		00D637541913B571004F6671 /* LinkedList.h in Headers */ = {isa = PBXBuildFile; fileRef = 00D637121913B571004F6671 /* LinkedList.h */; };
+		00D637551913B571004F6671 /* ALmixer_begin_code.h in Headers */ = {isa = PBXBuildFile; fileRef = 00D637161913B571004F6671 /* ALmixer_begin_code.h */; };
+		00D637561913B571004F6671 /* ALmixer_close_code.h in Headers */ = {isa = PBXBuildFile; fileRef = 00D637171913B571004F6671 /* ALmixer_close_code.h */; };
+		00D637571913B571004F6671 /* ALmixer_config.h in Headers */ = {isa = PBXBuildFile; fileRef = 00D637181913B571004F6671 /* ALmixer_config.h */; };
+		00D637581913B571004F6671 /* ALmixer_config_android.h in Headers */ = {isa = PBXBuildFile; fileRef = 00D637191913B571004F6671 /* ALmixer_config_android.h */; };
+		00D637591913B571004F6671 /* ALmixer_config_iphoneos.h in Headers */ = {isa = PBXBuildFile; fileRef = 00D6371A1913B571004F6671 /* ALmixer_config_iphoneos.h */; };
+		00D6375A1913B571004F6671 /* ALmixer_config_macosx.h in Headers */ = {isa = PBXBuildFile; fileRef = 00D6371B1913B571004F6671 /* ALmixer_config_macosx.h */; };
+		00D6375B1913B571004F6671 /* ALmixer_config_minimal.h in Headers */ = {isa = PBXBuildFile; fileRef = 00D6371C1913B571004F6671 /* ALmixer_config_minimal.h */; };
+		00D6375C1913B571004F6671 /* ALmixer_config_pandora.h in Headers */ = {isa = PBXBuildFile; fileRef = 00D6371D1913B571004F6671 /* ALmixer_config_pandora.h */; };
+		00D6375D1913B571004F6671 /* ALmixer_config_psp.h in Headers */ = {isa = PBXBuildFile; fileRef = 00D6371E1913B571004F6671 /* ALmixer_config_psp.h */; };
+		00D6375E1913B571004F6671 /* ALmixer_config_windows.h in Headers */ = {isa = PBXBuildFile; fileRef = 00D6371F1913B571004F6671 /* ALmixer_config_windows.h */; };
+		00D6375F1913B571004F6671 /* ALmixer_config_winrt.h in Headers */ = {isa = PBXBuildFile; fileRef = 00D637201913B571004F6671 /* ALmixer_config_winrt.h */; };
+		00D637601913B571004F6671 /* ALmixer_config_wiz.h in Headers */ = {isa = PBXBuildFile; fileRef = 00D637211913B571004F6671 /* ALmixer_config_wiz.h */; };
+		00D637611913B571004F6671 /* ALmixer_endian.h in Headers */ = {isa = PBXBuildFile; fileRef = 00D637221913B571004F6671 /* ALmixer_endian.h */; };
+		00D637621913B571004F6671 /* ALmixer_platform.h in Headers */ = {isa = PBXBuildFile; fileRef = 00D637231913B571004F6671 /* ALmixer_platform.h */; };
+		00D637631913B571004F6671 /* ALmixer_stdinc.h in Headers */ = {isa = PBXBuildFile; fileRef = 00D637241913B571004F6671 /* ALmixer_stdinc.h */; };
+		00D637641913B571004F6671 /* ALmixer_system.h in Headers */ = {isa = PBXBuildFile; fileRef = 00D637251913B571004F6671 /* ALmixer_system.h */; };
+		00D637651913B571004F6671 /* ALmixer_internal.h in Headers */ = {isa = PBXBuildFile; fileRef = 00D637271913B571004F6671 /* ALmixer_internal.h */; };
+		00D637681913B571004F6671 /* ALmixer_RWops.c in Sources */ = {isa = PBXBuildFile; fileRef = 00D6372D1913B571004F6671 /* ALmixer_RWops.c */; };
+		00D637691913B571004F6671 /* ALmixer_rwopsbundlesupport.h in Headers */ = {isa = PBXBuildFile; fileRef = 00D6372F1913B571004F6671 /* ALmixer_rwopsbundlesupport.h */; };
+		00D6376A1913B571004F6671 /* ALmixer_rwopsbundlesupport.m in Sources */ = {isa = PBXBuildFile; fileRef = 00D637301913B571004F6671 /* ALmixer_rwopsbundlesupport.m */; };
+		00D6376B1913B571004F6671 /* ALmixer_malloc.c in Sources */ = {isa = PBXBuildFile; fileRef = 00D637321913B571004F6671 /* ALmixer_malloc.c */; };
+		00D6376C1913B571004F6671 /* ALmixer_stdlib.c in Sources */ = {isa = PBXBuildFile; fileRef = 00D637331913B571004F6671 /* ALmixer_stdlib.c */; };
+		00D6376D1913B571004F6671 /* ALmixer_string.c in Sources */ = {isa = PBXBuildFile; fileRef = 00D637341913B571004F6671 /* ALmixer_string.c */; };
+		00D6376E1913B571004F6671 /* SimpleMutex.c in Sources */ = {isa = PBXBuildFile; fileRef = 00D637351913B571004F6671 /* SimpleMutex.c */; };
+		00D6376F1913B571004F6671 /* SimpleMutex.h in Headers */ = {isa = PBXBuildFile; fileRef = 00D637361913B571004F6671 /* SimpleMutex.h */; };
+		00D637701913B571004F6671 /* SimpleThread.h in Headers */ = {isa = PBXBuildFile; fileRef = 00D637371913B571004F6671 /* SimpleThread.h */; };
+		00D637711913B571004F6671 /* SimpleThreadPosix.c in Sources */ = {isa = PBXBuildFile; fileRef = 00D637381913B571004F6671 /* SimpleThreadPosix.c */; };
+		00D637731913B571004F6671 /* coreaudio.c in Sources */ = {isa = PBXBuildFile; fileRef = 00D6373B1913B571004F6671 /* coreaudio.c */; };
+		00D6377A1913B571004F6671 /* SoundDecoder.c in Sources */ = {isa = PBXBuildFile; fileRef = 00D637431913B571004F6671 /* SoundDecoder.c */; };
+		00D6377B1913B571004F6671 /* SoundDecoder.h in Headers */ = {isa = PBXBuildFile; fileRef = 00D637441913B571004F6671 /* SoundDecoder.h */; };
+		00D6377C1913B571004F6671 /* SoundDecoder_Internal.h in Headers */ = {isa = PBXBuildFile; fileRef = 00D637451913B571004F6671 /* SoundDecoder_Internal.h */; };
+		00D637801913B571004F6671 /* tErrorLib.c in Sources */ = {isa = PBXBuildFile; fileRef = 00D637491913B571004F6671 /* tErrorLib.c */; };
+		00D637811913B571004F6671 /* tErrorLib.h in Headers */ = {isa = PBXBuildFile; fileRef = 00D6374A1913B571004F6671 /* tErrorLib.h */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -66,25 +89,7 @@
 		00605CAC1625522400A479DE /* UIKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = UIKit.framework; path = System/Library/Frameworks/UIKit.framework; sourceTree = SDKROOT; };
 		00605CAE1625522400A479DE /* Foundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Foundation.framework; path = System/Library/Frameworks/Foundation.framework; sourceTree = SDKROOT; };
 		00605CB01625522400A479DE /* CoreGraphics.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreGraphics.framework; path = System/Library/Frameworks/CoreGraphics.framework; sourceTree = SDKROOT; };
-		00605CCF1625555400A479DE /* ALmixer.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = ALmixer.c; sourceTree = "<group>"; };
-		00605CD01625555400A479DE /* ALmixer.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = ALmixer.h; sourceTree = "<group>"; };
-		00605CD11625555400A479DE /* CircularQueue.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = CircularQueue.c; sourceTree = "<group>"; };
-		00605CD21625555400A479DE /* CircularQueue.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = CircularQueue.h; sourceTree = "<group>"; };
 		00605D0F1625559F00A479DE /* QuartzCore.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = QuartzCore.framework; path = System/Library/Frameworks/QuartzCore.framework; sourceTree = SDKROOT; };
-		00605D50162556C400A479DE /* ALmixer_RWops.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = ALmixer_RWops.c; sourceTree = "<group>"; };
-		00605D51162556C400A479DE /* ALmixer_RWops.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = ALmixer_RWops.h; sourceTree = "<group>"; };
-		00605D52162556C400A479DE /* coreaudio.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = coreaudio.c; sourceTree = "<group>"; };
-		00605D5D162556C400A479DE /* SimpleMutex.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = SimpleMutex.c; sourceTree = "<group>"; };
-		00605D5E162556C400A479DE /* SimpleMutex.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = SimpleMutex.h; sourceTree = "<group>"; };
-		00605D5F162556C400A479DE /* SimpleThread.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = SimpleThread.h; sourceTree = "<group>"; };
-		00605D60162556C400A479DE /* SimpleThreadPosix.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = SimpleThreadPosix.c; sourceTree = "<group>"; };
-		00605D62162556C400A479DE /* SoundDecoder.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = SoundDecoder.c; sourceTree = "<group>"; };
-		00605D63162556C400A479DE /* SoundDecoder.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = SoundDecoder.h; sourceTree = "<group>"; };
-		00605D64162556C400A479DE /* SoundDecoder_Internal.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = SoundDecoder_Internal.h; sourceTree = "<group>"; };
-		00605D65162556C400A479DE /* tErrorLib.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = tErrorLib.c; sourceTree = "<group>"; };
-		00605D66162556C400A479DE /* tErrorLib.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = tErrorLib.h; sourceTree = "<group>"; };
-		00605D81162556F600A479DE /* LinkedList.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = LinkedList.c; sourceTree = "<group>"; };
-		00605D82162556F600A479DE /* LinkedList.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = LinkedList.h; sourceTree = "<group>"; };
 		00605D891625571E00A479DE /* playstream.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = playstream.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		00605D8E1625571E00A479DE /* GLKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = GLKit.framework; path = System/Library/Frameworks/GLKit.framework; sourceTree = SDKROOT; };
 		00605D901625571E00A479DE /* OpenGLES.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = OpenGLES.framework; path = System/Library/Frameworks/OpenGLES.framework; sourceTree = SDKROOT; };
@@ -101,6 +106,61 @@
 		00605DA61625571F00A479DE /* en */ = {isa = PBXFileReference; lastKnownFileType = file.xib; name = en; path = en.lproj/ViewController_iPhone.xib; sourceTree = "<group>"; };
 		00605DA91625571F00A479DE /* en */ = {isa = PBXFileReference; lastKnownFileType = file.xib; name = en; path = en.lproj/ViewController_iPad.xib; sourceTree = "<group>"; };
 		00D4D9E516255E6400B27F02 /* battle_hymn_of_the_republic.mp3 */ = {isa = PBXFileReference; lastKnownFileType = audio.mp3; name = battle_hymn_of_the_republic.mp3; path = ../../../EXAMPLES/Resources/battle_hymn_of_the_republic.mp3; sourceTree = "<group>"; };
+		00D637081913B570004F6671 /* ALmixer.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = ALmixer.h; sourceTree = "<group>"; };
+		00D637091913B570004F6671 /* ALmixer_PlatformExtensions.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = ALmixer_PlatformExtensions.h; sourceTree = "<group>"; };
+		00D6370A1913B570004F6671 /* ALmixer_RWops.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = ALmixer_RWops.h; sourceTree = "<group>"; };
+		00D6370C1913B571004F6671 /* ALmixer.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = ALmixer.c; sourceTree = "<group>"; };
+		00D6370D1913B571004F6671 /* ALmixer_AndroidExtensions.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = ALmixer_AndroidExtensions.c; sourceTree = "<group>"; };
+		00D6370E1913B571004F6671 /* ALmixer_AndroidExtensions.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = ALmixer_AndroidExtensions.h; sourceTree = "<group>"; };
+		00D6370F1913B571004F6671 /* CircularQueue.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = CircularQueue.c; sourceTree = "<group>"; };
+		00D637101913B571004F6671 /* CircularQueue.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = CircularQueue.h; sourceTree = "<group>"; };
+		00D637111913B571004F6671 /* LinkedList.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = LinkedList.c; sourceTree = "<group>"; };
+		00D637121913B571004F6671 /* LinkedList.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = LinkedList.h; sourceTree = "<group>"; };
+		00D637161913B571004F6671 /* ALmixer_begin_code.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = ALmixer_begin_code.h; sourceTree = "<group>"; };
+		00D637171913B571004F6671 /* ALmixer_close_code.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = ALmixer_close_code.h; sourceTree = "<group>"; };
+		00D637181913B571004F6671 /* ALmixer_config.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = ALmixer_config.h; sourceTree = "<group>"; };
+		00D637191913B571004F6671 /* ALmixer_config_android.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = ALmixer_config_android.h; sourceTree = "<group>"; };
+		00D6371A1913B571004F6671 /* ALmixer_config_iphoneos.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = ALmixer_config_iphoneos.h; sourceTree = "<group>"; };
+		00D6371B1913B571004F6671 /* ALmixer_config_macosx.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = ALmixer_config_macosx.h; sourceTree = "<group>"; };
+		00D6371C1913B571004F6671 /* ALmixer_config_minimal.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = ALmixer_config_minimal.h; sourceTree = "<group>"; };
+		00D6371D1913B571004F6671 /* ALmixer_config_pandora.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = ALmixer_config_pandora.h; sourceTree = "<group>"; };
+		00D6371E1913B571004F6671 /* ALmixer_config_psp.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = ALmixer_config_psp.h; sourceTree = "<group>"; };
+		00D6371F1913B571004F6671 /* ALmixer_config_windows.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = ALmixer_config_windows.h; sourceTree = "<group>"; };
+		00D637201913B571004F6671 /* ALmixer_config_winrt.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = ALmixer_config_winrt.h; sourceTree = "<group>"; };
+		00D637211913B571004F6671 /* ALmixer_config_wiz.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = ALmixer_config_wiz.h; sourceTree = "<group>"; };
+		00D637221913B571004F6671 /* ALmixer_endian.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = ALmixer_endian.h; sourceTree = "<group>"; };
+		00D637231913B571004F6671 /* ALmixer_platform.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = ALmixer_platform.h; sourceTree = "<group>"; };
+		00D637241913B571004F6671 /* ALmixer_stdinc.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = ALmixer_stdinc.h; sourceTree = "<group>"; };
+		00D637251913B571004F6671 /* ALmixer_system.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = ALmixer_system.h; sourceTree = "<group>"; };
+		00D637271913B571004F6671 /* ALmixer_internal.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = ALmixer_internal.h; sourceTree = "<group>"; };
+		00D6372A1913B571004F6671 /* ALmixer_android.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = ALmixer_android.c; sourceTree = "<group>"; };
+		00D6372B1913B571004F6671 /* ALmixer_android.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = ALmixer_android.h; sourceTree = "<group>"; };
+		00D6372D1913B571004F6671 /* ALmixer_RWops.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = ALmixer_RWops.c; sourceTree = "<group>"; };
+		00D6372F1913B571004F6671 /* ALmixer_rwopsbundlesupport.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = ALmixer_rwopsbundlesupport.h; sourceTree = "<group>"; };
+		00D637301913B571004F6671 /* ALmixer_rwopsbundlesupport.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = ALmixer_rwopsbundlesupport.m; sourceTree = "<group>"; };
+		00D637321913B571004F6671 /* ALmixer_malloc.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = ALmixer_malloc.c; sourceTree = "<group>"; };
+		00D637331913B571004F6671 /* ALmixer_stdlib.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = ALmixer_stdlib.c; sourceTree = "<group>"; };
+		00D637341913B571004F6671 /* ALmixer_string.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = ALmixer_string.c; sourceTree = "<group>"; };
+		00D637351913B571004F6671 /* SimpleMutex.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = SimpleMutex.c; sourceTree = "<group>"; };
+		00D637361913B571004F6671 /* SimpleMutex.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = SimpleMutex.h; sourceTree = "<group>"; };
+		00D637371913B571004F6671 /* SimpleThread.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = SimpleThread.h; sourceTree = "<group>"; };
+		00D637381913B571004F6671 /* SimpleThreadPosix.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = SimpleThreadPosix.c; sourceTree = "<group>"; };
+		00D637391913B571004F6671 /* SimpleThreadWindows.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = SimpleThreadWindows.c; sourceTree = "<group>"; };
+		00D6373B1913B571004F6671 /* coreaudio.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = coreaudio.c; sourceTree = "<group>"; };
+		00D6373D1913B571004F6671 /* mpg123.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = mpg123.c; sourceTree = "<group>"; };
+		00D6373E1913B571004F6671 /* oggtremor.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = oggtremor.c; sourceTree = "<group>"; };
+		00D6373F1913B571004F6671 /* oggvorbis.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = oggvorbis.c; sourceTree = "<group>"; };
+		00D637401913B571004F6671 /* SDL_sound_minimal.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = SDL_sound_minimal.c; sourceTree = "<group>"; };
+		00D637411913B571004F6671 /* wav.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = wav.c; sourceTree = "<group>"; };
+		00D637421913B571004F6671 /* OpenSLES_Android.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = OpenSLES_Android.c; sourceTree = "<group>"; };
+		00D637431913B571004F6671 /* SoundDecoder.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = SoundDecoder.c; sourceTree = "<group>"; };
+		00D637441913B571004F6671 /* SoundDecoder.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = SoundDecoder.h; sourceTree = "<group>"; };
+		00D637451913B571004F6671 /* SoundDecoder_Internal.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = SoundDecoder_Internal.h; sourceTree = "<group>"; };
+		00D637461913B571004F6671 /* WindowsMediaFoundation.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = WindowsMediaFoundation.cpp; sourceTree = "<group>"; };
+		00D637471913B571004F6671 /* WindowsMediaFoundation_IMFByteStreamRWops.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = WindowsMediaFoundation_IMFByteStreamRWops.cpp; sourceTree = "<group>"; };
+		00D637481913B571004F6671 /* WindowsMediaFoundation_IMFByteStreamRWops.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = WindowsMediaFoundation_IMFByteStreamRWops.hpp; sourceTree = "<group>"; };
+		00D637491913B571004F6671 /* tErrorLib.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = tErrorLib.c; sourceTree = "<group>"; };
+		00D6374A1913B571004F6671 /* tErrorLib.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = tErrorLib.h; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -136,7 +196,8 @@
 		00605C4916254FDF00A479DE = {
 			isa = PBXGroup;
 			children = (
-				00605D4E1625564800A479DE /* ALmixer */,
+				00D637071913B570004F6671 /* include */,
+				00D6370B1913B570004F6671 /* src */,
 				00605D921625571E00A479DE /* playstream */,
 				00605C5616254FDF00A479DE /* Frameworks */,
 				00605C5516254FDF00A479DE /* Products */,
@@ -168,40 +229,6 @@
 			name = Frameworks;
 			sourceTree = "<group>";
 		};
-		00605D4E1625564800A479DE /* ALmixer */ = {
-			isa = PBXGroup;
-			children = (
-				00605CCF1625555400A479DE /* ALmixer.c */,
-				00605CD01625555400A479DE /* ALmixer.h */,
-				00605CD11625555400A479DE /* CircularQueue.c */,
-				00605CD21625555400A479DE /* CircularQueue.h */,
-				00605D81162556F600A479DE /* LinkedList.c */,
-				00605D82162556F600A479DE /* LinkedList.h */,
-				00605D4F162556C400A479DE /* Isolated */,
-			);
-			name = ALmixer;
-			path = ../..;
-			sourceTree = "<group>";
-		};
-		00605D4F162556C400A479DE /* Isolated */ = {
-			isa = PBXGroup;
-			children = (
-				00605D50162556C400A479DE /* ALmixer_RWops.c */,
-				00605D51162556C400A479DE /* ALmixer_RWops.h */,
-				00605D52162556C400A479DE /* coreaudio.c */,
-				00605D5D162556C400A479DE /* SimpleMutex.c */,
-				00605D5E162556C400A479DE /* SimpleMutex.h */,
-				00605D5F162556C400A479DE /* SimpleThread.h */,
-				00605D60162556C400A479DE /* SimpleThreadPosix.c */,
-				00605D62162556C400A479DE /* SoundDecoder.c */,
-				00605D63162556C400A479DE /* SoundDecoder.h */,
-				00605D64162556C400A479DE /* SoundDecoder_Internal.h */,
-				00605D65162556C400A479DE /* tErrorLib.c */,
-				00605D66162556C400A479DE /* tErrorLib.h */,
-			);
-			path = Isolated;
-			sourceTree = "<group>";
-		};
 		00605D921625571E00A479DE /* playstream */ = {
 			isa = PBXGroup;
 			children = (
@@ -230,6 +257,165 @@
 			name = "Supporting Files";
 			sourceTree = "<group>";
 		};
+		00D637071913B570004F6671 /* include */ = {
+			isa = PBXGroup;
+			children = (
+				00D637081913B570004F6671 /* ALmixer.h */,
+				00D637091913B570004F6671 /* ALmixer_PlatformExtensions.h */,
+				00D6370A1913B570004F6671 /* ALmixer_RWops.h */,
+			);
+			name = include;
+			path = ../../include;
+			sourceTree = "<group>";
+		};
+		00D6370B1913B570004F6671 /* src */ = {
+			isa = PBXGroup;
+			children = (
+				00D6370C1913B571004F6671 /* ALmixer.c */,
+				00D6370D1913B571004F6671 /* ALmixer_AndroidExtensions.c */,
+				00D6370E1913B571004F6671 /* ALmixer_AndroidExtensions.h */,
+				00D6370F1913B571004F6671 /* CircularQueue.c */,
+				00D637101913B571004F6671 /* CircularQueue.h */,
+				00D637111913B571004F6671 /* LinkedList.c */,
+				00D637121913B571004F6671 /* LinkedList.h */,
+				00D637131913B571004F6671 /* StandAlone */,
+				00D637491913B571004F6671 /* tErrorLib.c */,
+				00D6374A1913B571004F6671 /* tErrorLib.h */,
+			);
+			name = src;
+			path = ../../src;
+			sourceTree = "<group>";
+		};
+		00D637131913B571004F6671 /* StandAlone */ = {
+			isa = PBXGroup;
+			children = (
+				00D637141913B571004F6671 /* SDL */,
+				00D637351913B571004F6671 /* SimpleMutex.c */,
+				00D637361913B571004F6671 /* SimpleMutex.h */,
+				00D637371913B571004F6671 /* SimpleThread.h */,
+				00D637381913B571004F6671 /* SimpleThreadPosix.c */,
+				00D637391913B571004F6671 /* SimpleThreadWindows.c */,
+				00D6373A1913B571004F6671 /* SoundDecoder */,
+			);
+			path = StandAlone;
+			sourceTree = "<group>";
+		};
+		00D637141913B571004F6671 /* SDL */ = {
+			isa = PBXGroup;
+			children = (
+				00D637151913B571004F6671 /* include */,
+				00D637261913B571004F6671 /* src */,
+			);
+			path = SDL;
+			sourceTree = "<group>";
+		};
+		00D637151913B571004F6671 /* include */ = {
+			isa = PBXGroup;
+			children = (
+				00D637161913B571004F6671 /* ALmixer_begin_code.h */,
+				00D637171913B571004F6671 /* ALmixer_close_code.h */,
+				00D637181913B571004F6671 /* ALmixer_config.h */,
+				00D637191913B571004F6671 /* ALmixer_config_android.h */,
+				00D6371A1913B571004F6671 /* ALmixer_config_iphoneos.h */,
+				00D6371B1913B571004F6671 /* ALmixer_config_macosx.h */,
+				00D6371C1913B571004F6671 /* ALmixer_config_minimal.h */,
+				00D6371D1913B571004F6671 /* ALmixer_config_pandora.h */,
+				00D6371E1913B571004F6671 /* ALmixer_config_psp.h */,
+				00D6371F1913B571004F6671 /* ALmixer_config_windows.h */,
+				00D637201913B571004F6671 /* ALmixer_config_winrt.h */,
+				00D637211913B571004F6671 /* ALmixer_config_wiz.h */,
+				00D637221913B571004F6671 /* ALmixer_endian.h */,
+				00D637231913B571004F6671 /* ALmixer_platform.h */,
+				00D637241913B571004F6671 /* ALmixer_stdinc.h */,
+				00D637251913B571004F6671 /* ALmixer_system.h */,
+			);
+			path = include;
+			sourceTree = "<group>";
+		};
+		00D637261913B571004F6671 /* src */ = {
+			isa = PBXGroup;
+			children = (
+				00D637271913B571004F6671 /* ALmixer_internal.h */,
+				00D637281913B571004F6671 /* core */,
+				00D6372C1913B571004F6671 /* file */,
+				00D637311913B571004F6671 /* stdlib */,
+			);
+			path = src;
+			sourceTree = "<group>";
+		};
+		00D637281913B571004F6671 /* core */ = {
+			isa = PBXGroup;
+			children = (
+				00D637291913B571004F6671 /* android */,
+			);
+			path = core;
+			sourceTree = "<group>";
+		};
+		00D637291913B571004F6671 /* android */ = {
+			isa = PBXGroup;
+			children = (
+				00D6372A1913B571004F6671 /* ALmixer_android.c */,
+				00D6372B1913B571004F6671 /* ALmixer_android.h */,
+			);
+			path = android;
+			sourceTree = "<group>";
+		};
+		00D6372C1913B571004F6671 /* file */ = {
+			isa = PBXGroup;
+			children = (
+				00D6372D1913B571004F6671 /* ALmixer_RWops.c */,
+				00D6372E1913B571004F6671 /* cocoa */,
+			);
+			path = file;
+			sourceTree = "<group>";
+		};
+		00D6372E1913B571004F6671 /* cocoa */ = {
+			isa = PBXGroup;
+			children = (
+				00D6372F1913B571004F6671 /* ALmixer_rwopsbundlesupport.h */,
+				00D637301913B571004F6671 /* ALmixer_rwopsbundlesupport.m */,
+			);
+			path = cocoa;
+			sourceTree = "<group>";
+		};
+		00D637311913B571004F6671 /* stdlib */ = {
+			isa = PBXGroup;
+			children = (
+				00D637321913B571004F6671 /* ALmixer_malloc.c */,
+				00D637331913B571004F6671 /* ALmixer_stdlib.c */,
+				00D637341913B571004F6671 /* ALmixer_string.c */,
+			);
+			path = stdlib;
+			sourceTree = "<group>";
+		};
+		00D6373A1913B571004F6671 /* SoundDecoder */ = {
+			isa = PBXGroup;
+			children = (
+				00D6373B1913B571004F6671 /* coreaudio.c */,
+				00D6373C1913B571004F6671 /* LGPL */,
+				00D637421913B571004F6671 /* OpenSLES_Android.c */,
+				00D637431913B571004F6671 /* SoundDecoder.c */,
+				00D637441913B571004F6671 /* SoundDecoder.h */,
+				00D637451913B571004F6671 /* SoundDecoder_Internal.h */,
+				00D637461913B571004F6671 /* WindowsMediaFoundation.cpp */,
+				00D637471913B571004F6671 /* WindowsMediaFoundation_IMFByteStreamRWops.cpp */,
+				00D637481913B571004F6671 /* WindowsMediaFoundation_IMFByteStreamRWops.hpp */,
+			);
+			path = SoundDecoder;
+			sourceTree = "<group>";
+		};
+		00D6373C1913B571004F6671 /* LGPL */ = {
+			isa = PBXGroup;
+			children = (
+				00D6373D1913B571004F6671 /* mpg123.c */,
+				00D6373E1913B571004F6671 /* oggtremor.c */,
+				00D6373F1913B571004F6671 /* oggvorbis.c */,
+				00D637401913B571004F6671 /* SDL_sound_minimal.c */,
+				00D637411913B571004F6671 /* wav.c */,
+			);
+			path = LGPL;
+			sourceTree = "<group>";
+		};
 /* End PBXGroup section */
 
 /* Begin PBXHeadersBuildPhase section */
@@ -237,15 +423,34 @@
 			isa = PBXHeadersBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				00605CF11625555400A479DE /* ALmixer.h in Headers */,
-				00605CF31625555400A479DE /* CircularQueue.h in Headers */,
-				00605D6B162556C400A479DE /* ALmixer_RWops.h in Headers */,
-				00605D76162556C400A479DE /* SimpleMutex.h in Headers */,
-				00605D77162556C400A479DE /* SimpleThread.h in Headers */,
-				00605D7B162556C400A479DE /* SoundDecoder.h in Headers */,
-				00605D7C162556C400A479DE /* SoundDecoder_Internal.h in Headers */,
-				00605D7E162556C400A479DE /* tErrorLib.h in Headers */,
-				00605D84162556F600A479DE /* LinkedList.h in Headers */,
+				00D6374C1913B571004F6671 /* ALmixer_PlatformExtensions.h in Headers */,
+				00D637691913B571004F6671 /* ALmixer_rwopsbundlesupport.h in Headers */,
+				00D6374B1913B571004F6671 /* ALmixer.h in Headers */,
+				00D6374D1913B571004F6671 /* ALmixer_RWops.h in Headers */,
+				00D637591913B571004F6671 /* ALmixer_config_iphoneos.h in Headers */,
+				00D637701913B571004F6671 /* SimpleThread.h in Headers */,
+				00D6375B1913B571004F6671 /* ALmixer_config_minimal.h in Headers */,
+				00D6375C1913B571004F6671 /* ALmixer_config_pandora.h in Headers */,
+				00D637641913B571004F6671 /* ALmixer_system.h in Headers */,
+				00D637621913B571004F6671 /* ALmixer_platform.h in Headers */,
+				00D6377B1913B571004F6671 /* SoundDecoder.h in Headers */,
+				00D637651913B571004F6671 /* ALmixer_internal.h in Headers */,
+				00D637581913B571004F6671 /* ALmixer_config_android.h in Headers */,
+				00D637561913B571004F6671 /* ALmixer_close_code.h in Headers */,
+				00D6375A1913B571004F6671 /* ALmixer_config_macosx.h in Headers */,
+				00D637551913B571004F6671 /* ALmixer_begin_code.h in Headers */,
+				00D637521913B571004F6671 /* CircularQueue.h in Headers */,
+				00D637571913B571004F6671 /* ALmixer_config.h in Headers */,
+				00D6375D1913B571004F6671 /* ALmixer_config_psp.h in Headers */,
+				00D637601913B571004F6671 /* ALmixer_config_wiz.h in Headers */,
+				00D637811913B571004F6671 /* tErrorLib.h in Headers */,
+				00D637541913B571004F6671 /* LinkedList.h in Headers */,
+				00D637611913B571004F6671 /* ALmixer_endian.h in Headers */,
+				00D6376F1913B571004F6671 /* SimpleMutex.h in Headers */,
+				00D6377C1913B571004F6671 /* SoundDecoder_Internal.h in Headers */,
+				00D6375F1913B571004F6671 /* ALmixer_config_winrt.h in Headers */,
+				00D637631913B571004F6671 /* ALmixer_stdinc.h in Headers */,
+				00D6375E1913B571004F6671 /* ALmixer_config_windows.h in Headers */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -335,15 +540,19 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				00605CF01625555400A479DE /* ALmixer.c in Sources */,
-				00605CF21625555400A479DE /* CircularQueue.c in Sources */,
-				00605D6A162556C400A479DE /* ALmixer_RWops.c in Sources */,
-				00605D6C162556C400A479DE /* coreaudio.c in Sources */,
-				00605D75162556C400A479DE /* SimpleMutex.c in Sources */,
-				00605D78162556C400A479DE /* SimpleThreadPosix.c in Sources */,
-				00605D7A162556C400A479DE /* SoundDecoder.c in Sources */,
-				00605D7D162556C400A479DE /* tErrorLib.c in Sources */,
-				00605D83162556F600A479DE /* LinkedList.c in Sources */,
+				00D6376A1913B571004F6671 /* ALmixer_rwopsbundlesupport.m in Sources */,
+				00D637801913B571004F6671 /* tErrorLib.c in Sources */,
+				00D637711913B571004F6671 /* SimpleThreadPosix.c in Sources */,
+				00D6376D1913B571004F6671 /* ALmixer_string.c in Sources */,
+				00D637731913B571004F6671 /* coreaudio.c in Sources */,
+				00D637531913B571004F6671 /* LinkedList.c in Sources */,
+				00D6377A1913B571004F6671 /* SoundDecoder.c in Sources */,
+				00D6376B1913B571004F6671 /* ALmixer_malloc.c in Sources */,
+				00D637681913B571004F6671 /* ALmixer_RWops.c in Sources */,
+				00D6376C1913B571004F6671 /* ALmixer_stdlib.c in Sources */,
+				00D6374E1913B571004F6671 /* ALmixer.c in Sources */,
+				00D6376E1913B571004F6671 /* SimpleMutex.c in Sources */,
+				00D637511913B571004F6671 /* CircularQueue.c in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -424,7 +633,7 @@
 				IPHONEOS_DEPLOYMENT_TARGET = 5.1;
 				ONLY_ACTIVE_ARCH = YES;
 				SDKROOT = iphoneos;
-				USER_HEADER_SEARCH_PATHS = "$(BASE_SDK)/System/Library/Frameworks/OpenAL.framework/Headers \"$(SDKROOT)/System/Library/Frameworks/OpenAL.framework/Headers\"";
+				USER_HEADER_SEARCH_PATHS = "$(BASE_SDK)/System/Library/Frameworks/OpenAL.framework/Headers \"$(SDKROOT)/System/Library/Frameworks/OpenAL.framework/Headers\" \"$(SRCROOT)/../../include\" \"$(SRCROOT)/../../src\"/**";
 			};
 			name = Debug;
 		};
@@ -453,7 +662,7 @@
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 5.1;
 				SDKROOT = iphoneos;
-				USER_HEADER_SEARCH_PATHS = "$(BASE_SDK)/System/Library/Frameworks/OpenAL.framework/Headers \"$(SDKROOT)/System/Library/Frameworks/OpenAL.framework/Headers\"";
+				USER_HEADER_SEARCH_PATHS = "$(BASE_SDK)/System/Library/Frameworks/OpenAL.framework/Headers \"$(SDKROOT)/System/Library/Frameworks/OpenAL.framework/Headers\" \"$(SRCROOT)/../../include\" \"$(SRCROOT)/../../src\"/**";
 				VALIDATE_PRODUCT = YES;
 			};
 			name = Release;

@@ -1,5 +1,7 @@
 /* Copyright PlayControl Software LLC / Eric Wing.
  */
+#ifdef _WIN32
+
 #include "SimpleThread.h"
 
 #define WIN32_LEAN_AND_MEAN
@@ -192,4 +194,5 @@ void SimpleThread_SetThreadPriority(SimpleThread* simple_thread, int priority_le
 		return;
 	}
 }
+#endif /* _WIN32 */
 
