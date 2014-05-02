@@ -361,9 +361,9 @@ extern DECLSPEC Sint64 ALMIXER_CALL ALmixer_strtoll(const char *str, char **endp
 extern DECLSPEC Uint64 ALMIXER_CALL ALmixer_strtoull(const char *str, char **endp, int base);
 extern DECLSPEC double ALMIXER_CALL ALmixer_strtod(const char *str, char **endp);
 
-extern DECLSPEC int ALMIXER_CALL ALmixer_strcmp(const char *str1, const char *str2);
 #endif /* #if 0 */
 
+extern DECLSPEC int ALMIXER_CALL ALmixer_strcmp(const char *str1, const char *str2);
 extern DECLSPEC int ALMIXER_CALL ALmixer_strncmp(const char *str1, const char *str2, size_t maxlen);
 
 #if 0
@@ -401,6 +401,11 @@ extern DECLSPEC double ALMIXER_CALL ALmixer_sin(double x);
 extern DECLSPEC float ALMIXER_CALL ALmixer_sinf(float x);
 extern DECLSPEC double ALMIXER_CALL ALmixer_sqrt(double x);
 
+
+/* ALmixer: Only Windows uses this function for WIN_UTF8ToString. 
+	This has a lot of code dependencies and size so I'm making it Windows only.
+*/
+#if _WIN32
 /* The SDL implementation of iconv() returns these error codes */
 #define ALmixer_ICONV_ERROR     (size_t)-1
 #define ALmixer_ICONV_E2BIG     (size_t)-2
@@ -417,10 +422,7 @@ extern DECLSPEC size_t ALMIXER_CALL ALmixer_iconv(ALmixer_iconv_t cd, const char
                                          size_t * outbytesleft);
 #endif /* #if 0 */
 
-/* ALmixer: Only Windows uses this function for WIN_UTF8ToString. 
-	This has a lot of code dependencies and size so I'm making it Windows only.
-*/
-#if _WIN32
+
 /**
  *  This function converts a string between encodings in one pass, returning a
  *  string that must be freed with ALmixer_free() or NULL on error.

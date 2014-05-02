@@ -159,6 +159,8 @@ SET(ALMIXER_WITHOUT_SDL_SOURCE
 	${ALmixer_SOURCE_DIR}/src/StandAlone/SDL/src/stdlib/ALmixer_string.c
 	# Note: Currently #ifdef'd only for Windows to save space since only Windows needs it.
 	${ALmixer_SOURCE_DIR}/src/StandAlone/SDL/src/stdlib/ALmixer_iconv.c
+	# Note: Currently #ifdef'd only for Windows to save space since only Windows needs it.
+	${ALmixer_SOURCE_DIR}/src/StandAlone/SDL/src/stdlib/ALmixer_getenv.c
 )
 SET(ALMIXER_WITHOUT_SDL_SOURCE_INCLUDE_PATHS
 	${ALmixer_SOURCE_DIR}/src/StandAlone

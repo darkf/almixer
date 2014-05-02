@@ -895,6 +895,8 @@ ALmixer_strtod(const char *string, char **endp)
 #endif /* HAVE_STRTOD */
 }
 
+#endif /* #if 0 */
+
 int
 ALmixer_strcmp(const char *str1, const char *str2)
 {
@@ -910,7 +912,6 @@ ALmixer_strcmp(const char *str1, const char *str2)
     return (int) ((unsigned char) *str1 - (unsigned char) *str2);
 #endif /* HAVE_STRCMP */
 }
-#endif /* #if 0 */
 
 
 int
