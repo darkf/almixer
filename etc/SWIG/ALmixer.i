@@ -19,6 +19,7 @@
 %{
  /* Includes the header in the wrapper code */
  #include "ALmixer.h"
+ #include "ALmixer_RWops.h"
 %}
 
 /* This was just a SWIG experiment.
@@ -477,50 +478,39 @@ typedef void ALvoid;
 #define ALMIXER_DECLSPEC
     #define ALMIXER_CALL
 #else
-#ifdef ALMIXER_COMPILE_WITHOUT_SDL
-    #if defined(_WIN32)
-        #if defined(ALMIXER_BUILD_LIBRARY)
-            #define ALMIXER_DECLSPEC __declspec(dllexport)
-        #else
-            #define ALMIXER_DECLSPEC
-        #endif
-    #else
-        #if defined(ALMIXER_BUILD_LIBRARY)
-            #if defined (__GNUC__) && __GNUC__ >= 4
-                #define ALMIXER_DECLSPEC __attribute__((visibility("default")))
-            #else
-                #define ALMIXER_DECLSPEC
-            #endif
-        #else
-            #define ALMIXER_DECLSPEC
-        #endif
-    #endif
+	#if defined(_WIN32)
+		#if defined(ALMIXER_BUILD_LIBRARY)
+			#define ALMIXER_DECLSPEC __declspec(dllexport)
+		#else
+			#define ALMIXER_DECLSPEC
+		#endif
+	#else
+		#if defined(ALMIXER_BUILD_LIBRARY)
+			#if defined (__GNUC__) && __GNUC__ >= 4
+				#define ALMIXER_DECLSPEC __attribute__((visibility("default")))
+			#else
+				#define ALMIXER_DECLSPEC
+			#endif
+		#else
+			#define ALMIXER_DECLSPEC
+		#endif
+	#endif
 
-    #if defined(_WIN32)
-        #define ALMIXER_CALL __cdecl
-    #else
-        #define ALMIXER_CALL
-    #endif
-#else
-    #include "SDL_types.h" /* will include begin_code.h which is what I really want */
-    #define ALMIXER_DECLSPEC DECLSPEC
-    #define ALMIXER_CALL SDLCALL
-#endif
+	#if defined(_WIN32)
+		#define ALMIXER_CALL __cdecl
+	#else
+		#define ALMIXER_CALL
+	#endif
 #endif
 #endif /* DOXYGEN_SHOULD_IGNORE_THIS */
 
 
-#ifdef ALMIXER_COMPILE_WITHOUT_SDL
-    typedef struct ALmixer_version
-    {
-        ALubyte major;
-        ALubyte minor;
-        ALubyte patch;
-    } ALmixer_version;
-#else
-    #include "SDL_version.h"
-    #define ALmixer_version SDL_version
-#endif
+typedef struct ALmixer_version
+{
+	ALubyte major;
+	ALubyte minor;
+	ALubyte patch;
+} ALmixer_version;
 
 /* Printable format: "%d.%d.%d", MAJOR, MINOR, PATCHLEVEL
  */
@@ -537,21 +527,13 @@ typedef void ALvoid;
 
 extern ALMIXER_DECLSPEC const ALmixer_version* ALMIXER_CALL ALmixer_GetLinkedVersion(void);
 
-#ifdef ALMIXER_COMPILE_WITHOUT_SDL
-    extern ALMIXER_DECLSPEC const char* ALMIXER_CALL ALmixer_GetError(void);
-#else
-    #include "SDL_error.h"
-    #define ALmixer_GetError    SDL_GetError
-    #define ALmixer_SetError    SDL_SetError
-#endif
+extern ALMIXER_DECLSPEC const char* ALMIXER_CALL ALmixer_GetError(void);
+extern ALMIXER_DECLSPEC void ALMIXER_CALL ALmixer_SetError(const char *fmt, ...);
+    
+extern ALMIXER_DECLSPEC ALuint ALMIXER_CALL ALmixer_GetTicks(void);
+extern ALMIXER_DECLSPEC void ALMIXER_CALL ALmixer_Delay(ALuint milliseconds_delay);
 
-
-#ifdef ALMIXER_COMPILE_WITHOUT_SDL
-    #include "ALmixer_RWops.h"
-#else
-    #include "SDL_rwops.h"
-    #define ALmixer_RWops   SDL_RWops
-#endif
+%include "ALmixer_RWops.i"
 
 
 #define ALMIXER_DEFAULT_FREQUENCY   0
@@ -889,9 +871,11 @@ extern ALMIXER_DECLSPEC void ALMIXER_CALL ALmixer_OutputDecoders(void);
 extern ALMIXER_DECLSPEC void ALMIXER_CALL ALmixer_OutputOpenALInfo(void);
 
 /** This function may be removed in the future. Returns true if compiled with threads, false if not. */ 
+/*
 extern ALMIXER_DECLSPEC size_t ALMIXER_CALL ALmixer_GetCurrentThreadID(void);
 extern ALMIXER_DECLSPEC ALboolean ALMIXER_CALL ALmixer_CompiledWithThreadBackend(void);
 extern ALMIXER_DECLSPEC size_t ALMIXER_CALL ALmixer_GetThreadIDForType(int almixer_thread_type);
+*/
 
 /* Ends C function definitions when using C++ */
 #ifdef __cplusplus

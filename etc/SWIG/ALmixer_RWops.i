@@ -38,7 +38,7 @@
 	I'm probably asking for trouble, but I don't want to have to ship all the SDL_config headers.
 	So I'm going to inline just the parts I need. 
 	I need the stdint types, and
-	I need the compiler define for HAVE_STDIO_H.
+	I need the compiler define for ALMIXER_HAVE_STDIO_H.
 	As far as I can tell, all the shipping SDL2 systems have stdio.
 	I also want the pragma structure packing. My hope is my copied implementation is compatible so you can pointer cast between SDL/ALmixer.
  */
@@ -115,7 +115,7 @@ extern "C" {
 /**
  * This is the read/write operation structure -- very basic.
  */
-typedef struct ALmixer_RWops
+struct ALmixer_RWops
 {
     /**
      *  Return the size of the file in this rwops, or -1 if unknown
@@ -206,7 +206,9 @@ typedef struct ALmixer_RWops
         } unknown;
     } hidden;
 
-} ALmixer_RWops;
+};
+
+typedef ALmixer_RWops ALmixer_RWops;
 
 
 /**
@@ -303,3 +305,4 @@ extern ALMIXER_DECLSPEC size_t ALMIXER_CALL ALmixer_WriteBE64(ALmixer_RWops * ds
 #endif /* _ALmixer_rwops_h */
 
 /* vi: set ts=4 sw=4 expandtab: */
+
