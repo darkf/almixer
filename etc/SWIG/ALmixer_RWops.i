@@ -117,6 +117,9 @@ extern "C" {
  */
 struct ALmixer_RWops
 {
+/* SWIG JavaScript is having problems with anonymous unions. Disable for now. */
+#if 0
+
     /**
      *  Return the size of the file in this rwops, or -1 if unknown
      */
@@ -205,7 +208,7 @@ struct ALmixer_RWops
             void *data2;
         } unknown;
     } hidden;
-
+#endif
 };
 
 typedef ALmixer_RWops ALmixer_RWops;
