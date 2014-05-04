@@ -103,6 +103,35 @@ IF(ANDROID)
 ENDIF(ANDROID)
 
 
+# RPATH $ORIGIN is only for Linux and Solaris
+# I don't know what name CMake uses for Solaris.
+IF("${CMAKE_SYSTEM_NAME}" MATCHES "Linux" AND NOT ANDROID)
+	# use, i.e. don't skip the full RPATH for the build tree
+	SET(CMAKE_SKIP_BUILD_RPATH  FALSE)
+
+	# when building, don't use the install RPATH already
+	# (but later on when installing)
+	SET(CMAKE_BUILD_WITH_INSTALL_RPATH FALSE) 
+
+	#SET(CMAKE_INSTALL_RPATH "${CMAKE_INSTALL_PREFIX}/lib")
+
+	# add the automatically determined parts of the RPATH
+	# which point to directories outside the build tree to the install RPATH
+	SET(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
+
+
+	# the RPATH to be used when installing, but only if it's not a system directory
+	LIST(FIND CMAKE_PLATFORM_IMPLICIT_LINK_DIRECTORIES "${CMAKE_INSTALL_PREFIX}/lib" isSystemDir)
+	IF("${isSystemDir}" STREQUAL "-1")
+	#   SET(CMAKE_INSTALL_RPATH "${CMAKE_INSTALL_PREFIX}/lib")
+
+	#    SET(CMAKE_INSTALL_RPATH "${CMAKE_INSTALL_RPATH}:\\$$ORIGIN")
+	ENDIF("${isSystemDir}" STREQUAL "-1")
+	SET(CMAKE_INSTALL_RPATH "\\\$ORIGIN")
+#    SET(CMAKE_INSTALL_RPATH "/usr/lib${CMAKE_INSTALL_RPATH}:\\\$ORIGIN")
+ENDIF()
+
+
 
 SET(ALMIXER_LIBRARY_NAME ALmixer)
 IF(APPLE)
@@ -454,6 +483,11 @@ IF(WANTS_BUILD_SHARED_LIBRARY AND WANTS_BUILD_FRAMEWORK)
 	SET(MACOSX_FRAMEWORK_IDENTIFIER "net.playcontrol.almixer")
 
 ELSEIF(WANTS_BUILD_SHARED_LIBRARY)
+	# Need quotes around ${PUBLIC_HEADERS}, 
+	# otherwise CMake only seems to use the first one
+	SET_TARGET_PROPERTIES(ALmixer PROPERTIES
+		PUBLIC_HEADER "${PUBLIC_HEADERS}"
+	)
 	IF(APPLE)
 		SET_TARGET_PROPERTIES(ALmixer PROPERTIES
 			FRAMEWORK FALSE
