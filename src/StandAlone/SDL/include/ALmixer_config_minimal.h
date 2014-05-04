@@ -22,7 +22,7 @@
 #ifndef _ALMIXER_config_minimal_h
 #define _ALMIXER_config_minimal_h
 
-#include "ALMIXER_platform.h"
+#include "ALmixer_platform.h"
 
 /**
  *  \file ALMIXER_config_minimal.h

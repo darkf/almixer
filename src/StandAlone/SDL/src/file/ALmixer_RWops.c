@@ -18,7 +18,7 @@ ALmixer_RWFromFile(const char *file, const char *mode)
 	return SDL_reinterpret_cast(ALmixer_RWops*, SDL_RWFromFile(file, mode));
 }
 
-#ifdef HAVE_STDIO_H
+#ifdef ALMIXER_HAVE_STDIO_H
 ALmixer_RWops *
 ALmixer_RWFromFP(FILE * fp, ALmixer_bool autoclose)
 {
@@ -30,7 +30,7 @@ ALmixer_RWFromFP(void * fp, ALmixer_bool autoclose)
 {
  	return SDL_reinterpret_cast(ALmixer_RWops*, SDL_RWFromFP(fp, autoclose));
 }
-#endif /* HAVE_STDIO_H */
+#endif /* ALMIXER_HAVE_STDIO_H */
 
 ALmixer_RWops *
 ALmixer_RWFromMem(void *mem, int size)
@@ -502,7 +502,7 @@ windows_file_close(ALmixer_RWops * context)
 }
 #endif /* __WIN32__ */
 
-#ifdef HAVE_STDIO_H
+#ifdef ALMIXER_HAVE_STDIO_H
 
 /* Functions to read/write stdio file pointers */
 
@@ -583,7 +583,7 @@ stdio_close(ALmixer_RWops * context)
     }
     return status;
 }
-#endif /* !HAVE_STDIO_H */
+#endif /* !ALMIXER_HAVE_STDIO_H */
 
 /* Functions to read/write memory pointers */
 
@@ -684,7 +684,7 @@ ALmixer_RWFromFile(const char *file, const char *mode)
         return NULL;
     }
 #if defined(__ANDROID__)
-#ifdef HAVE_STDIO_H
+#ifdef ALMIXER_HAVE_STDIO_H
     /* Try to open the file on the filesystem first */
     if (*file == '/') {
         FILE *fp = fopen(file, mode);
@@ -707,7 +707,7 @@ ALmixer_RWFromFile(const char *file, const char *mode)
             }
         }
     }
-#endif /* HAVE_STDIO_H */
+#endif /* ALMIXER_HAVE_STDIO_H */
 
     /* Try to open the file from the asset system */
     rwops = ALmixer_AllocRW();
@@ -739,7 +739,7 @@ ALmixer_RWFromFile(const char *file, const char *mode)
     rwops->close = windows_file_close;
     rwops->type = ALMIXER_RWOPS_WINFILE;
 
-#elif HAVE_STDIO_H
+#elif ALMIXER_HAVE_STDIO_H
     {
         #ifdef __APPLE__
         FILE *fp = ALmixer_OpenFPFromBundleOrFallback(file, mode);
@@ -757,12 +757,12 @@ ALmixer_RWFromFile(const char *file, const char *mode)
     }
 #else
     ALmixer_SetError("ALmixer_RWops not compiled with stdio support");
-#endif /* !HAVE_STDIO_H */
+#endif /* !ALMIXER_HAVE_STDIO_H */
 
     return rwops;
 }
 
-#ifdef HAVE_STDIO_H
+#ifdef ALMIXER_HAVE_STDIO_H
 ALmixer_RWops *
 ALmixer_RWFromFP(FILE * fp, ALmixer_bool autoclose)
 {
@@ -788,7 +788,7 @@ ALmixer_RWFromFP(void * fp, ALmixer_bool autoclose)
     ALmixer_SetError("ALmixer_RWops not compiled with stdio support");
     return NULL;
 }
-#endif /* HAVE_STDIO_H */
+#endif /* ALMIXER_HAVE_STDIO_H */
 
 ALmixer_RWops *
 ALmixer_RWFromMem(void *mem, int size)

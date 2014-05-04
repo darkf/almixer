@@ -46,7 +46,9 @@
 #include "SoundDecoder.h"
 
 #include "SoundDecoder_Internal.h"
-#include "SDL_endian_minimal.h"
+/*
+#include "ALmixer_endian.h"
+*/
 #include "ALmixer_RWops.h"
 
 /*
@@ -66,9 +68,9 @@ static int OGG_init(void);
 static void OGG_quit(void);
 static int OGG_open(Sound_Sample *sample, const char *ext);
 static void OGG_close(Sound_Sample *sample);
-static uint32_t OGG_read(Sound_Sample *sample);
+static size_t OGG_read(Sound_Sample *sample);
 static int OGG_rewind(Sound_Sample *sample);
-static int OGG_seek(Sound_Sample *sample, uint32_t ms);
+static int OGG_seek(Sound_Sample *sample, size_t ms);
 
 static const char *extensions_ogg[] = { "OGG", NULL };
 const Sound_DecoderFunctions __Sound_DecoderFunctions_OGG =
@@ -243,7 +245,7 @@ static int OGG_open(Sound_Sample *sample, const char *ext)
      *  OGG files are apparently commonly encoded in.
      */
     sample->actual.format = (sample->desired.format == 0) ?
-                             AUDIO_S16LSB : sample->desired.format;
+                             AUDIO_S16SYS : sample->desired.format;
     return(1);
 } /* OGG_open */
 
@@ -267,19 +269,30 @@ static void OGG_close(Sound_Sample *sample)
  * However, there may still be some corner cases where the buffer
  * cannot be entirely filled. So be aware.
  */
-static uint32_t OGG_read(Sound_Sample *sample)
+static size_t OGG_read(Sound_Sample *sample)
 {
-    int rc;
+    size_t rc;
     int bitstream;
 	Sound_SampleInternal *internal = (Sound_SampleInternal *) sample->opaque;
     OggVorbis_File *vf = (OggVorbis_File *) internal->decoder_private;
 
+	/*
+	{
+		int big_endian = ((sample->actual.format & 0x1000) ? 1 : 0);
+		int bytes_per_sample_point = ((sample->actual.format & 0xFF) / 8);
+		int signed_data = ((sample->actual.format & 0x8000) ? 1 : 0);
+		fprintf(stderr, "actual.format %x\n", sample->actual.format);
+		fprintf(stderr, "big_endian: %d\n", big_endian);
+		fprintf(stderr, "bytes_per_sample_point: %d\n", bytes_per_sample_point);
+		fprintf(stderr, "signed_data: %d\n", signed_data);
+		fprintf(stderr, "internal_buffer_size: %d\n", internal->buffer_size);
+	}
+	*/
     rc = ov_read(vf, internal->buffer, internal->buffer_size,
             ((sample->actual.format & 0x1000) ? 1 : 0), /* bigendian? */
             ((sample->actual.format & 0xFF) / 8), /* bytes per sample point */
             ((sample->actual.format & 0x8000) ? 1 : 0), /* signed data? */
             &bitstream);
-
         /* Make sure the read went smoothly... */
     if (rc == 0)
         sample->flags |= SOUND_SAMPLEFLAG_EOF;
@@ -289,11 +302,10 @@ static uint32_t OGG_read(Sound_Sample *sample)
 
     /* If the buffer isn't filled, keep trying to fill it
      * until no more data can be grabbed */
-    else if ((uint32_t) rc < internal->buffer_size)
+    else if (rc < internal->buffer_size)
 	{
         /* Creating a pointer to the buffer that denotes where to start
          * writing new data. */
-        uint8_t lala;
         char* buffer_start_point = NULL;
         int total_bytes_read = rc;
         int bytes_remaining = internal->buffer_size - rc;
@@ -354,7 +366,7 @@ static uint32_t OGG_read(Sound_Sample *sample)
         /* Test for a buffer underrun. It should occur less frequently
          * now, but it still may happen and not necessarily mean
          * anything useful. */
-        if ((uint32_t) total_bytes_read < internal->buffer_size)
+        if (total_bytes_read < internal->buffer_size)
         {
             sample->flags |= SOUND_SAMPLEFLAG_EAGAIN;
         }
@@ -364,7 +376,7 @@ static uint32_t OGG_read(Sound_Sample *sample)
         rc = total_bytes_read;
     }
 
-    return((uint32_t) rc);
+    return(rc);
 } /* OGG_read */
 
 
@@ -378,7 +390,7 @@ static int OGG_rewind(Sound_Sample *sample)
 } /* OGG_rewind */
 
 
-static int OGG_seek(Sound_Sample *sample, uint32_t ms)
+static int OGG_seek(Sound_Sample *sample, size_t ms)
 {
     Sound_SampleInternal *internal = (Sound_SampleInternal *) sample->opaque;
     OggVorbis_File *vf = (OggVorbis_File *) internal->decoder_private;

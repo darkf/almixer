@@ -54,12 +54,20 @@ extern "C" {
  * Linux provides <endian.h>
  */
 #if !defined(__BIG_ENDIAN__) && !defined(__LITTLE_ENDIAN__)
-	#ifdef __linux__
+	/* Ugh. It looks like Android does something different than Linux. */
+	#ifdef __ANDROID__
 		#include <endian.h>
 		#if _BYTE_ORDER == _BIG_ENDIAN
-			#define __BIG_ENDIAN__ 1
+			#define __SOUNDDECODER_BIG_ENDIAN__ 1
 		#else
-			#define __LITTLE_ENDIAN__ 1
+			#define __SOUNDDECODER_LITTLE_ENDIAN__ 1
+		#endif
+	#elif __linux__
+		#include <endian.h>
+		#if __BYTE_ORDER == __BIG_ENDIAN
+			#define __SOUNDDECODER_BIG_ENDIAN__ 1
+		#else
+			#define __SOUNDDECODER_LITTLE_ENDIAN__ 1
 		#endif
 	#else /* __linux __ */
 		#if defined(__hppa__) || \
@@ -68,19 +76,22 @@ extern "C" {
 			defined(__ppc__) || defined(__POWERPC__) || defined(_M_PPC) || \
 			defined(__sparc__)
 		
-			#define __BIG_ENDIAN__ 1
+			#define __SOUNDDECODER_BIG_ENDIAN__ 1
 		#else
-			#define __LITTLE_ENDIAN__ 1
+			#define __SOUNDDECODER_LITTLE_ENDIAN__ 1
 		#endif
 	#endif /* __linux __ */
+#else /* for Apple */
+	#define __SOUNDDECODER_BIG_ENDIAN__ __BIG_ENDIAN__ 
+	#define __SOUNDDECODER_LITTLE_ENDIAN__ __LITTLE_ENDIAN__ 
 #endif /*  */
 
 
-#if __BIG_ENDIAN__
+#if __SOUNDDECODER_BIG_ENDIAN__
 	/* #warning "Using __BIG_ENDIAN__" */
 	#define AUDIO_U16SYS AUDIO_U16MSB
 	#define AUDIO_S16SYS AUDIO_S16MSB
-#elif __LITTLE_ENDIAN__
+#elif __SOUNDDECODER_LITTLE_ENDIAN__
 	#define AUDIO_U16SYS	AUDIO_U16LSB
 	#define AUDIO_S16SYS	AUDIO_S16LSB
 #else
