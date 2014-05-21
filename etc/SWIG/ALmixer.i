@@ -180,13 +180,15 @@ typedef void ALvoid;
 /* Redefine for SWIG native boolean */
 /*
 /* Boolean False. */
+/*
 #define AL_FALSE                                  0
-
-/** Boolean True. */
+*/
+/* Boolean True. */
+/*
 #define AL_TRUE                                   1
 */
-typedef false AL_FALSE
-typedef true AL_TRUE
+typedef false AL_FALSE;
+typedef true AL_TRUE;
 
 
 #if 0  /* OpenAL defines */
