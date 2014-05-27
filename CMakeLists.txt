@@ -1,4 +1,10 @@
-CMAKE_MINIMUM_REQUIRED(VERSION 2.4)
+IF(APPLE)
+	# Need @rpath support introduced in 2.8.12
+	CMAKE_MINIMUM_REQUIRED(VERSION 2.8.12)
+ELSE()
+	# Probably will work with 2.4
+	CMAKE_MINIMUM_REQUIRED(VERSION 2.8)
+ENDIF()
 # These are all useless <sigh>
 cmake_policy(SET CMP0000 OLD)
 cmake_policy(SET CMP0004 OLD)
@@ -103,9 +109,11 @@ IF(ANDROID)
 ENDIF(ANDROID)
 
 
-# RPATH $ORIGIN is only for Linux and Solaris
-# I don't know what name CMake uses for Solaris.
-IF("${CMAKE_SYSTEM_NAME}" MATCHES "Linux" AND NOT ANDROID)
+# RPATH stuff. This MUST be set before any targets that use it are declared.
+IF("${CMAKE_SYSTEM}" MATCHES "Linux" AND NOT ANDROID)
+	# RPATH $ORIGIN is only for Linux and Solaris
+	# FIXME: match for Solaris too
+
 	# use, i.e. don't skip the full RPATH for the build tree
 	SET(CMAKE_SKIP_BUILD_RPATH  FALSE)
 
@@ -127,17 +135,29 @@ IF("${CMAKE_SYSTEM_NAME}" MATCHES "Linux" AND NOT ANDROID)
 
 	#    SET(CMAKE_INSTALL_RPATH "${CMAKE_INSTALL_RPATH}:\\$$ORIGIN")
 	ENDIF("${isSystemDir}" STREQUAL "-1")
-	SET(CMAKE_INSTALL_RPATH "\\\$ORIGIN")
-#    SET(CMAKE_INSTALL_RPATH "/usr/lib${CMAKE_INSTALL_RPATH}:\\\$ORIGIN")
+	    SET(CMAKE_INSTALL_RPATH "\\\$ORIGIN")
+	#    SET(CMAKE_INSTALL_RPATH "/usr/lib${CMAKE_INSTALL_RPATH}:\\\$ORIGIN")
+ELSEIF(APPLE)
+	set(CMAKE_MACOSX_RPATH 1)
+	# use, i.e. don't skip the full RPATH for the build tree
+	#	SET(CMAKE_SKIP_BUILD_RPATH  FALSE)
+
+	# when building, don't use the install RPATH already
+	# (but later on when installing)
+	SET(CMAKE_BUILD_WITH_INSTALL_RPATH TRUE) 
+
+	#SET(CMAKE_INSTALL_RPATH "${CMAKE_INSTALL_PREFIX}/lib")
+
+	# add the automatically determined parts of the RPATH
+	# which point to directories outside the build tree to the install RPATH
+	SET(CMAKE_INSTALL_RPATH_USE_LINK_PATH FALSE)	
 ENDIF()
-
-
 
 SET(ALMIXER_LIBRARY_NAME ALmixer)
 IF(APPLE)
 	SET(CMAKE_FRAMEWORK_INSTALL_DIR "/Library/Frameworks" CACHE STRING "Directory to install frameworks to.")
+	# @rpath now replaces this
 #	SET(CMAKE_FRAMEWORK_INSTALL_NAME_DIR "@executable_path/../Frameworks" CACHE STRING "install_name path for framework.")
-	SET(CMAKE_MACOSX_RPATH 1)
 	#SET(CMAKE_DYLIB_INSTALL_NAME_DIR "" CACHE STRING "install_name path for dylib.")
 	SET(CMAKE_DYLIB_INSTALL_NAME_DIR "${CMAKE_INSTALL_PREFIX}/lib" CACHE STRING "install_name path for dylib.")
 	SET(ALMIXER_FRAMEWORK_NAME "${ALMIXER_LIBRARY_NAME}.framework")
