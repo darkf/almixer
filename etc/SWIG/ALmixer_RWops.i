@@ -118,7 +118,7 @@ extern "C" {
 struct ALmixer_RWops
 {
 /* SWIG JavaScript is having problems with anonymous unions. Disable for now. */
-#if 0
+#if 1
 
     /**
      *  Return the size of the file in this rwops, or -1 if unknown
@@ -162,7 +162,7 @@ struct ALmixer_RWops
     uint32_t type;
     union
     {
-#if defined(__ANDROID__)
+//#if defined(__ANDROID__)
         struct
         {
             void *fileNameRef;
@@ -175,7 +175,7 @@ struct ALmixer_RWops
             long offset;
             int fd;
         } androidio;
-#elif defined(__WIN32__)
+//#elif defined(__WIN32__)
         struct
         {
             ALmixer_bool append;
@@ -187,15 +187,15 @@ struct ALmixer_RWops
                 size_t left;
             } buffer;
         } windowsio;
-#endif
+//#endif
 
-#ifdef ALMIXER_HAVE_STDIO_H
+//#ifdef ALMIXER_HAVE_STDIO_H
         struct
         {
             ALmixer_bool autoclose;
             FILE *fp;
         } stdio;
-#endif
+//#endif
         struct
         {
             uint8_t *base;
@@ -212,6 +212,18 @@ struct ALmixer_RWops
 };
 
 typedef ALmixer_RWops ALmixer_RWops;
+/* FIXME: The autoclose makes the automatic memory management tricky/dangerous.
+*/
+/*
+%extend ALmixer_RWops
+{
+	~ALmixer_RWops()
+	{
+		ALmixer_FreeRW($self);
+	}
+};
+*/
+
 
 
 /**
@@ -220,26 +232,34 @@ typedef ALmixer_RWops ALmixer_RWops;
  *  Functions to create ALmixer_RWops structures from various data streams.
  */
 /* @{ */
-
+%newobject ALmixer_RWFromFile;
 extern ALMIXER_DECLSPEC ALmixer_RWops *ALMIXER_CALL ALmixer_RWFromFile(const char *file,
                                                   const char *mode);
 
-#ifdef ALMIXER_HAVE_STDIO_H
+// Assumption: All the platforms we are targeting support stdio.
+//#ifdef ALMIXER_HAVE_STDIO_H
+%newobject ALmixer_RWFromFP;
 extern ALMIXER_DECLSPEC ALmixer_RWops *ALMIXER_CALL ALmixer_RWFromFP(FILE * fp,
                                                 ALmixer_bool autoclose);
-#else
+//#else
+/*
 extern ALMIXER_DECLSPEC ALmixer_RWops *ALMIXER_CALL ALmixer_RWFromFP(void * fp,
                                                 ALmixer_bool autoclose);
-#endif
+*/
+//#endif
 
+%newobject ALmixer_RWFromMem;
 extern ALMIXER_DECLSPEC ALmixer_RWops *ALMIXER_CALL ALmixer_RWFromMem(void *mem, int size);
+%newobject ALmixer_RWFromConstMem;
 extern ALMIXER_DECLSPEC ALmixer_RWops *ALMIXER_CALL ALmixer_RWFromConstMem(const void *mem,
                                                       int size);
 
 /* @} *//* RWFrom functions */
 
 
+%newobject ALmixer_AllocRW;
 extern ALMIXER_DECLSPEC ALmixer_RWops *ALMIXER_CALL ALmixer_AllocRW(void);
+%delobject ALmixer_FreeRW;
 extern ALMIXER_DECLSPEC void ALMIXER_CALL ALmixer_FreeRW(ALmixer_RWops * area);
 
 #define RW_SEEK_SET 0       /**< Seek from the beginning of data */
@@ -252,12 +272,21 @@ extern ALMIXER_DECLSPEC void ALMIXER_CALL ALmixer_FreeRW(ALmixer_RWops * area);
  *  Macros to easily read and write from an ALmixer_RWops structure.
  */
 /* @{ */
+/*
 #define ALmixer_RWsize(ctx)         (ctx)->size(ctx)
 #define ALmixer_RWseek(ctx, offset, whence) (ctx)->seek(ctx, offset, whence)
 #define ALmixer_RWtell(ctx)         (ctx)->seek(ctx, 0, RW_SEEK_CUR)
 #define ALmixer_RWread(ctx, ptr, size, n)   (ctx)->read(ctx, ptr, size, n)
 #define ALmixer_RWwrite(ctx, ptr, size, n)  (ctx)->write(ctx, ptr, size, n)
 #define ALmixer_RWclose(ctx)        (ctx)->close(ctx)
+*/
+int64_t ALmixer_RWsize(ALmixer_RWops* ctx);
+int64_t ALmixer_RWseek(ALmixer_RWops* ctx, int64_t offset, int whence);
+int64_t ALmixer_RWtell(ALmixer_RWops* ctx);
+size_t ALmixer_RWread(ALmixer_RWops* ctx, void *ptr, size_t size, size_t maxnum);
+size_t ALmixer_RWwrite(ALmixer_RWops* ctx, const void *ptr, size_t size, size_t num);
+int ALmixer_RWclose(ALmixer_RWops* ctx);
+
 /* @} *//* Read/write macros */
 
 
