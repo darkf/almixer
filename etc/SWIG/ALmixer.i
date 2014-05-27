@@ -175,14 +175,20 @@ typedef void ALvoid;
 
 /* "no distance model" or "no buffer" */
 #define AL_NONE                                   0
-
-/* Boolean False. */
-#define AL_FALSE                                  0
-
-/** Boolean True. */
-#define AL_TRUE                                   1
-
 #endif /* ifndef ALMIXER_SWIG_INCLUDE_OPENAL_BINDINGS */
+
+/* Redefine for SWIG native boolean */
+/*
+/* Boolean False. */
+/*
+#define AL_FALSE                                  0
+*/
+/* Boolean True. */
+/*
+#define AL_TRUE                                   1
+*/
+typedef false AL_FALSE;
+typedef true AL_TRUE;
 
 
 #if 0  /* OpenAL defines */
