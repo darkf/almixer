@@ -20,9 +20,9 @@
 		004708381694F340008D5B45 /* ALmixer.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 0047076F1694EDE8008D5B45 /* ALmixer.framework */; };
 		0047083C1694F35B008D5B45 /* ALmixer.framework in CopyFiles */ = {isa = PBXBuildFile; fileRef = 0047076F1694EDE8008D5B45 /* ALmixer.framework */; };
 		0047083E1694F3ED008D5B45 /* battle_hymn_of_the_republic.mp3 in Resources */ = {isa = PBXBuildFile; fileRef = 0047083D1694F3ED008D5B45 /* battle_hymn_of_the_republic.mp3 */; };
-		00D6361A1913B036004F6671 /* ALmixer.h in Headers */ = {isa = PBXBuildFile; fileRef = 00D635D71913B036004F6671 /* ALmixer.h */; };
-		00D6361B1913B036004F6671 /* ALmixer_PlatformExtensions.h in Headers */ = {isa = PBXBuildFile; fileRef = 00D635D81913B036004F6671 /* ALmixer_PlatformExtensions.h */; };
-		00D6361C1913B036004F6671 /* ALmixer_RWops.h in Headers */ = {isa = PBXBuildFile; fileRef = 00D635D91913B036004F6671 /* ALmixer_RWops.h */; };
+		00D6361A1913B036004F6671 /* ALmixer.h in Headers */ = {isa = PBXBuildFile; fileRef = 00D635D71913B036004F6671 /* ALmixer.h */; settings = {ATTRIBUTES = (Public, ); }; };
+		00D6361B1913B036004F6671 /* ALmixer_PlatformExtensions.h in Headers */ = {isa = PBXBuildFile; fileRef = 00D635D81913B036004F6671 /* ALmixer_PlatformExtensions.h */; settings = {ATTRIBUTES = (Public, ); }; };
+		00D6361C1913B036004F6671 /* ALmixer_RWops.h in Headers */ = {isa = PBXBuildFile; fileRef = 00D635D91913B036004F6671 /* ALmixer_RWops.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		00D6361D1913B036004F6671 /* ALmixer.c in Sources */ = {isa = PBXBuildFile; fileRef = 00D635DB1913B036004F6671 /* ALmixer.c */; };
 		00D636201913B036004F6671 /* CircularQueue.c in Sources */ = {isa = PBXBuildFile; fileRef = 00D635DE1913B036004F6671 /* CircularQueue.c */; };
 		00D636211913B036004F6671 /* CircularQueue.h in Headers */ = {isa = PBXBuildFile; fileRef = 00D635DF1913B036004F6671 /* CircularQueue.h */; };
@@ -428,9 +428,9 @@
 			buildActionMask = 2147483647;
 			files = (
 				00D6361B1913B036004F6671 /* ALmixer_PlatformExtensions.h in Headers */,
-				00D636381913B036004F6671 /* ALmixer_rwopsbundlesupport.h in Headers */,
 				00D6361A1913B036004F6671 /* ALmixer.h in Headers */,
 				00D6361C1913B036004F6671 /* ALmixer_RWops.h in Headers */,
+				00D636381913B036004F6671 /* ALmixer_rwopsbundlesupport.h in Headers */,
 				00D636281913B036004F6671 /* ALmixer_config_iphoneos.h in Headers */,
 				00D6363F1913B036004F6671 /* SimpleThread.h in Headers */,
 				00D6362A1913B036004F6671 /* ALmixer_config_minimal.h in Headers */,
@@ -675,6 +675,11 @@
 				DYLIB_COMPATIBILITY_VERSION = 1;
 				DYLIB_CURRENT_VERSION = 1;
 				FRAMEWORK_VERSION = A;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					ALMIXER_BUILD_LIBRARY,
+					"$(inherited)",
+				);
+				GCC_SYMBOLS_PRIVATE_EXTERN = YES;
 				INFOPLIST_FILE = "ALmixer/ALmixer-Info.plist";
 				INSTALL_PATH = "@rpath";
 				PRODUCT_NAME = "$(TARGET_NAME)";
@@ -689,6 +694,11 @@
 				DYLIB_COMPATIBILITY_VERSION = 1;
 				DYLIB_CURRENT_VERSION = 1;
 				FRAMEWORK_VERSION = A;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					ALMIXER_BUILD_LIBRARY,
+					"$(inherited)",
+				);
+				GCC_SYMBOLS_PRIVATE_EXTERN = YES;
 				INFOPLIST_FILE = "ALmixer/ALmixer-Info.plist";
 				INSTALL_PATH = "@rpath";
 				PRODUCT_NAME = "$(TARGET_NAME)";
@@ -708,7 +718,7 @@
 					"$(inherited)",
 				);
 				INFOPLIST_FILE = "playstream/playstream-Info.plist";
-				LD_RUNPATH_SEARCH_PATHS = "@loader_path/../Frameworks";
+				LD_RUNPATH_SEARCH_PATHS = "@loader_path/../Frameworks @loader_path/../lib";
 				MACOSX_DEPLOYMENT_TARGET = 10.8;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				WRAPPER_EXTENSION = app;
