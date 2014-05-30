@@ -26,8 +26,8 @@ TARGET_LINK_LIBRARIES(playsound ALmixer ${OPENAL_LIBRARY} ${SDL_SOUND_LIBRARIES}
 # (Additional paths have been added to cover the common cases so hopefully this won't be a normal issue)
 IF(APPLE)
 	IF(WANTS_BUILD_SHARED_LIBRARY)
-		SET_TARGET_PROPERTIES(playstream PROPERTIES INSTALL_RPATH "@loader_path:@loader_path/..:@loader_path/../bin")
-		SET_TARGET_PROPERTIES(playsound PROPERTIES INSTALL_RPATH "@loader_path:@loader_path/..:@loader_path/../bin")
+		SET_TARGET_PROPERTIES(playstream PROPERTIES INSTALL_RPATH "@loader_path;@loader_path/..;@loader_path/../bin")
+		SET_TARGET_PROPERTIES(playsound PROPERTIES INSTALL_RPATH "@loader_path;@loader_path/..;@loader_path/../bin")
 	ENDIF()
 ENDIF()
 
