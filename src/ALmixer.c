@@ -296,10 +296,13 @@ ALdouble Internal_alcMacOSXGetMixerOutputRate()
 			LARGE_INTEGER s_hiResTicksPerSecond;
 			double s_hiResSecondsPerTick;
 			LARGE_INTEGER s_ticksBaseTime;
-	#else
+	#elif defined(__ANDROID__) || defined(ALMIXER_USE_CLOCK_GETTIME) 
    	  	#include <unistd.h>
 		#include <time.h>
 		static struct timespec s_ticksBaseTime;
+	#else
+        #include <sys/time.h>
+		static struct timeval s_ticksBaseTime;
 	#endif
 	static void ALmixer_InitTime()
 	{
@@ -318,9 +321,11 @@ ALdouble Internal_alcMacOSXGetMixerOutputRate()
 				ALmixer_SetError("Windows error: High resolution clock failed.");
 				fprintf(stderr, "Windows error: High resolution clock failed. Audio will not work correctly.\n");
 			}
-		#else
+		#elif defined(__ANDROID__) || defined(ALMIXER_USE_CLOCK_GETTIME) 
 			/* clock_gettime is POSIX.1-2001 */
 			clock_gettime(CLOCK_MONOTONIC, &s_ticksBaseTime);
+		#else
+			gettimeofday(&s_ticksBaseTime, NULL);
 		#endif
 
 	}
@@ -332,11 +337,34 @@ ALdouble Internal_alcMacOSXGetMixerOutputRate()
 			LARGE_INTEGER current_time;
 			QueryPerformanceCounter(&current_time);
 			return (ALuint)((current_time.QuadPart - s_ticksBaseTime.QuadPart) * 1000 * s_hiResSecondsPerTick);
-		#else /* assuming POSIX */
+
+		/* Turns out clock_gettime is a binary/linking nightmare.
+			So I found these two threads:
+			https://code.google.com/p/gdsl-toolkit/issues/detail?id=7
+			https://gcc.gnu.org/bugzilla/show_bug.cgi?id=47571
+
+			I think the gist of it is,
+			For GLIBC, before 2.17, it was in librt.
+			>= 2.17, it moves to glibc.
+
+			If that is correct, then linking to librt via -lrt, 
+			could be why it sometimes works, because it forces linking to (legacy?) librt implementations. 
+			But from other discussions, it looks like the position of where -lrt appears in your link 
+			command matters greatly, and I'm not sure what the rule is. (Probably before libc?) 
+			And I don't know if some librt's removed clock_gettime which would break things.
+
+			So I'm making it a non-default option because shipping a binary on Linux is too hard.
+			This is not a problem for Android.
+		*/
+		#elif defined(__ANDROID__) || defined(ALMIXER_USE_CLOCK_GETTIME) 
 			/* clock_gettime is POSIX.1-2001 */
 			struct timespec current_time;
 			clock_gettime(CLOCK_MONOTONIC, &current_time);
-			return (ALuint)((current_time.tv_sec - s_ticksBaseTime.tv_sec)*1000.0 + (current_time.tv_nsec - s_ticksBaseTime.tv_nsec) / 1000000);
+			return (ALuint)((current_time.tv_sec - s_ticksBaseTime.tv_sec)*1000 + (current_time.tv_nsec - s_ticksBaseTime.tv_nsec) / 1000000);
+		#else
+			struct timeval current_time;
+			gettimeofday(&current_time, NULL);
+			return (ALuint)((current_time.tv_sec - s_ticksBaseTime.tv_sec)*1000 + (current_time.tv_usec - s_ticksBaseTime.tv_usec) / 1000);
 		#endif
 	}
 	void ALmixer_Delay(ALuint milliseconds_delay)

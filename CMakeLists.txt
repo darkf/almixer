@@ -24,6 +24,26 @@ OPTION(WANTS_BUILD_SHARED_LIBRARY "Set to ON to build dynamic library." ON)
 OPTION(ALMIXER_OPTION_COMPILE_WITH_SDL "Compile ALmixer with dependencies on SDL" OFF)
 OPTION(ALMIXER_OPTION_COMPILE_WITH_SDLSOUND "Compile ALmixer with dependencies on SDL_sound (requires COMPILE_WITH_SDL)" OFF)
 OPTION(ENABLE_ALMIXER_THREADS "Use background thread for ALmixer_Update()" OFF)
+IF(UNIX AND NOT APPLE AND NOT ANDROID)
+	# Turns out clock_gettime is a binary/linking nightmare.
+	# So I found these two threads:
+	# https://code.google.com/p/gdsl-toolkit/issues/detail?id=7
+	# https://gcc.gnu.org/bugzilla/show_bug.cgi?id=47571
+
+	# I think the gist of it is,
+	# For GLIBC, before 2.17, it was in librt.
+	# >= 2.17, it moves to glibc.
+
+	# If that is correct, then linking to librt via -lrt, 
+	# could be why it sometimes works, because it forces linking to (legacy?) librt implementations. 
+	# But from other discussions, it looks like the position of where -lrt appears in your link 
+	# command matters greatly, and I'm not sure what the rule is. (Probably before libc?) 
+	# And I don't know if some librt's removed clock_gettime which would break things.
+
+	# So I'm making it a non-default option because shipping a binary on Linux is too hard.
+	# This is not a problem for Android.
+	OPTION(ALMIXER_USE_CLOCK_GETTIME "Set to ON to build with clock_gettime() instead of gettimeofday()." OFF)
+ENDIF()
 
 # SDL implies SDL+SDL_sound. If we are not using SDL_sound, we need to supply our own decoders.
 IF(NOT ALMIXER_OPTION_COMPILE_WITH_SDLSOUND)
