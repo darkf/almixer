@@ -23,7 +23,7 @@ FIND_PACKAGE(OpenAL)
 OPTION(WANTS_BUILD_SHARED_LIBRARY "Set to ON to build dynamic library." ON)
 OPTION(ALMIXER_OPTION_COMPILE_WITH_SDL "Compile ALmixer with dependencies on SDL" OFF)
 OPTION(ALMIXER_OPTION_COMPILE_WITH_SDLSOUND "Compile ALmixer with dependencies on SDL_sound (requires COMPILE_WITH_SDL)" OFF)
-OPTION(ENABLE_ALMIXER_THREADS "Use background thread for ALmixer_Update()" OFF)
+OPTION(ENABLE_ALMIXER_THREADS "Use background thread for ALmixer_Update()" ON)
 IF(UNIX AND NOT APPLE AND NOT ANDROID)
 	# Turns out clock_gettime is a binary/linking nightmare.
 	# So I found these two threads:
