@@ -118,11 +118,12 @@ typedef struct ALmixer_PlaybackFinishedCallbackContainer
 JSValueRef ALmixer_SetPlaybackFinishedCallback_CallAsFunction(
   ALint which_channel, ALuint al_source, ALmixer_Data* almixer_data, ALboolean finished_naturally, ALmixer_PlaybackFinishedCallbackContainer *data, JSObjectRef func) {
 
-  if (func == NULL) return NULL;
-
   JSContextRef context    = data->context;
   JSObjectRef  thisObject = data->thisObject;
   JSValueRef   args[5];
+
+  if (func == NULL) return NULL;
+
 
   args[0] = JSValueMakeNumber(context, which_channel);
   args[1] = JSValueMakeNumber(context, al_source);
