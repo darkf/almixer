@@ -25,7 +25,7 @@ extern "C" {
  * @note There is no Quit counterpart because it is automatically handled by the standard ALmixer_Quit*
  * family of functions.
  */
-extern ALMIXER_DECLSPEC void ALMIXER_CALL ALmixer_Android_Init(jclass activity_class);
+extern ALMIXER_DECLSPEC void ALMIXER_CALL ALmixer_Android_Init(jobject activity_class);
 
 
 /* Quit is handled automatically by ALmixer_Quit so it is not public */

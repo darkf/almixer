@@ -176,7 +176,9 @@ void ALmixer_Android_Core_Init(jobject activity_object)
     mJavaVM = ALmixer_Android_GetJavaVM();
 
 
-    LOGI("JNI_OnLoad called");
+	/*
+    LOGI("ALmixer_Android_Core_Init called");
+	*/
     if ((*mJavaVM)->GetEnv(mJavaVM, (void**) &env, JNI_VERSION_1_6) != JNI_OK) {
         __android_log_print(ANDROID_LOG_ERROR, "ALmixer_android", "Failed to get the environment using GetEnv()");
         return;
@@ -193,7 +195,7 @@ void ALmixer_Android_Core_Init(jobject activity_object)
 
 
     /* Do I need a Quit function to release the Activity class? */
-    s_activityObject = (jclass)((*env)->NewGlobalRef(env, activity_object));
+    s_activityObject = (jobject)((*env)->NewGlobalRef(env, activity_object));
 
 
 }
