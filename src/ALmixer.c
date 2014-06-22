@@ -6,9 +6,9 @@
  */
 
 #include "ALmixer.h"
+#include "ALmixer_RWops.h"
 
 #ifndef ALMIXER_COMPILE_WITH_SDLSOUND
-	#include "ALmixer_RWops.h"
 	#include "SoundDecoder.h"
 #else
 	#include "SDL_sound.h"
