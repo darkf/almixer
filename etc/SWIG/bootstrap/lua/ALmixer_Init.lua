@@ -67,7 +67,9 @@ function LuaALmixer_Initialize()
 	end
 	s_LuaALmixerIsInitialized = true;
 
-	local ALmixer = require('ALmixer');
+	-- The SWIG binding isn't a proper module. Don't require because it doesn't follow packaing conventions.
+	-- Load the file directly from C in a dofile fashion.
+--	local ALmixer = require('ALmixer');
 	-- Create a table to hold the original versions of the functions I intend to override.
 	ALmixer._original = {};
 	-- Create a table for utility/helper APIs
