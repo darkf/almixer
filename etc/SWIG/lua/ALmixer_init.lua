@@ -51,11 +51,11 @@ end
 		if(callback_function)
 		then
 			callback_function(event_table);
-			event_table = null;
-			callback_function = null;
+			event_table = nil;
+			callback_function = nil;
 		end
-		event_table = null;
-		saved_table = null;
+		event_table = nil;
+		saved_table = nil;
 	end
 
 
@@ -267,8 +267,8 @@ function LuaALmixer_Initialize()
 		local al_source = 0;
 		local num_loops = 0;
 		local duration = -1;
-		local on_complete = null;
-		local user_data = null;
+		local on_complete = nil;
+		local user_data = nil;
 		local using_source_instead_of_channel = false;
 		if(options_table)
 		then

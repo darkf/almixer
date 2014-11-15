@@ -634,7 +634,11 @@ static int lua_alGet(lua_State* lua_state)
 	return 0;
 }
 
+#if LUA_VERSION_NUM > 501
+static const luaL_Reg luaALFuncs[] =
+#else
 static const luaL_reg luaALFuncs[] =
+#endif
 {
 	{ "Enable", 								lua_alEnable },
 	{ "Disable", 								lua_alDisable },
@@ -658,15 +662,18 @@ static const luaL_reg luaALFuncs[] =
 
 int luaopen_luaal(lua_State *L) 
 {
-  luaL_register(L, "al", luaALFuncs);
+#if LUA_VERSION_NUM > 501
+	luaL_newlib(L, luaALFuncs);
+#else	
+	luaL_register(L, "al", luaALFuncs);
+#endif
+	luaopenal_initenum(L, s_luaALEnum);
 
-  luaopenal_initenum(L, s_luaALEnum);
+	lua_pushstring(L, "_VERSION");
+	lua_pushstring(L, LUAAL_VERSION);
+	lua_settable(L,-3);
 
-  lua_pushstring(L, "_VERSION");
-  lua_pushstring(L, LUAAL_VERSION);
-  lua_settable(L,-3);
-
-  return 1;
+	return 1;
 }
 
 
