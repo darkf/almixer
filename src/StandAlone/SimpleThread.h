@@ -29,6 +29,29 @@ extern "C" {
 		#define SIMPLE_THREAD_CALL
 	#endif
 
+
+/* Optional API symbol name rewrite to help avoid duplicate symbol conflicts.
+	For example:   -DSIMPLE_THREAD_NAMESPACE_PREFIX=ALmixer
+*/
+	
+#if defined(SIMPLE_THREAD_NAMESPACE_PREFIX)
+	#define SIMPLE_THREAD_RENAME_PUBLIC_SYMBOL_WITH_NAMESPACE(namespace, symbol) namespace##symbol
+	#define SIMPLE_THREAD_RENAME_PUBLIC_SYMBOL(symbol) SIMPLE_THREAD_RENAME_PUBLIC_SYMBOL_WITH_NAMESPACE(SIMPLE_THREAD_NAMESPACE_PREFIX, symbol)
+	
+	#define SimpleThread_CreateThread	SIMPLE_THREAD_RENAME_PUBLIC_SYMBOL(SimpleThread_CreateThread)
+	#define SimpleThread_GetCurrentThreadID		SIMPLE_THREAD_RENAME_PUBLIC_SYMBOL(SimpleThread_GetCurrentThreadID)
+	#define SimpleThread_GetThreadID		SIMPLE_THREAD_RENAME_PUBLIC_SYMBOL(SimpleThread_GetThreadID)
+	#define SimpleThread_WaitThread		SIMPLE_THREAD_RENAME_PUBLIC_SYMBOL(SimpleThread_WaitThread)
+	#define SimpleThread_GetThreadPriority		SIMPLE_THREAD_RENAME_PUBLIC_SYMBOL(SimpleThread_GetThreadPriority)
+	#define SimpleThread_SetThreadPriority		SIMPLE_THREAD_RENAME_PUBLIC_SYMBOL(SimpleThread_SetThreadPriority)
+
+	/* structs don't export symbols */
+	/*
+	#define SimpleThread				SIMPLE_THREAD_RENAME_PUBLIC_SYMBOL(SimpleThread)
+	*/
+#endif /* defined(SIMPLE_THREAD_NAMESPACE_PREFIX) */
+
+
 #include <stddef.h>
 
 typedef struct SimpleThread SimpleThread;

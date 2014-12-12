@@ -68,6 +68,41 @@ extern "C" {
 
 /** @endcond DOXYGEN_SHOULD_IGNORE_THIS */
 #endif /* DOXYGEN_SHOULD_IGNORE_THIS */
+	
+
+/* Optional API symbol name rewrite to help avoid duplicate symbol conflicts.
+	For example:   -DLINKED_LIST_NAMESPACE_PREFIX=ALmixer
+*/
+	
+#if defined(LINKED_LIST_NAMESPACE_PREFIX)
+	#define LINKED_LIST_RENAME_PUBLIC_SYMBOL_WITH_NAMESPACE(namespace, symbol) namespace##symbol
+	#define LINKED_LIST_RENAME_PUBLIC_SYMBOL(symbol) LINKED_LIST_RENAME_PUBLIC_SYMBOL_WITH_NAMESPACE(LINKED_LIST_NAMESPACE_PREFIX, symbol)
+	
+	#define LinkedList_Create	LINKED_LIST_RENAME_PUBLIC_SYMBOL(LinkedList_Create)
+	#define LinkedList_Free		LINKED_LIST_RENAME_PUBLIC_SYMBOL(LinkedList_Free)
+	#define LinkedList_Front		LINKED_LIST_RENAME_PUBLIC_SYMBOL(LinkedList_Front)
+	#define LinkedList_Back		LINKED_LIST_RENAME_PUBLIC_SYMBOL(LinkedList_Back)
+	#define LinkedList_PushFront		LINKED_LIST_RENAME_PUBLIC_SYMBOL(LinkedList_PushFront)
+	#define LinkedList_PushBack		LINKED_LIST_RENAME_PUBLIC_SYMBOL(LinkedList_PushBack)
+	#define LinkedList_PopFront			LINKED_LIST_RENAME_PUBLIC_SYMBOL(LinkedList_PopFront)
+	#define LinkedList_PopBack			LINKED_LIST_RENAME_PUBLIC_SYMBOL(LinkedList_PopBack)
+	#define LinkedList_Size			LINKED_LIST_RENAME_PUBLIC_SYMBOL(LinkedList_Size)
+	#define LinkedList_Clear		LINKED_LIST_RENAME_PUBLIC_SYMBOL(LinkedList_Clear)
+	#define LinkedListNode_GetData			LINKED_LIST_RENAME_PUBLIC_SYMBOL(LinkedListNode_GetData)
+	#define LinkedList_Find			LINKED_LIST_RENAME_PUBLIC_SYMBOL(LinkedList_Find)
+	#define LinkedList_Remove	LINKED_LIST_RENAME_PUBLIC_SYMBOL(LinkedList_Remove)
+	#define LinkedListIterator_GetIteratorAtBegin	LINKED_LIST_RENAME_PUBLIC_SYMBOL(LinkedListIterator_GetIteratorAtBegin)
+	#define LinkedListIterator_IteratorNext	LINKED_LIST_RENAME_PUBLIC_SYMBOL(LinkedListIterator_IteratorNext)
+	#define LinkedListIterator_GetNode	LINKED_LIST_RENAME_PUBLIC_SYMBOL(LinkedListIterator_GetNode)
+
+	/* structs don't export symbols */
+	/*
+	#define LinkedList						LINKED_LIST_RENAME_PUBLIC_SYMBOL(LinkedList)
+	#define LinkedListNode						LINKED_LIST_RENAME_PUBLIC_SYMBOL(LinkedListNode)
+	#define LinkedListIterator				LINKED_LIST_RENAME_PUBLIC_SYMBOL(LinkedListIterator)
+	*/
+#endif /* defined(LINKED_LIST_NAMESPACE_PREFIX) */
+
 
 	
 #include <stddef.h>

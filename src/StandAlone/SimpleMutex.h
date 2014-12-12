@@ -31,6 +31,29 @@ extern "C" {
 		#define SIMPLE_MUTEX_CALL
 	#endif
 
+	
+	
+/* Optional API symbol name rewrite to help avoid duplicate symbol conflicts.
+	For example:   -DSIMPLE_MUTEX_NAMESPACE_PREFIX=ALmixer
+*/
+	
+#if defined(SIMPLE_MUTEX_NAMESPACE_PREFIX)
+	#define SIMPLE_MUTEX_RENAME_PUBLIC_SYMBOL_WITH_NAMESPACE(namespace, symbol) namespace##symbol
+	#define SIMPLE_MUTEX_RENAME_PUBLIC_SYMBOL(symbol) SIMPLE_MUTEX_RENAME_PUBLIC_SYMBOL_WITH_NAMESPACE(SIMPLE_MUTEX_NAMESPACE_PREFIX, symbol)
+	
+	#define SimpleMutex_CreateMutex	SIMPLE_MUTEX_RENAME_PUBLIC_SYMBOL(SimpleMutex_CreateMutex)
+	#define SimpleMutex_DestroyMutex		SIMPLE_MUTEX_RENAME_PUBLIC_SYMBOL(SimpleMutex_DestroyMutex)
+	#define SimpleMutex_LockMutex		SIMPLE_MUTEX_RENAME_PUBLIC_SYMBOL(SimpleMutex_LockMutex)
+	#define SimpleMutex_UnlockMutex		SIMPLE_MUTEX_RENAME_PUBLIC_SYMBOL(SimpleMutex_UnlockMutex)
+
+	/* structs don't export symbols */
+	/*
+	#define SimpleMutex				SIMPLE_MUTEX_RENAME_PUBLIC_SYMBOL(SimpleMutex)
+	*/
+#endif /* defined(SIMPLE_MUTEX_NAMESPACE_PREFIX) */
+
+
+
 typedef struct SimpleMutex SimpleMutex;
 
 extern SIMPLE_MUTEX_DECLSPEC SimpleMutex* SIMPLE_MUTEX_CALL SimpleMutex_CreateMutex(void);

@@ -297,6 +297,41 @@ extern "C" {
 	#define TERROR_CALL
 #endif
 
+/* Optional API symbol name rewrite to help avoid duplicate symbol conflicts.
+	For example:   -DTERROR_NAMESPACE_PREFIX=ALmixer
+*/
+	
+#if defined(TERROR_NAMESPACE_PREFIX)
+	#define TERROR_RENAME_PUBLIC_SYMBOL_WITH_NAMESPACE(namespace, symbol) namespace##symbol
+	#define TERROR_RENAME_PUBLIC_SYMBOL(symbol) TERROR_RENAME_PUBLIC_SYMBOL_WITH_NAMESPACE(TERROR_NAMESPACE_PREFIX, symbol)
+	
+	#define TError_GetLinkedVersion	TERROR_RENAME_PUBLIC_SYMBOL(TError_GetLinkedVersion)
+	#define TError_CreateErrorPool		TERROR_RENAME_PUBLIC_SYMBOL(TError_CreateErrorPool)
+	#define TError_FreeErrorPool		TERROR_RENAME_PUBLIC_SYMBOL(TError_FreeErrorPool)
+	#define TError_DeleteEntryOnCurrentThread		TERROR_RENAME_PUBLIC_SYMBOL(TError_DeleteEntryOnCurrentThread)
+	#define TError_SetError		TERROR_RENAME_PUBLIC_SYMBOL(TError_SetError)
+	#define TError_SetErrorv		TERROR_RENAME_PUBLIC_SYMBOL(TError_SetErrorv)
+	#define TError_SetErrorNoFormat			TERROR_RENAME_PUBLIC_SYMBOL(TError_SetErrorNoFormat)
+	#define TError_SetErrorNum			TERROR_RENAME_PUBLIC_SYMBOL(TError_SetErrorNum)
+	#define TError_SetErrorStr			TERROR_RENAME_PUBLIC_SYMBOL(TError_SetErrorStr)
+	#define TError_SetErrorStrv		TERROR_RENAME_PUBLIC_SYMBOL(TError_SetErrorStrv)
+	#define TError_SetErrorStrNoFormat			TERROR_RENAME_PUBLIC_SYMBOL(TError_SetErrorStrNoFormat)
+	#define TError_GetErrorNumOnCurrentThread			TERROR_RENAME_PUBLIC_SYMBOL(TError_GetErrorNumOnCurrentThread)
+	#define TError_GetErrorStrOnCurrentThread	TERROR_RENAME_PUBLIC_SYMBOL(TError_GetErrorStrOnCurrentThread)
+	#define TError_GetErrorOnCurrentThread	TERROR_RENAME_PUBLIC_SYMBOL(TError_GetErrorOnCurrentThread)
+	#define TError_GetLastErrorNum	TERROR_RENAME_PUBLIC_SYMBOL(TError_GetLastErrorNum)
+	#define TError_GetLastErrorStr	TERROR_RENAME_PUBLIC_SYMBOL(TError_GetLastErrorStr)
+	#define TError_GetLastError	TERROR_RENAME_PUBLIC_SYMBOL(TError_GetLastError)
+
+	/* structs don't export symbols */
+	/*
+	#define TErrorVersion						TERROR_RENAME_PUBLIC_SYMBOL(TErrorVersion)
+	#define TErrorPool						TERROR_RENAME_PUBLIC_SYMBOL(TErrorPool)
+	#define TErrorStatus				TERROR_RENAME_PUBLIC_SYMBOL(TErrorStatus)
+	*/
+#endif /* defined(TERROR_NAMESPACE_PREFIX) */
+
+
 	
 /* Version number is set here.
  * Printable format: "%d.%d.%d", MAJOR, MINOR, PATCHLEVEL
