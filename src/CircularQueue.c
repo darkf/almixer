@@ -2,19 +2,8 @@
     CircularQueue
     Copyright (C) 2002  Eric Wing
 
-    This library is free software; you can redistribute it and/or
-    modify it under the terms of the GNU Library General Public
-    License as published by the Free Software Foundation; either
-    version 2 of the License, or (at your option) any later version.
-
-    This library is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-    Library General Public License for more details.
-
-    You should have received a copy of the GNU Library General Public
-    License along with this library; if not, write to the Free
-    Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+	(renamed CircularQueue to CircularQueue to avoid symbol clashes with ALmixer)
+	zlib license
 */
 
 #include "CircularQueue.h"
@@ -283,7 +272,7 @@ unsigned int CircularQueueUnsignedInt_ValueAtIndex(CircularQueueUnsignedInt* que
 	{
 		return 0;
 	}
-	i = (queue->headIndex + the_index) % queue->currentSize;
+	i = (queue->headIndex + the_index) % queue->maxSize;
 //	fprintf(stderr, "%d\n", queue->internalQueue[i]);
 	return queue->internalQueue[i];
 }
@@ -538,7 +527,7 @@ void* CircularQueueVoid_ValueAtIndex(CircularQueueVoid* queue, unsigned int the_
 	{
 		return NULL;
 	}
-	i = (queue->headIndex + the_index) % queue->currentSize;
+	i = (queue->headIndex + the_index) % queue->maxSize;
 	//	fprintf(stderr, "%d\n", queue->internalQueue[i]);
 	return queue->internalQueue[i];
 }

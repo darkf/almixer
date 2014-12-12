@@ -2,19 +2,7 @@
     CircularQueue
     Copyright (C) 2002  Eric Wing <ewing . public @ playcontrol.net>
 
-    This library is free software; you can redistribute it and/or
-    modify it under the terms of the GNU Library General Public
-    License as published by the Free Software Foundation; either
-    version 2 of the License, or (at your option) any later version.
-
-    This library is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-    Library General Public License for more details.
-
-    You should have received a copy of the GNU Library General Public
-    License along with this library; if not, write to the Free
-    Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+	zlib license.
 */
 
 
@@ -63,6 +51,51 @@ extern "C" {
 
 /** @endcond DOXYGEN_SHOULD_IGNORE_THIS */
 #endif /* DOXYGEN_SHOULD_IGNORE_THIS */
+
+	
+/* Optional API symbol name rewrite to help avoid duplicate symbol conflicts.
+	For example:   -DCIRCULAR_QUEUE_NAMESPACE_PREFIX=ALmixer
+*/
+	
+#if defined(CIRCULAR_QUEUE_NAMESPACE_PREFIX)
+	#define CIRCULAR_QUEUE_RENAME_PUBLIC_SYMBOL_WITH_NAMESPACE(namespace, symbol) namespace##symbol
+	#define CIRCULAR_QUEUE_RENAME_PUBLIC_SYMBOL(symbol) CIRCULAR_QUEUE_RENAME_PUBLIC_SYMBOL_WITH_NAMESPACE(CIRCULAR_QUEUE_NAMESPACE_PREFIX, symbol)
+	
+	#define CircularQueueUnsignedInt_CreateQueue	CIRCULAR_QUEUE_RENAME_PUBLIC_SYMBOL(CircularQueueUnsignedInt_CreateQueue)
+	#define CircularQueueUnsignedInt_FreeQueue		CIRCULAR_QUEUE_RENAME_PUBLIC_SYMBOL(CircularQueueUnsignedInt_FreeQueue)
+	#define CircularQueueUnsignedInt_PushBack		CIRCULAR_QUEUE_RENAME_PUBLIC_SYMBOL(CircularQueueUnsignedInt_PushBack)
+	#define CircularQueueUnsignedInt_PushFront		CIRCULAR_QUEUE_RENAME_PUBLIC_SYMBOL(CircularQueueUnsignedInt_PushFront)
+	#define CircularQueueUnsignedInt_PopFront		CIRCULAR_QUEUE_RENAME_PUBLIC_SYMBOL(CircularQueueUnsignedInt_PopFront)
+	#define CircularQueueUnsignedInt_PopBack		CIRCULAR_QUEUE_RENAME_PUBLIC_SYMBOL(CircularQueueUnsignedInt_PopBack)
+	#define CircularQueueUnsignedInt_Front			CIRCULAR_QUEUE_RENAME_PUBLIC_SYMBOL(CircularQueueUnsignedInt_Front)
+	#define CircularQueueUnsignedInt_Back			CIRCULAR_QUEUE_RENAME_PUBLIC_SYMBOL(CircularQueueUnsignedInt_Back)
+	#define CircularQueueUnsignedInt_Size			CIRCULAR_QUEUE_RENAME_PUBLIC_SYMBOL(CircularQueueUnsignedInt_Size)
+	#define CircularQueueUnsignedInt_MaxSize		CIRCULAR_QUEUE_RENAME_PUBLIC_SYMBOL(CircularQueueUnsignedInt_MaxSize)
+	#define CircularQueueUnsignedInt_Clear			CIRCULAR_QUEUE_RENAME_PUBLIC_SYMBOL(CircularQueueUnsignedInt_Clear)
+	#define CircularQueueUnsignedInt_Print			CIRCULAR_QUEUE_RENAME_PUBLIC_SYMBOL(CircularQueueUnsignedInt_Print)
+	#define CircularQueueUnsignedInt_ValueAtIndex	CIRCULAR_QUEUE_RENAME_PUBLIC_SYMBOL(CircularQueueUnsignedInt_ValueAtIndex)
+
+	#define CircularQueueVoid_CreateQueue			CIRCULAR_QUEUE_RENAME_PUBLIC_SYMBOL(CircularQueueVoid_CreateQueue)
+	#define CircularQueueVoid_FreeQueue				CIRCULAR_QUEUE_RENAME_PUBLIC_SYMBOL(CircularQueueVoid_FreeQueue)
+	#define CircularQueueVoid_PushBack				CIRCULAR_QUEUE_RENAME_PUBLIC_SYMBOL(CircularQueueVoid_PushBack)
+	#define CircularQueueVoid_PushFront				CIRCULAR_QUEUE_RENAME_PUBLIC_SYMBOL(CircularQueueVoid_PushFront)
+	#define CircularQueueVoid_PopFront				CIRCULAR_QUEUE_RENAME_PUBLIC_SYMBOL(CircularQueueVoid_PopFront)
+	#define CircularQueueVoid_PopBack				CIRCULAR_QUEUE_RENAME_PUBLIC_SYMBOL(CircularQueueVoid_PopBack)
+	#define CircularQueueVoid_Front					CIRCULAR_QUEUE_RENAME_PUBLIC_SYMBOL(CircularQueueVoid_Front)
+	#define CircularQueueVoid_Back					CIRCULAR_QUEUE_RENAME_PUBLIC_SYMBOL(CircularQueueVoid_Back)
+	#define CircularQueueVoid_Size					CIRCULAR_QUEUE_RENAME_PUBLIC_SYMBOL(CircularQueueVoid_Size)
+	#define CircularQueueVoid_MaxSize				CIRCULAR_QUEUE_RENAME_PUBLIC_SYMBOL(CircularQueueVoid_MaxSize)
+	#define CircularQueueVoid_Clear					CIRCULAR_QUEUE_RENAME_PUBLIC_SYMBOL(CircularQueueVoid_Clear)
+	#define CircularQueueVoid_Print					CIRCULAR_QUEUE_RENAME_PUBLIC_SYMBOL(CircularQueueVoid_Print)
+	#define CircularQueueVoid_ValueAtIndex			CIRCULAR_QUEUE_RENAME_PUBLIC_SYMBOL(CircularQueueVoid_ValueAtIndex)
+
+	/* structs don't export symbols */
+	/*
+	#define CircularQueueUnsignedInt				CIRCULAR_QUEUE_RENAME_PUBLIC_SYMBOL(CircularQueueUnsignedInt)
+	#define CircularQueueVoid						CIRCULAR_QUEUE_RENAME_PUBLIC_SYMBOL(CircularQueueVoid)
+	*/
+#endif /* defined(CIRCULAR_QUEUE_NAMESPACE_PREFIX) */
+
 
 /**
  * @file
