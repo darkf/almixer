@@ -56,6 +56,13 @@ extern "C" {
 
 typedef struct SimpleThread SimpleThread;
 
+typedef enum
+{
+    SIMPLE_THREAD_PRIORITY_UNKNOWN = -1,
+    SIMPLE_THREAD_PRIORITY_LOW = 0,
+    SIMPLE_THREAD_PRIORITY_NORMAL = 1,
+    SIMPLE_THREAD_PRIORITY_HIGH = 2
+} SimpleThreadPriority;
 
 extern SIMPLE_THREAD_DECLSPEC SimpleThread* SIMPLE_THREAD_CALL SimpleThread_CreateThread(int (*user_function)(void*), void* user_data);
 
@@ -65,8 +72,8 @@ extern SIMPLE_THREAD_DECLSPEC size_t SIMPLE_THREAD_CALL SimpleThread_GetThreadID
 extern SIMPLE_THREAD_DECLSPEC void SIMPLE_THREAD_CALL SimpleThread_WaitThread(SimpleThread* simple_thread, int* thread_status);
 
 
-extern SIMPLE_THREAD_DECLSPEC int SIMPLE_THREAD_CALL SimpleThread_GetThreadPriority(SimpleThread* simple_thread);
-extern SIMPLE_THREAD_DECLSPEC void SIMPLE_THREAD_CALL SimpleThread_SetThreadPriority(SimpleThread* simple_thread, int priority_level);
+extern SIMPLE_THREAD_DECLSPEC SimpleThreadPriority SIMPLE_THREAD_CALL SimpleThread_GetThreadPriority(SimpleThread* simple_thread);
+extern SIMPLE_THREAD_DECLSPEC void SIMPLE_THREAD_CALL SimpleThread_SetThreadPriority(SimpleThread* simple_thread, SimpleThreadPriority priority_level);
 
 /* Ends C function definitions when using C++ */
 #ifdef __cplusplus

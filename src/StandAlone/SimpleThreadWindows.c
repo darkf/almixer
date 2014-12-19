@@ -158,7 +158,7 @@ size_t SimpleThread_GetThreadID(SimpleThread* simple_thread)
 }
 
 /* TODO: Figure out portable/normalized range for levels */
-int SimpleThread_GetThreadPriority(SimpleThread* simple_thread)
+SimpleThreadPriority SimpleThread_GetThreadPriority(SimpleThread* simple_thread)
 {
 	int ret_val = 0;
 
@@ -173,12 +173,29 @@ int SimpleThread_GetThreadPriority(SimpleThread* simple_thread)
 		THRDDBG(("SimpleThread_GetThreadPriority GetThreadPriority failed with: %d\n", ret_val));
 		return THREAD_PRIORITY_ERROR_RETURN;
 	}
-	return ret_val;
+
+	if(THREAD_PRIORITY_LOWEST == ret_val)
+	{
+		return SIMPLE_THREAD_PRIORITY_LOW;
+    }
+	else if(THREAD_PRIORITY_HIGHEST == ret_val)
+	{
+		return SIMPLE_THREAD_PRIORITY_HIGH;
+    }
+	else if(THREAD_PRIORITY_NORMAL == ret_val)
+	{
+		return SIMPLE_THREAD_PRIORITY_NORMAL;
+	}
+	else
+	{
+		return SIMPLE_THREAD_PRIORITY_UNKNOWN;
+    }
 }
 
 /* TODO: Figure out portable/normalized range for levels */
-void SimpleThread_SetThreadPriority(SimpleThread* simple_thread, int priority_level)
+void SimpleThread_SetThreadPriority(SimpleThread* simple_thread, SimpleThreadPriority priority_level)
 {
+	int priority_level;
 	BOOL ret_val;
 
 	if(NULL == simple_thread)
@@ -186,6 +203,19 @@ void SimpleThread_SetThreadPriority(SimpleThread* simple_thread, int priority_le
 		THRDDBG(("SimpleThread_SetThreadPriority was passed NULL\n"));
 		return;
 	}
+
+    if(SIMPLE_THREAD_PRIORITY_LOW == priority_level)
+	{
+        priority_level = THREAD_PRIORITY_LOWEST;
+    }
+	else if(SIMPLE_THREAD_PRIORITY_HIGH == priority_level)
+	{
+        priority_level = THREAD_PRIORITY_HIGHEST;
+    }
+	else
+	{
+        priority_level = THREAD_PRIORITY_NORMAL;
+    }
 
 	ret_val = SetThreadPriority(simple_thread->nativeThread, priority_level);
 	if(0 == ret_val)
