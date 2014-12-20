@@ -415,7 +415,10 @@ static void Internal_LowerThreadPriority(SDL_Thread* simple_thread)
 	#ifndef ALMIXER_COMPILE_WITH_SDL
 		SimpleThread_SetThreadPriority(Stream_Thread_global, SIMPLE_THREAD_PRIORITY_LOW);
 	#else
-		SDL_SetThreadPriority(Stream_Thread_global, SDL_THREAD_PRIORITY_LOW);
+		/* This doesn't work because SDL doens't pass the thread parameter. 
+		 * The semantics mean the SDL call must be made in the background thread.
+		 */
+		//SDL_SetThreadPriority(not available>>>Stream_Thread_global, SDL_THREAD_PRIORITY_LOW);
 	#endif
 #else
 	/* No-Op */

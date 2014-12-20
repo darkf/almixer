@@ -218,25 +218,25 @@ void SimpleThread_SetThreadPriority(SimpleThread* simple_thread, SimpleThreadPri
 	}
 
 	ret_val = pthread_getschedparam(simple_thread->nativeThread, &sched_policy, &schedule_param);
-    if(ret_val < 0) 
+	if(ret_val < 0) 
 	{
 		THRDDBG(("SimpleThread_SetThreadPriority pthread_getschedparam failed with: %d\n", ret_val));
 		return;
-    }
-    if(SIMPLE_THREAD_PRIORITY_LOW == priority_level)
+	}
+	if(SIMPLE_THREAD_PRIORITY_LOW == priority_level)
 	{
-        schedule_param.sched_priority = sched_get_priority_min(sched_policy);
-    }
+		schedule_param.sched_priority = sched_get_priority_min(sched_policy);
+	}
 	else if(SIMPLE_THREAD_PRIORITY_HIGH == priority_level)
 	{
-        schedule_param.sched_priority = sched_get_priority_max(sched_policy);
-    }
+		schedule_param.sched_priority = sched_get_priority_max(sched_policy);
+	}
 	else
 	{
-        int min_priority = sched_get_priority_min(sched_policy);
-        int max_priority = sched_get_priority_max(sched_policy);
-        schedule_param.sched_priority = (min_priority + (max_priority - min_priority) / 2);
-    }
+		int min_priority = sched_get_priority_min(sched_policy);
+		int max_priority = sched_get_priority_max(sched_policy);
+		schedule_param.sched_priority = (min_priority + (max_priority - min_priority) / 2);
+	}
 
 
 #if 0
