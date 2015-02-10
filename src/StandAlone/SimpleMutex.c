@@ -86,6 +86,14 @@
 		SimpleMutex* SimpleMutex_CreateMutex()
 		{
 			int ret_val;
+			/* We can skip the mutex_attributes and pthread_mutexattr_init()
+			 	and pass NULL to pthread_mutex_init()
+				if we don't have any attributes.
+				In the RECURSIVE_MUTEX case, we need an attribute, 
+				so it is easier to always call pthread_mutexattr_init() and pass it.
+			 */
+			pthread_mutexattr_t mutex_attributes;
+
 			SimpleMutex* simple_mutex = (SimpleMutex*)malloc(sizeof(SimpleMutex));
 			if(NULL == simple_mutex)
 			{
@@ -100,13 +108,19 @@
 				return NULL;		
 			}
 
-			ret_val = pthread_mutex_init(simple_mutex->nativeMutex, NULL);
+			pthread_mutexattr_init(&mutex_attributes);
+#if SIMPLE_THREAD_USE_RECURSIVE_MUTEX
+			pthread_mutexattr_settype(&mutex_attributes, PTHREAD_MUTEX_RECURSIVE);
+#endif
+			
+			ret_val = pthread_mutex_init(simple_mutex->nativeMutex, &mutex_attributes);
 			if(0 != ret_val)
 			{
 				free(simple_mutex->nativeMutex);
 				free(simple_mutex);
 				return NULL;
 			}
+				
 			return simple_mutex;
 		}
 		void SimpleMutex_DestroyMutex(SimpleMutex* simple_mutex)

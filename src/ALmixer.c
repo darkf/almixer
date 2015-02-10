@@ -235,7 +235,9 @@ static ALuint Is_Playing_global = 0;
 static ALboolean g_StreamThreadEnabled = AL_FALSE;
 static SDL_mutex* s_simpleLock = NULL;
 static SDL_Thread* Stream_Thread_global = NULL;
+/*
 static size_t s_originatingThreadID = 0;
+*/
 #endif /* ENABLE_ALMIXER_THREADS */
 
 static LinkedList* s_listOfALmixerData = NULL;
@@ -411,15 +413,12 @@ static void Internal_LowerThreadPriority(SDL_Thread* simple_thread)
 	/* Might open to other platforms as needed */
 #if defined(__APPLE__) && ( (TARGET_OS_IPHONE == 1) || (TARGET_IPHONE_SIMULATOR == 1) )
 	#ifndef ALMIXER_COMPILE_WITH_SDL
-		SimpleThread_SetThreadPriority(Stream_Thread_global, 0);
+		SimpleThread_SetThreadPriority(Stream_Thread_global, SIMPLE_THREAD_PRIORITY_LOW);
 	#else
-		struct sched_param schedule_param;
-		int sched_policy;
-		int ret_val;
-		schedule_param.sched_priority = 0; /* PTHREAD_MIN_PRIORITY, max=31 */
-		/* EVIL! This will break if the SDL_Thread structure layout changes. */
-		pthread_t* native_thread_ptr_hack = (pthread_t*)(((char*)(Stream_Thread_global))+sizeof(unsigned long));
-		ret_val = pthread_setschedparam(*native_thread_ptr_hack, SCHED_OTHER, &schedule_param);
+		/* This doesn't work because SDL doens't pass the thread parameter. 
+		 * The semantics mean the SDL call must be made in the background thread.
+		 */
+		//SDL_SetThreadPriority(not available>>>Stream_Thread_global, SDL_THREAD_PRIORITY_LOW);
 	#endif
 #else
 	/* No-Op */
@@ -7045,8 +7044,9 @@ ALboolean ALmixer_Init(ALuint frequency, ALuint num_sources, ALuint refresh)
 		return AL_FALSE;
 	}
 	
+/*
 	s_originatingThreadID = (size_t)SDL_ThreadID();
-
+*/
 	/* Note: Only a few platforms change the priority. See implementation for notes. */
 	/*
 	Internal_LowerThreadPriority(Stream_Thread_global);
@@ -7607,8 +7607,9 @@ ALboolean ALmixer_InitMixer(ALuint num_sources)
 		return AL_FALSE;
 	}
 
+/*
 	s_originatingThreadID = (size_t)SDL_ThreadID();
-
+*/
 	/* Note: Only a few platforms change the priority. See implementation for notes. */
 	/*
 	Internal_LowerThreadPriority(Stream_Thread_global);
@@ -7930,8 +7931,9 @@ void ALmixer_Quit()
 	SDL_WaitThread(Stream_Thread_global, NULL);
 	Stream_Thread_global = NULL;
 
+/*
 	s_originatingThreadID = 0;
-
+*/
 	SDL_DestroyMutex(s_simpleLock);
 	s_simpleLock = NULL;
 #endif
@@ -8064,8 +8066,9 @@ void ALmixer_QuitWithoutFreeData()
 	SDL_WaitThread(Stream_Thread_global, NULL);
 	Stream_Thread_global = NULL;
 
+/*
 	s_originatingThreadID = 0;
-
+*/
 	SDL_DestroyMutex(s_simpleLock);
 	s_simpleLock = NULL;
 #endif

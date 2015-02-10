@@ -219,7 +219,7 @@ typedef ALmixer_RWops ALmixer_RWops;
 {
 	~ALmixer_RWops()
 	{
-		ALmixer_FreeRW($self);
+		ALmixer_RWclose($self);
 	}
 };
 */
@@ -232,13 +232,13 @@ typedef ALmixer_RWops ALmixer_RWops;
  *  Functions to create ALmixer_RWops structures from various data streams.
  */
 /* @{ */
-%newobject ALmixer_RWFromFile;
+// %newobject ALmixer_RWFromFile; // not under memory management because autoclose confuses things
 extern ALMIXER_DECLSPEC ALmixer_RWops *ALMIXER_CALL ALmixer_RWFromFile(const char *file,
                                                   const char *mode);
 
 // Assumption: All the platforms we are targeting support stdio.
 //#ifdef ALMIXER_HAVE_STDIO_H
-%newobject ALmixer_RWFromFP;
+// %newobject ALmixer_RWFromFP; // not under memory management because autoclose confuses things
 extern ALMIXER_DECLSPEC ALmixer_RWops *ALMIXER_CALL ALmixer_RWFromFP(FILE * fp,
                                                 ALmixer_bool autoclose);
 //#else
@@ -248,18 +248,18 @@ extern ALMIXER_DECLSPEC ALmixer_RWops *ALMIXER_CALL ALmixer_RWFromFP(void * fp,
 */
 //#endif
 
-%newobject ALmixer_RWFromMem;
+// %newobject ALmixer_RWFromMem; // not under memory management because autoclose confuses things
 extern ALMIXER_DECLSPEC ALmixer_RWops *ALMIXER_CALL ALmixer_RWFromMem(void *mem, int size);
-%newobject ALmixer_RWFromConstMem;
+// %newobject ALmixer_RWFromConstMem; // not under memory management because autoclose confuses things
 extern ALMIXER_DECLSPEC ALmixer_RWops *ALMIXER_CALL ALmixer_RWFromConstMem(const void *mem,
                                                       int size);
 
 /* @} *//* RWFrom functions */
 
 
-%newobject ALmixer_AllocRW;
+// %newobject ALmixer_AllocRW; // not under memory management because autoclose confuses things
 extern ALMIXER_DECLSPEC ALmixer_RWops *ALMIXER_CALL ALmixer_AllocRW(void);
-%delobject ALmixer_FreeRW;
+// %delobject ALmixer_FreeRW; // not under memory management because autoclose confuses things
 extern ALMIXER_DECLSPEC void ALMIXER_CALL ALmixer_FreeRW(ALmixer_RWops * area);
 
 #define RW_SEEK_SET 0       /**< Seek from the beginning of data */
