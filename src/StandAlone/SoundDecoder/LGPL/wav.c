@@ -125,7 +125,7 @@ static __inline__ int read_uint8_t(ALmixer_RWops *rw, uint8_t *ui8)
     return(1);
 } /* read_uint8_t */
 
-
+#if 0
 static __inline__ uint16_t SDL_ReadLE16( ALmixer_RWops *rw )
 {
 	uint16_t result = 0;
@@ -142,6 +142,7 @@ static __inline__ uint32_t SDL_ReadLE32( ALmixer_RWops *rw )
 
 	return result;
 }
+#endif
 
     /* Chunk management code... */
 
