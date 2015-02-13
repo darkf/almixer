@@ -19,8 +19,11 @@ INCLUDE(CPack)
 set(CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/CMakeModules/" ${CMAKE_MODULE_PATH})
 FIND_PACKAGE(OpenAL)
 
-
-OPTION(WANTS_BUILD_SHARED_LIBRARY "Set to ON to build dynamic library." ON)
+IF(IOS)
+	OPTION(WANTS_BUILD_SHARED_LIBRARY "Set to ON to build dynamic library." OFF)
+ELSE()
+	OPTION(WANTS_BUILD_SHARED_LIBRARY "Set to ON to build dynamic library." ON)
+ENDIF()
 OPTION(ALMIXER_OPTION_COMPILE_WITH_SDL "Compile ALmixer with dependencies on SDL" OFF)
 OPTION(ALMIXER_OPTION_COMPILE_WITH_SDLSOUND "Compile ALmixer with dependencies on SDL_sound (requires COMPILE_WITH_SDL)" OFF)
 OPTION(ENABLE_ALMIXER_THREADS "Use background thread for ALmixer_Update()" ON)
@@ -120,7 +123,9 @@ SET(ALMIXER_SOVERSION ${ALMIXER_MAJOR_VERSION}.${ALMIXER_MINOR_VERSION}.0)
 
 
 IF(APPLE)
-	CMAKE_DEPENDENT_OPTION(WANTS_BUILD_FRAMEWORK "Set to ON to build framework instead of dylib. Only valid if BUILD_SHARED_LIBRARY is ON an is OS X." ON "WANTS_BUILD_SHARED_LIBRARY" ON)
+	IF(NOT IOS)
+		CMAKE_DEPENDENT_OPTION(WANTS_BUILD_FRAMEWORK "Set to ON to build framework instead of dylib. Only valid if BUILD_SHARED_LIBRARY is ON an is OS X." ON "WANTS_BUILD_SHARED_LIBRARY" ON)
+	ENDIF()
 ENDIF(APPLE)
 
 # FIXME: This kind of assumes Android is always using the Apportable Android.
@@ -705,6 +710,11 @@ ELSE()
 
 #	MESSAGE("ALMIXER_SELECTED_LINKED_LIBRARIES ${ALMIXER_SELECTED_LINKED_LIBRARIES}")
 
+ENDIF()
+
+IF(APPLE)
+	INCLUDE(XcodeDefaults)
+	BLURRR_CONFIGURE_XCODE_DEFAULTS(ALmixer)
 ENDIF()
 
 
