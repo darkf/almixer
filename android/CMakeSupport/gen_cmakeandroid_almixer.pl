@@ -36,6 +36,9 @@ use Cwd;
 
 
 # Global constants
+
+my $kCMakeBootStrapCacheFile = "InitialCache_Android.cmake";
+
 my %kArchToDirectoryNameMap =
 (
 #	mips => "mips",
@@ -81,7 +84,7 @@ main();
 
 sub main()
 {
-	my ($targetdir, $standalone, $compilerversion, $should_build, $cmake, $toolchain, $libsdir, $buildtype, $sourcedir, $openalbasedir, @remaining_options) = extract_parameters();
+	my ($targetdir, $standalone, $compilerversion, $should_build, $cmake, $toolchain, $libsdir, $buildtype, $sourcedir, $openalbasedir, $blurrr_sdk_path, @remaining_options) = extract_parameters();
 
 	my $openal_include_dir = $openalbasedir . "/jni/OpenAL/include/AL";
 	my $openal_include_dir_option = "-DOPENAL_INCLUDE_DIR=" . $openal_include_dir;
@@ -154,9 +157,16 @@ sub main()
 		my $openal_lib_dir = $openalbasedir . "/libs/" . $arch . "/libopenal.so";
 		my $openal_lib_dir_option = "-DOPENAL_LIBRARY=" . $openal_lib_dir;
 
+		my $initial_cache = "$sourcedir/android/CMakeSupport/$kCMakeBootStrapCacheFile";
+
 		
-		print("Executing: $cmake $toolchain $android_standalone_toolchain $arch_flag $libsdir $buildtype, $openal_include_dir_option $openal_lib_dir_option @remaining_options $sourcedir\n");
-		my $error_status = system($cmake, $toolchain, $android_standalone_toolchain, $arch_flag, $libsdir, $buildtype, $openal_include_dir_option, $openal_lib_dir_option, @remaining_options, $sourcedir);
+		print("Executing: $cmake $toolchain $android_standalone_toolchain -DBLURRR_SDK_PATH=$blurrr_sdk_path $arch_flag -C $initial_cache $libsdir $buildtype, $openal_include_dir_option $openal_lib_dir_option @remaining_options $sourcedir\n");
+		my $error_status = system($cmake, $toolchain, $android_standalone_toolchain, 
+			"-DBLURRR_SDK_PATH=$blurrr_sdk_path", 
+			$arch_flag, 
+			"-DBLURRR_CMAKE_ANDROID_REAL_BINARY_DIR=$targetdir",
+			"-C", $initial_cache, 
+			$libsdir, $buildtype, $openal_include_dir_option, $openal_lib_dir_option, @remaining_options, $sourcedir);
 		if($error_status != 0)
 		{
 			die "Invoking CMake failed: $?\n";
@@ -202,6 +212,7 @@ sub helpmenu()
 	print "  --cmake=<CMake executable>               (Optional) Allows you to specify the path and file to the CMake executable.\n";
 	print "  --buildtype=<build type>                 (Optional) The CMake Build Type. Default is Release.\n";
 	print "  --[no]build                              (Optional) Specifies whether make should be invoked.\n";
+	print "  --blurrrsdkpath=<path>   	   		      Path to the SDK to use, e.g. ~/Blurrr/Libraries/Android/SDK/Lua_f32_i32. You may define this in an environmental variable. This acts as an overrride to BLURRR_ROOT.\n";
 	print "\n";
 	print "Example Usage:\n";
 	print "$basename --sourcedir=../Chipmunk2D/ --targetdir=. --toolchain=~/Source/HG/android-cmake/toolchain/android.toolchain.cmake\n";
@@ -245,6 +256,7 @@ sub extract_parameters()
 		buildtype => \(my $buildtype = "Release"),
 		standalone => \(my $standalone),
 		build => \(my $should_build = 1),
+		blurrrsdkpath => \(my $blurrr_sdk_path), # acts as an override for blurrr_sdk_root
 		cmake => \(my $cmake)
        );
 
@@ -252,6 +264,7 @@ sub extract_parameters()
 	# their corresponding values.
 	# These parameters will be removed from @ARGV
 	my $errorval = &GetOptions(\%params, "h", "help",
+					"blurrrsdkpath=s",
 					"sourcedir=s",
 					"openalbasedir=s",
 					"targetdir=s",
@@ -353,13 +366,26 @@ sub extract_parameters()
 	$libsdir = "-DLIBRARY_OUTPUT_PATH_ROOT=" . absolute_path($libsdir);
 	$buildtype = "-DCMAKE_BUILD_TYPE=$buildtype";
 
+	if(not defined($blurrr_sdk_path))
+	{
+		$blurrr_sdk_path = $ENV{"BLURRR_SDK_PATH"};
+		if(not defined($blurrr_sdk_path))
+		{
+			$blurrr_sdk_path = undef;
+		}
+	}
+	else
+	{
+		$blurrr_sdk_path = absolute_path($blurrr_sdk_path);
+	}
+
 
 
 	# This can be optimized out, but is left for clarity. 
 	# GetOptions has removed all found options so anything left in @ARGV is "remaining".
 	my @remaining_options = @ARGV;
 
-	my @sorted_options = ($targetdir, $standalone, $compilerversion, $should_build, $cmake, $toolchain, $libsdir, $buildtype, $sourcedir, $openalbasedir, @remaining_options);
+	my @sorted_options = ($targetdir, $standalone, $compilerversion, $should_build, $cmake, $toolchain, $libsdir, $buildtype, $sourcedir, $openalbasedir, $blurrr_sdk_path, @remaining_options);
 	
 	return @sorted_options;
 }

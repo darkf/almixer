@@ -214,6 +214,7 @@ SET(ALMIXER_CORE_SOURCE
 	${ALmixer_SOURCE_DIR}/src/LinkedList.h
 	${ALmixer_SOURCE_DIR}/src/tErrorLib.c
 	${ALmixer_SOURCE_DIR}/src/tErrorLib.h
+	${ALmixer_SOURCE_DIR}/src/StandAlone/SDL/src/file/ALmixer_RWops.c
 )
 IF(ANDROID)
 	SET(ALMIXER_CORE_SOURCE
@@ -227,7 +228,6 @@ SET(ALMIXER_WITHOUT_SDL_SOURCE
 	${ALmixer_SOURCE_DIR}/src/StandAlone/SimpleThread.h
 	${ALmixer_SOURCE_DIR}/src/StandAlone/SimpleMutex.h
 	${ALmixer_SOURCE_DIR}/src/StandAlone/SimpleMutex.c
-	${ALmixer_SOURCE_DIR}/src/StandAlone/SDL/src/file/ALmixer_RWops.c
 	${ALmixer_SOURCE_DIR}/src/StandAlone/SDL/src/stdlib/ALmixer_malloc.c
 	${ALmixer_SOURCE_DIR}/src/StandAlone/SDL/src/stdlib/ALmixer_stdlib.c
 	${ALmixer_SOURCE_DIR}/src/StandAlone/SDL/src/stdlib/ALmixer_string.c
@@ -665,6 +665,7 @@ ELSE()
 			${OPENAL_INCLUDE_DIR}
 			${ALmixer_SOURCE_DIR}/include
 			${ALmixer_SOURCE_DIR}/src
+			${SOUNDDECODER_INCLUDE_PATHS}
 			${ALMIXER_SELECTED_INCLUDE_PATHS}
 			${SDL_INCLUDE_DIR}
 		)

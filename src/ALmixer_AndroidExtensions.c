@@ -2,6 +2,7 @@
 #include "ALmixer.h"
 #include "ALmixer_PlatformExtensions.h"
 #include <jni.h>
+#include <stddef.h>
 
 #ifndef ALMIXER_COMPILE_WITH_SDL
 	#include "ALmixer_android.h"

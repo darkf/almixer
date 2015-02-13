@@ -25,13 +25,16 @@
 	 * ALC_MAC_OSX_CONVERT_DATA_UPON_LOADING.
 	 */
 	#include <TargetConditionals.h>
-/*
 	#if (TARGET_OS_IPHONE == 1) || (TARGET_IPHONE_SIMULATOR == 1)
+		#include <CoreFoundation/CFBase.h>
+/*
 		#include <AudioToolbox/AudioToolbox.h>
-	#else
-		#include <OpenAL/MacOSX_OALExtensions.h>
-	#endif
 */
+	#else
+/*
+		#include <OpenAL/MacOSX_OALExtensions.h>
+*/
+	#endif
 #endif
 
 /* For malloc, bsearch, qsort */
