@@ -140,15 +140,15 @@ IF("${CMAKE_SYSTEM}" MATCHES "Linux" AND NOT ANDROID)
 	# FIXME: match for Solaris too
 
 	# use, i.e. don't skip the full RPATH for the build tree
-	#SET(CMAKE_SKIP_BUILD_RPATH  FALSE)
+	SET(CMAKE_SKIP_BUILD_RPATH TRUE)
 
 	# when building, don't use the install RPATH already
 	# (but later on when installing)
-	SET(CMAKE_BUILD_WITH_INSTALL_RPATH TRUE) 
+#	SET(CMAKE_BUILD_WITH_INSTALL_RPATH TRUE) 
 
 	# add the automatically determined parts of the RPATH
 	# which point to directories outside the build tree to the install RPATH
-	SET(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
+#	SET(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
 
 
 	# the RPATH to be used when installing, but only if it's not a system directory
@@ -160,7 +160,7 @@ IF("${CMAKE_SYSTEM}" MATCHES "Linux" AND NOT ANDROID)
 	# ENDIF("${isSystemDir}" STREQUAL "-1")
 	#    SET(CMAKE_INSTALL_RPATH "\\\$ORIGIN")
 	#SET(CMAKE_INSTALL_RPATH "\$ORIGIN")
-	SET(CMAKE_INSTALL_RPATH "\$ORIGIN:\$ORIGIN/..:\$ORIGIN/../lib")
+#	SET(CMAKE_INSTALL_RPATH "\$ORIGIN:\$ORIGIN/..:\$ORIGIN/../lib")
 	#    SET(CMAKE_INSTALL_RPATH "/usr/lib${CMAKE_INSTALL_RPATH}:\\\$ORIGIN")
 ELSEIF(APPLE)
 	set(CMAKE_MACOSX_RPATH 1)
