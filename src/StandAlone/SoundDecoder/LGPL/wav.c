@@ -58,9 +58,9 @@
 #include "SoundDecoder_Internal.h"
 #ifdef ALMIXER_COMPILE_WITH_SDL
 	#include "SDL_endian.h"
-	#define SDL_ReadLE32 ALmixer_ReadLE32
-	#define SDL_SwapLE16 ALmixer_SwapLE16
-	#define SDL_SwapLE32 ALmixer_SwapLE32
+	#define ALmixer_ReadLE32 SDL_ReadLE32
+	#define ALmixer_SwapLE16 SDL_SwapLE16
+	#define ALmixer_SwapLE32 SDL_SwapLE32
 #else
 	#include "ALmixer_endian.h"
 #endif
