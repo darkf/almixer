@@ -29,6 +29,35 @@ function JSALmixer_ShiftCallbackTable(which_channel)
 {
 	return s_JSALmixerDataChannelTable[which_channel].shift();
 }
+		function JSALmixer_ALmixerSoundPlaybackFinished(al_source, finished_naturally)
+		{
+			// This will remove the callback table from the queue and return it.
+			var which_channel = ALmixer.GetChannel(al_source);
+			var saved_table = JSALmixer_ShiftCallbackTable(which_channel);
+
+			var callback_function = saved_table.onComplete;
+			var sound_handle = saved_table.soundHandle;
+			var event_table =
+			{
+				name:"ALmixer",
+				type:"completed",
+				channel:which_channel,
+				alsource:al_source,
+				finishedNaturally:finished_naturally,
+				handle:saved_table.soundHandle,
+				userData:saved_table.userData
+			};
+
+			// Invoke user callback
+			if(callback_function)
+			{
+				callback_function(event_table);
+				event_table = null;
+				callback_function = null;
+			}
+			event_table = null;
+			saved_table = null;
+		}
 
 function JSALmixer_Initialize()
 {
@@ -38,9 +67,9 @@ function JSALmixer_Initialize()
 	}
 	s_JSALmixerIsInitialized = true;
 
-	var almixer_ti_proxy = require('co.lanica.almixer');
-	s_JSALmixerTiProxy = almixer_ti_proxy;
-	var ALmixer = co_lanica_almixer;
+//	var almixer_ti_proxy = require('co.lanica.almixer');
+//	s_JSALmixerTiProxy = almixer_ti_proxy;
+//	var ALmixer = co_lanica_almixer;
 	// Create a table to hold the original versions of the functions I intend to override.
 	ALmixer._original = {};
 	// Create a table for utility/helper APIs
@@ -50,6 +79,7 @@ function JSALmixer_Initialize()
 
 	s_JSALmixerDataChannelTable = {};
 
+/*
 	almixer_ti_proxy.addEventListener('ALmixerSoundPlaybackFinished', function(e)
 	{
 		var which_channel = e.which_channel;
@@ -79,12 +109,16 @@ function JSALmixer_Initialize()
 		event_table = null;
 		saved_table = null;
 	});
+*/
 
+
+
+/*
 	ALmixer.experimental.collectgarbage = function()
 	{
 		almixer_ti_proxy.collectgarbage();
 	}
-
+*/
 	ALmixer._original.PlayChannelTimed = ALmixer.PlayChannelTimed;
 	ALmixer.PlayChannelTimed = function(which_channel, sound_handle, num_loops, duration, on_complete, user_data)
 	{
@@ -379,9 +413,9 @@ function JSALmixer_Initialize()
 		{
 			// In Titanium, for Android, the relative path must be prepended with Resources/
 			// Mac/iOS should manually compose the NSBundle resourcePath.
-			if(Titanium)
+			if(typeof Titanium !== "undefined")
 			{
-				if(Titanium.Platform.osname == 'android')
+				if(Titanium.Platform.osname === 'android')
 				{
 					filename = "Resources/" + filename;
 				}
@@ -458,6 +492,8 @@ function JSALmixer_Initialize()
 		ALmixer._original.QuitWithoutFreeData();
 	}
 
+	ALmixer._private = {};
+	ALmixer._private.HandleALmixerSoundPlaybackFinished = JSALmixer_ALmixerSoundPlaybackFinished;
 }
 
 JSALmixer_Initialize();
