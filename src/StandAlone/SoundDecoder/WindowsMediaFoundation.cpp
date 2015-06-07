@@ -157,7 +157,8 @@ static int MediaFoundation_init(void)
     }
 
 
-	hr = MFStartup(MF_VERSION, 0);
+//	hr = MFStartup(MF_VERSION, MFSTARTUP_FULL);
+	hr = MFStartup(MF_VERSION, MFSTARTUP_NOSOCKET);
 	if(S_OK == hr)
 	{
 		return 1;
@@ -172,8 +173,8 @@ static int MediaFoundation_init(void)
 
 static void MediaFoundation_quit(void)
 {
-    MFShutdown();
-    CoUninitialize();	
+	MFShutdown();
+	CoUninitialize();
 } /* MediaFoundation_quit */
 
 
