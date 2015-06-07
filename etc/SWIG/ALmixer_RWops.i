@@ -283,8 +283,245 @@ extern ALMIXER_DECLSPEC void ALMIXER_CALL ALmixer_FreeRW(ALmixer_RWops * area);
 int64_t ALmixer_RWsize(ALmixer_RWops* ctx);
 int64_t ALmixer_RWseek(ALmixer_RWops* ctx, int64_t offset, int whence);
 int64_t ALmixer_RWtell(ALmixer_RWops* ctx);
-size_t ALmixer_RWread(ALmixer_RWops* ctx, void *ptr, size_t size, size_t maxnum);
-size_t ALmixer_RWwrite(ALmixer_RWops* ctx, const void *ptr, size_t size, size_t num);
+// SWIG: Should pretend string buffer.
+//size_t SDL_RWread(SDL_RWops* ctx, void *ptr, size_t size, size_t maxnum);
+%include "typemaps.i"
+#ifdef SWIG_JAVASCRIPT_JSC
+/* The check typemap doesn't work, so I'm implementing the whole thing. */
+%native(RWread) JSValueRef _wrap_RWread(JSContextRef context, JSObjectRef function, JSObjectRef thisObject, size_t argc, const JSValueRef argv[], JSValueRef* exception);
+%{
+static JSValueRef _wrap_RWread(JSContextRef context, JSObjectRef function, JSObjectRef thisObject, size_t argc, const JSValueRef argv[], JSValueRef* exception)
+{
+  SDL_RWops *arg1 = (SDL_RWops *) 0 ;
+  char *arg2 = (char *) 0 ;
+  size_t arg3 ;
+  size_t arg4 ;
+  void *argp1 = 0 ;
+  int res1 = 0 ;
+  size_t val3 ;
+  int ecode3 = 0 ;
+  size_t val4 ;
+  int ecode4 = 0 ;
+  size_t result;
+  
+  JSValueRef jsresult;
+  
+  if(argc != 3) SWIG_exception_fail(SWIG_ERROR, "Illegal number of arguments for _wrap_RWread.");
+  
+  res1 = SWIG_ConvertPtr(argv[0], &argp1,SWIGTYPE_p_SDL_RWops, 0 |  0 );
+  if (!SWIG_IsOK(res1)) {
+    SWIG_exception_fail(SWIG_ArgError(res1), "in method '" "RWread" "', argument " "1"" of type '" "SDL_RWops *""'"); 
+  }
+  arg1 = (SDL_RWops *)(argp1);
+  {
+    // typemap to disable read_buffer as an input parameter
+  }
+  ecode3 = SWIG_AsVal_size_t SWIG_JSC_AS_CALL_ARGS(argv[2], &val3);
+  if (!SWIG_IsOK(ecode3)) {
+    SWIG_exception_fail(SWIG_ArgError(ecode3), "in method '" "RWread" "', argument " "3"" of type '" "size_t""'");
+  } 
+  arg3 = (size_t)(val3);
+  ecode4 = SWIG_AsVal_size_t SWIG_JSC_AS_CALL_ARGS(argv[3], &val4);
+  if (!SWIG_IsOK(ecode4)) {
+    SWIG_exception_fail(SWIG_ArgError(ecode4), "in method '" "RWread" "', argument " "4"" of type '" "size_t""'");
+  } 
+  arg4 = (size_t)(val4);
+
+  {
+    arg2 = (char*)SDL_malloc(arg3*arg4);
+  }
+
+  result = SDL_RWread(arg1,arg2,arg3,arg4);
+  jsresult = SWIG_From_size_t  SWIG_JSC_FROM_CALL_ARGS((size_t)(result));
+
+  {
+    JSValueRef return_string = ((void *)0);
+    char* buffer = arg2;
+    JSStringRef jsstring_data_buffer;
+    /* size is always 1 as far as I know. But to be defensive in case nmemb 
+        and size get swapped or they are not what I expect, I will multiply.
+    */
+    size_t num_size = arg3*arg4; // size is 1 as far as I know.
+
+    JSChar* js_char_buffer = SDL_malloc(num_size*sizeof(JSChar));
+    size_t i;
+    
+    for(i=0; i<num_size; i++)
+    {
+      if(buffer[i] & 0x80)
+      {
+        js_char_buffer[i] = 0xF700 | buffer[i];
+      }
+      else
+      {
+        js_char_buffer[i] = buffer[i];
+      }
+    }
+    
+    jsstring_data_buffer = JSStringCreateWithCharacters(&js_char_buffer[0], num_size);
+    free(js_char_buffer);
+    
+    return_string = JSValueMakeString(context, jsstring_data_buffer);
+    JSStringRelease(jsstring_data_buffer);
+    
+    {
+        JSValueRef return_array_values[2];
+        JSObjectRef return_js_array;
+        return_array_values[0] = jsresult;
+        return_array_values[1] = return_string;
+        return_js_array = JSObjectMakeArray(context, 2, return_array_values, NULL);
+
+        jsresult = return_js_array;
+    }
+  }
+
+  {
+    SDL_free(arg2);
+  }
+  
+  return jsresult;
+  
+  goto fail;
+fail:
+  return JSValueMakeUndefined(context);
+}
+%}
+
+#elif defined(SWIGLUA)
+
+/* This disables read_buffer as an input parameter. */
+%typemap(in, numinputs=0) char* read_buffer
+{
+    // typemap to disable read_buffer as an input parameter
+}
+/* We need to malloc after the last two parameters are read in. So we use "check". */
+/* $1 is arg2 */
+%typemap(check) char* read_buffer
+{
+   $1 = (char*)SDL_malloc(arg3*arg4);
+}
+/* This makes read_buffer a return value */
+/* $1 is arg2, but I don't know how to use tokens for arg3, arg4 */
+%typemap(argout) char* read_buffer
+{
+  lua_pushlstring(L, $1, arg3*arg4);
+  SWIG_arg++;
+}
+/* free the temporary buffer */
+%typemap(freearg) char* read_buffer 
+{
+   SDL_free($1);
+}
+/*
+local num_bytes, buffer_string = SDL.RWread(rw_ops, 1, 20);
+*/
+size_t SDL_RWread(SDL_RWops* ctx, char* read_buffer, size_t size, size_t maxnum);
+
+#else
+#warning "Need to map read buffer output for SDL_RWread"
+// SWIG doesn't apply OUTPUT to char*. Have to do it manually.
+size_t SDL_RWread(SDL_RWops* ctx, void *OUTPUT, size_t size, size_t maxnum);
+#endif
+// SWIG: Should pretend string buffer.
+//size_t SDL_RWwrite(SDL_RWops* ctx, const void *ptr, size_t size, size_t num);
+#ifdef SWIG_JAVASCRIPT_JSC
+/* This was originally generated from SWIG, and then I injected the code for the s_listOfCallbackUserDatas */
+%native(RWwrite) JSValueRef _wrap_RWwrite(JSContextRef context, JSObjectRef function, JSObjectRef thisObject, size_t argc, const JSValueRef argv[], JSValueRef* exception);
+%{
+static JSValueRef _wrap_RWwrite(JSContextRef context, JSObjectRef function, JSObjectRef thisObject, size_t argc, const JSValueRef argv[], JSValueRef* exception)
+{
+  SDL_RWops *arg1 = (SDL_RWops *) 0 ;
+  char *arg2 = (char *) 0 ;
+  size_t arg3 ;
+  size_t arg4 ;
+  void *argp1 = 0 ;
+  int res1 = 0 ;
+  int res2 ;
+  size_t val3 ;
+  size_t val4 ;
+  int ecode3 = 0 ;
+  int ecode4 = 0 ;
+  size_t result;
+  
+  JSValueRef jsresult;
+  
+  if(argc != 4) SWIG_exception_fail(SWIG_ERROR, "Illegal number of arguments for _wrap_RWwrite.");
+  
+  res1 = SWIG_ConvertPtr(argv[0], &argp1,SWIGTYPE_p_SDL_RWops, 0 |  0 );
+  if (!SWIG_IsOK(res1)) {
+    SWIG_exception_fail(SWIG_ArgError(res1), "in method '" "RWwrite" "', argument " "1"" of type '" "SDL_RWops *""'"); 
+  }
+  arg1 = (SDL_RWops *)(argp1);
+/*
+  res2 = SWIG_AsCharPtrAndSize(argv[1], &buf2, &size2, &alloc2);
+  if (!SWIG_IsOK(res2)) {
+    SWIG_exception_fail(SWIG_ArgError(res2), "in method '" "RWwrite" "', argument " "2"" of type '" "char const *""'");
+  }
+*/
+  if(!JSValueIsString(context, argv[1]))
+  {
+    SWIG_exception_fail(SWIG_ArgError(res2), "in method '" "RWwrite" "', argument " "2"" of type '" "string""'");
+  }
+  ecode3 = SWIG_AsVal_size_t SWIG_JSC_AS_CALL_ARGS(argv[2], &val3);
+  if (!SWIG_IsOK(ecode4)) {
+    SWIG_exception_fail(SWIG_ArgError(ecode4), "in method '" "RWwrite" "', argument " "4"" of type '" "size_t""'");
+  } 
+  arg3 = (size_t)(val3);
+
+  ecode4 = SWIG_AsVal_size_t SWIG_JSC_AS_CALL_ARGS(argv[3], &val4);
+  if (!SWIG_IsOK(ecode4)) {
+    SWIG_exception_fail(SWIG_ArgError(ecode4), "in method '" "RWwrite" "', argument " "4"" of type '" "size_t""'");
+  } 
+  arg4 = (size_t)(val4);
+
+
+
+    {
+        JSStringRef js_str = JSValueToStringCopy(context, argv[1], NULL);
+//        size_t num_chars = JSStringGetLength(js_str);
+        size_t num_chars = arg3 * arg4;
+        const JSChar* jschar_buffer = JSStringGetCharactersPtr(js_str);
+        size_t i;
+//        char* char_buffer = (char*)malloc(unicode_chars * sizeof(char)); // Not null terminated
+        char* char_buffer = (char*)malloc(arg3 * arg4); // Not null terminated
+        for(i=0; i<num_chars; i++)
+        {
+            if(jschar_buffer[i] & 0xF700)
+            {
+                char_buffer[i] = 0x0080 | jschar_buffer[i];
+            }
+            else
+            {
+                char_buffer[i] = 0x00FF & jschar_buffer[i];
+            }
+        }
+
+        arg2 = char_buffer;
+
+        result = SDL_RWwrite(arg1,(char const *)arg2,arg3,arg4);
+
+        free(char_buffer);
+        JSStringRelease(js_str);
+
+    }
+
+
+  jsresult = SWIG_From_size_t  SWIG_JSC_FROM_CALL_ARGS((size_t)(result));
+  
+//  if (alloc2 == SWIG_NEWOBJ) free((char*)buf2);
+  
+  return jsresult;
+  
+  goto fail;
+fail:
+  return JSValueMakeUndefined(context);
+}
+%}
+
+#else
+size_t SDL_RWwrite(SDL_RWops* ctx, const char *ptr, size_t size, size_t num);
+#endif
+
 int ALmixer_RWclose(ALmixer_RWops* ctx);
 
 /* @} *//* Read/write macros */
