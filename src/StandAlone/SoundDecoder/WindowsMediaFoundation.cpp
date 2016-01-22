@@ -67,6 +67,7 @@ typedef struct MediaFoundationFileContainer
     UINT32 leftoverBufferLength;
     int leftoverBufferPosition;
     long currentPosition;
+	__int64 seekTargetPosition;
     bool isDead;
     bool isSeeking;
 	unsigned int bitsPerSample;
@@ -528,7 +529,43 @@ static LONGLONG MediaFoundation_MsecToMFTime(const LONG& time)
     return (LONGLONG)((ONE_SECOND / ONE_MSEC) * time);
 }
 
+/*
+EW: This is part of the fix for seeking because calling SetCurrentPosition was failing.
+It is now split up to set a flag that seeking needs to be done,
+and we call this at a time that seems to work (in the read).
+*/ 
+static void Internal_DoSeek(Sound_Sample* sample)
+{
+	Sound_SampleInternal *internal = (Sound_SampleInternal *) sample->opaque;
+	MediaFoundationFileContainer* media_foundation_file_container = (MediaFoundationFileContainer*)internal->decoder_private;
+	__int64 mf_seek_target = media_foundation_file_container->seekTargetPosition;
+	PROPVARIANT prop_variant;
+	HRESULT hr = S_OK;
 
+	// this doesn't fail, see MS's implementation
+	hr = InitPropVariantFromInt64(mf_seek_target, &prop_variant);
+
+	// http://msdn.microsoft.com/en-us/library/dd374668(v=VS.85).aspx
+	hr = media_foundation_file_container->sourceReader->SetCurrentPosition(GUID_NULL, prop_variant);
+	if(FAILED(hr))
+	{
+		// nothing we can do here as we can't fail (no facility to other than
+		// crashing mixxx)
+	//		sample->flags |= SOUND_SAMPLEFLAG_ERROR;
+		// more C++ BS
+		sample->flags = (SoundDecoder_SampleFlags)(sample->flags | SOUND_SAMPLEFLAG_ERROR);
+		if (hr == MF_E_INVALIDREQUEST)
+		{
+			SNDDBG(("WindowsMediaFoundation failed to seek: Sample requests still pending\n"));
+		}
+		else
+		{
+			SNDDBG(("WindowsMediaFoundation failed to seek\n"));
+		}
+	}
+
+	PropVariantClear(&prop_variant);
+}
 
 static size_t MediaFoundation_read(Sound_Sample* sample)
 {
@@ -557,8 +594,12 @@ static size_t MediaFoundation_read(Sound_Sample* sample)
 	size_t frames_requested = (requested_sample_size /  num_channels);
     size_t frames_needed = frames_requested;
 
-
-
+	
+	// EW: This is part of the seek deferal fix.
+	if(media_foundation_file_container->isSeeking)
+	{
+		Internal_DoSeek(sample);
+	}
 
 	// first, copy frames from leftover buffer IF the leftover buffer is at
 	// the correct frame
@@ -810,7 +851,29 @@ releaseSample:
 	return total_bytes_read;
 } /* MediaFoundation_read */
 
+/* EW: Note: I had problems with this function.
+Calling SetCurrentPosition would trigger an error and I would be unable to seek.
+(It's not the MF_E_INVALIDREQUEST error, but the else case. Also, I see a first-chance exception message in the console.)
+(With or without the Flush call).
+This was discovered with the LoadStream looping feature.
+It seems that if I defer calling SetCurrentPosition until the Read callback, then I can seek there.
+I don't really understand the reasoning for this.
+The Microsoft documentation says nothing, and Google searches continue to show that pretty much nobody else in the world uses this API.
+So I changed the code to defer calling seek.
+The big flaw in this fix is that I can't return a legitimate return code because I don't know yet if the seek will work.
 
+Other details:
+There was already an isSeeking flag implemented.
+So I needed to save the time position and and also make a modification to the read callback to call SetCurrentPosition.
+Also note that the original code does not have the isSeeking check early enough so I put in an extra early block for this.
+My current theories for why I have to do this:
+- It could be that SetCurrentPosition can only be called from a certain thread.
+- It could be I have to wait for internal buffers to clear. e.g. Maybe I call flush, and then there is an async delay to actually flush
+which I have to wait for. But I don't think I enabled async flush so I think it's supposed to be synchronous. But if this is the problem,
+I don't actually know when the buffers clear, so it could be dumb luck that this fix is working right now.
+- Maybe SetCurrentPosition can only be called in certain callbacks? (Documentation says nothing.)
+- MediaFoundation is just plain broken (and nobody uses it so nobody knows)
+*/
 static int MediaFoundation_seek(Sound_Sample *sample, size_t ms)
 {
 	Sound_SampleInternal *internal = (Sound_SampleInternal *) sample->opaque;
@@ -854,7 +917,7 @@ static int MediaFoundation_seek(Sound_Sample *sample, size_t ms)
     }
 
     // this doesn't fail, see MS's implementation
-    hr = InitPropVariantFromInt64(mf_seek_target, &prop_variant);
+//    hr = InitPropVariantFromInt64(mf_seek_target, &prop_variant);
 
 
     hr = media_foundation_file_container->sourceReader->Flush(MF_SOURCE_READER_FIRST_AUDIO_STREAM);
@@ -866,35 +929,13 @@ static int MediaFoundation_seek(Sound_Sample *sample, size_t ms)
 		sample->flags = (SoundDecoder_SampleFlags)(sample->flags | SOUND_SAMPLEFLAG_ERROR);
 	}
 
-    // http://msdn.microsoft.com/en-us/library/dd374668(v=VS.85).aspx
-    hr = media_foundation_file_container->sourceReader->SetCurrentPosition(GUID_NULL, prop_variant);
-    if(FAILED(hr))
-	{
-        // nothing we can do here as we can't fail (no facility to other than
-        // crashing mixxx)
-//		sample->flags |= SOUND_SAMPLEFLAG_ERROR;
-		// more C++ BS
-		sample->flags = (SoundDecoder_SampleFlags)(sample->flags | SOUND_SAMPLEFLAG_ERROR);
-		if (hr == MF_E_INVALIDREQUEST)
-		{
-			SNDDBG(("WindowsMediaFoundation failed to seek: Sample requests still pending\n"));
-		}
-		else
-		{
-			SNDDBG(("WindowsMediaFoundation failed to seek\n"));
-		}
-    }
-	else
-	{
-		the_result = sample_index;
-    }
-    PropVariantClear(&prop_variant);
-
     // record the next frame so that we can make sure we're there the next
     // time we get a buffer from MFSourceReader
     media_foundation_file_container->nextFrame = seek_target_frame;
     media_foundation_file_container->isSeeking = true;
     media_foundation_file_container->currentPosition = the_result;
+	media_foundation_file_container->seekTargetPosition = mf_seek_target;
+	
 	return(1);
 } /* MediaFoundation_seek */
 
