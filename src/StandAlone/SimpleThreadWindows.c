@@ -195,7 +195,6 @@ SimpleThreadPriority SimpleThread_GetThreadPriority(SimpleThread* simple_thread)
 /* TODO: Figure out portable/normalized range for levels */
 void SimpleThread_SetThreadPriority(SimpleThread* simple_thread, SimpleThreadPriority priority_level)
 {
-	int priority_level;
 	BOOL ret_val;
 
 	if(NULL == simple_thread)
