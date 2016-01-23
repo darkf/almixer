@@ -155,7 +155,14 @@ IMFByteStreamRWops::GetCapabilities(DWORD* out_capabilities)
 
 	*out_capabilities = MFBYTESTREAM_IS_READABLE
 		| MFBYTESTREAM_IS_SEEKABLE
+#if (WINVER >= _WIN32_WINNT_WIN8)
 		| MFBYTESTREAM_DOES_NOT_USE_NETWORK
+#else
+	// If you don't have the Win8 headers, this is the constant. 
+	// I believe the flag will be ignored by the runtime on pre-Win 8.
+	| 0x00000800
+#endif
+
 	;
 	return S_OK;
 }
