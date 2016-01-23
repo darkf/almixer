@@ -65,13 +65,45 @@
  */
 #include "LinkedList.h"
 
-#ifdef __ANDROID__
-	#undef fprintf
-	#include <android/log.h>
-	#define fprintf(stderr, ...) __android_log_print(ANDROID_LOG_INFO, "ALmixer", __VA_ARGS__)
+#ifdef ALMIXER_CORE_DEBUG_CHATTER
 
-	#include "ALmixer_AndroidExtensions.h"
-#endif
+#	ifdef ALMIXER_COMPILE_WITH_SDL
+		// drat: can't remember what version VS finally got variadic macros
+#		if _MSC_VER && (_MSC_VER < 1600) // VS2010
+				// don't know what to do
+#		else
+#			undef fprintf
+#			define fprintf(stderr, ...) SDL_Log(__VA_ARGS__)
+#		endif
+#	else
+
+#		ifdef __ANDROID__
+#			undef fprintf
+#			include <android/log.h>
+#			define fprintf(stderr, ...) __android_log_print(ANDROID_LOG_INFO, "ALmixer", __VA_ARGS__)
+
+#			include "ALmixer_AndroidExtensions.h"
+
+#		elif _MSC_VER
+			// drat: can't remember what version VS finally got variadic macros
+#			if (_MSC_VER >= 1600) // VS2010
+#				define WIN32_LEAN_AND_MEAN
+#				include <Windows.h>
+#				undef fprintf
+				// warning C4996: '_snprintf': This function or variable may be unsafe. Consider using _snprintf_s instead.
+#				pragma warning(disable : 4996)
+#				define fprintf(stderr, ...) { char output_dbg_buf[1024]; _snprintf(output_dbg_buf, 1024, __VA_ARGS__); OutputDebugStringA(output_dbg_buf); }
+#			else
+#			// don't know what to do
+#			endif
+#		else
+#		// leave fprintf as is
+#		endif
+#	endif /* SDL */
+#else
+#	undef fprintf
+
+#endif /* debug */
 
 
 #ifdef ENABLE_ALMIXER_THREADS
@@ -8281,7 +8313,9 @@ void ALmixer_OutputDecoders()
 
 	fprintf(stream, "Supported sound formats:\n");
 	if (rc == NULL)
+	{
 		fprintf(stream, " * Apparently, NONE!\n");
+	}
 	else
 	{
 		for (i = rc; *i != NULL; i++)

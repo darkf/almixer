@@ -153,7 +153,7 @@ static int MediaFoundation_init(void)
     if(FAILED(hr))
 	{
 //        std::cerr << "SSMF: failed to initialize COM" << std::endl;
-        SNDDBG(("WindowsMediaFoundation: Failed to initialize COM"));
+        SNDERR("WindowsMediaFoundation: Failed to initialize COM");
         return 0;
     }
 
@@ -166,7 +166,7 @@ static int MediaFoundation_init(void)
 	}
 	else
 	{
-        SNDDBG(("WindowsMediaFoundation: MFStartup failed"));
+        SNDERR("WindowsMediaFoundation: MFStartup failed");
 		return 0;
 	}	
 } /* MediaFoundation_init */
@@ -197,7 +197,7 @@ static int MediaFoundation_open(Sound_Sample *sample, const char *ext)
 	hresult = MFCreateSourceReaderFromByteStream(byte_stream, NULL, &source_reader);
 	if (FAILED(hresult))
     {
-		SNDDBG(("Error opening input file"));
+		SNDERR("Error opening input file");
 		return 0;
 	}
 
@@ -234,7 +234,7 @@ static int MediaFoundation_open(Sound_Sample *sample, const char *ext)
 			);
 			if(FAILED(hr))
 			{
-				SNDDBG(("GetNativeMediaType failed"));
+				SNDERR("GetNativeMediaType failed");
 				free(media_foundation_file_container);
 				SafeRelease(&source_reader);		
 				return 0;
@@ -255,13 +255,13 @@ static int MediaFoundation_open(Sound_Sample *sample, const char *ext)
 			hr = audio_type->GetUINT32(MF_MT_AUDIO_NUM_CHANNELS, &num_channels);
 			hr = audio_type->GetUINT32(MF_MT_AUDIO_SAMPLES_PER_SECOND, &samples_per_second);
 
-			SNDDBG(("WindowsMediaFoundation: all_samples_independent == (%d).\n", all_samples_independent));
-			SNDDBG(("WindowsMediaFoundation: fixed_size_samples == (%d).\n", fixed_size_samples));
-			SNDDBG(("WindowsMediaFoundation: sample_size == (%d).\n", sample_size));
-			SNDDBG(("WindowsMediaFoundation: bits_per_sample == (%d).\n", bits_per_sample));
-			SNDDBG(("WindowsMediaFoundation: block_alignment == (%d).\n", block_alignment));
-			SNDDBG(("WindowsMediaFoundation: num_channels == (%d).\n", num_channels));
-			SNDDBG(("WindowsMediaFoundation: samples_per_second == (%d).\n", samples_per_second));
+			SNDDBG2("WindowsMediaFoundation: all_samples_independent == (%d).\n", all_samples_independent);
+			SNDDBG2("WindowsMediaFoundation: fixed_size_samples == (%d).\n", fixed_size_samples);
+			SNDDBG2("WindowsMediaFoundation: sample_size == (%d).\n", sample_size);
+			SNDDBG2("WindowsMediaFoundation: bits_per_sample == (%d).\n", bits_per_sample);
+			SNDDBG2("WindowsMediaFoundation: block_alignment == (%d).\n", block_alignment);
+			SNDDBG2("WindowsMediaFoundation: num_channels == (%d).\n", num_channels);
+			SNDDBG2("WindowsMediaFoundation: samples_per_second == (%d).\n", samples_per_second);
 
 
 			// Get the total length of the stream 
@@ -271,7 +271,7 @@ static int MediaFoundation_open(Sound_Sample *sample, const char *ext)
 			hr = source_reader->GetPresentationAttribute(MF_SOURCE_READER_MEDIASOURCE, MF_PD_DURATION, &prop_variant);
 			if(FAILED(hr))
 			{
-				SNDDBG(("WindowsMediaFoundation: Failed to get duration"));
+				SNDERR("WindowsMediaFoundation: Failed to get duration");
 				duration_in_milliseconds = -1.0;
 			}
 			else
@@ -302,7 +302,7 @@ static int MediaFoundation_open(Sound_Sample *sample, const char *ext)
 				sample->actual.format = sample->desired.format;				
 			}
 
-			SNDDBG(("WindowsMediaFoundation: total seconds of sample == (%d).\n", internal->total_time));
+			SNDDBG2("WindowsMediaFoundation: total seconds of sample == (%d).\n", internal->total_time);
 
 
 			// For compressed files, the bits per sample is undefined
@@ -330,7 +330,7 @@ static int MediaFoundation_open(Sound_Sample *sample, const char *ext)
 			hr = MFCreateMediaType(&target_audio_type);
 			if(FAILED(hr))
 			{
-				SNDDBG(("WindowsMediaFoundation: Failed to create target MediaType\n"));
+				SNDERR("WindowsMediaFoundation: Failed to create target MediaType\n");
 				SafeRelease(&source_reader);
 				free(media_foundation_file_container);
 			}
@@ -338,7 +338,7 @@ static int MediaFoundation_open(Sound_Sample *sample, const char *ext)
 			hr = target_audio_type->SetGUID(MF_MT_MAJOR_TYPE, MFMediaType_Audio);
 			if(FAILED(hr))
 			{
-				SNDDBG(("WindowsMediaFoundation: Failed to set MFMediaType_Audio\n"));
+				SNDERR("WindowsMediaFoundation: Failed to set MFMediaType_Audio\n");
 				SafeRelease(&target_audio_type);
 				SafeRelease(&source_reader);
 				free(media_foundation_file_container);
@@ -348,7 +348,7 @@ static int MediaFoundation_open(Sound_Sample *sample, const char *ext)
 			hr = target_audio_type->SetGUID(MF_MT_SUBTYPE, MFAudioFormat_PCM);
 			if(FAILED(hr))
 			{
-				SNDDBG(("WindowsMediaFoundation: Failed to set MFAudioFormat_PCM\n"));
+				SNDERR("WindowsMediaFoundation: Failed to set MFAudioFormat_PCM\n");
 				SafeRelease(&target_audio_type);
 				SafeRelease(&source_reader);
 				free(media_foundation_file_container);
@@ -360,7 +360,7 @@ static int MediaFoundation_open(Sound_Sample *sample, const char *ext)
 			hr = source_reader->SetCurrentMediaType((DWORD)MF_SOURCE_READER_FIRST_AUDIO_STREAM, NULL, target_audio_type);
 			if(FAILED(hr))
 			{
-				SNDDBG(("WindowsMediaFoundation: Failed to set SetCurrentMediaType\n"));
+				SNDERR("WindowsMediaFoundation: Failed to set SetCurrentMediaType\n");
 				SafeRelease(&target_audio_type);
 				SafeRelease(&source_reader);
 				free(media_foundation_file_container);
@@ -380,7 +380,7 @@ static int MediaFoundation_open(Sound_Sample *sample, const char *ext)
 			hr = source_reader->GetCurrentMediaType((DWORD)MF_SOURCE_READER_FIRST_AUDIO_STREAM, &uncompressed_audio_type);
 			if(FAILED(hr))
 			{
-				SNDDBG(("WindowsMediaFoundation: Failed to set SetCurrentMediaType\n"));
+				SNDERR("WindowsMediaFoundation: Failed to set SetCurrentMediaType\n");
 				SafeRelease(&source_reader);
 				free(media_foundation_file_container);
 				return 0;
@@ -389,7 +389,7 @@ static int MediaFoundation_open(Sound_Sample *sample, const char *ext)
 			// Ensure the stream is selected.
 			if(FAILED(hr))
 			{
-				SNDDBG(("WindowsMediaFoundation: Failed to set SetCurrentMediaType\n"));
+				SNDERR("WindowsMediaFoundation: Failed to set SetCurrentMediaType\n");
 				SafeRelease(&uncompressed_audio_type);
 				SafeRelease(&source_reader);
 				free(media_foundation_file_container);
@@ -401,7 +401,7 @@ static int MediaFoundation_open(Sound_Sample *sample, const char *ext)
 			hr = uncompressed_audio_type->GetUINT32(MF_MT_SAMPLE_SIZE, &leftover_buffer_size);
 			if(FAILED(hr))
 			{
-				SNDDBG(("WindowsMediaFoundation: Failed to get leftover_buffer_size\n"));
+				SNDERR("WindowsMediaFoundation: Failed to get leftover_buffer_size\n");
 				leftover_buffer_size = 32;
 			}
 
@@ -556,11 +556,11 @@ static void Internal_DoSeek(Sound_Sample* sample)
 		sample->flags = (SoundDecoder_SampleFlags)(sample->flags | SOUND_SAMPLEFLAG_ERROR);
 		if (hr == MF_E_INVALIDREQUEST)
 		{
-			SNDDBG(("WindowsMediaFoundation failed to seek: Sample requests still pending\n"));
+			SNDERR("WindowsMediaFoundation failed to seek: Sample requests still pending\n");
 		}
 		else
 		{
-			SNDDBG(("WindowsMediaFoundation failed to seek\n"));
+			SNDERR("WindowsMediaFoundation failed to seek\n");
 		}
 	}
 
@@ -611,7 +611,7 @@ static size_t MediaFoundation_read(Sound_Sample* sample)
 		{
 			if(frames_needed != 0)
 			{
-				SNDDBG(("WindowsMediaFoundation: Expected frames needed to be 0. Abandoning this file.\n"));
+				SNDERR("WindowsMediaFoundation: Expected frames needed to be 0. Abandoning this file.\n");
 				media_foundation_file_container->isDead = true;
 			}
 			media_foundation_file_container->leftoverBufferPosition += frames_requested;
@@ -643,21 +643,21 @@ static size_t MediaFoundation_read(Sound_Sample* sample)
 			&current_sample);                           // [out] IMFSample **ppSample
 		if(FAILED(hr))
 		{
-			SNDDBG(("WindowsMediaFoundation read: ReadSample failed\n"));
+			SNDERR("WindowsMediaFoundation read: ReadSample failed\n");
 			break;
 		}
 
 		/*
-		SNDDBG(("WindowsMediaFoundation: ReadSample timestamp:%ld, frame:%ld, stream_flags:%d\n", 
+		SNDDBG2("WindowsMediaFoundation: ReadSample timestamp:%ld, frame:%ld, stream_flags:%d\n", 
 				timestamp,
 				MediaFoundation_FrameFromMF(timestamp, sample_rate),
 				stream_flags
-		));
+		);
 		*/
 		if (stream_flags & MF_SOURCE_READERF_ERROR)
 		{
 			// our source reader is now dead, according to the docs
-			SNDDBG(("WindowsMediaFoundation read: ReadSample set ERROR, SourceReader is now dead\n"));
+			SNDERR("WindowsMediaFoundation read: ReadSample set ERROR, SourceReader is now dead\n");
 			media_foundation_file_container->isDead = true;
 //			sample->flags |= SOUND_SAMPLEFLAG_EOF;
 			// more C++ BS
@@ -666,7 +666,7 @@ static size_t MediaFoundation_read(Sound_Sample* sample)
 		}
 		else if(stream_flags & MF_SOURCE_READERF_ENDOFSTREAM)
 		{
-			SNDDBG(("WindowsMediaFoundation read: End of input file.\n"));
+			SNDDBG2("WindowsMediaFoundation read: End of input file.\n");
 //			sample->flags |= SOUND_SAMPLEFLAG_EOF;
 			// more C++ BS
 			sample->flags = (SoundDecoder_SampleFlags)(sample->flags | SOUND_SAMPLEFLAG_EOF);
@@ -674,7 +674,7 @@ static size_t MediaFoundation_read(Sound_Sample* sample)
 		}
 		else if (stream_flags & MF_SOURCE_READERF_CURRENTMEDIATYPECHANGED)
 		{
-			SNDDBG(("WindowsMediaFoundation read: Type change\n"));			
+			SNDDBG2("WindowsMediaFoundation read: Type change\n");			
 			/* Don't know what to do here. */
 //			sample->flags |= SOUND_SAMPLEFLAG_EAGAIN;
 			// more C++ BS
@@ -685,7 +685,7 @@ static size_t MediaFoundation_read(Sound_Sample* sample)
 		{
 			// generally this will happen when stream_flags contains ENDOFSTREAM,
 			// so it'll be caught before now -bkgood
-			SNDDBG(("WindowsMediaFoundation read: No sample\n"));			
+			SNDDBG2("WindowsMediaFoundation read: No sample\n");			
 			/* Don't know what to do here. */
 //			sample->flags |= SOUND_SAMPLEFLAG_ERROR;
 			// more C++ BS
@@ -717,10 +717,10 @@ static size_t MediaFoundation_read(Sound_Sample* sample)
 		if(media_foundation_file_container->isSeeking)
 		{
 			__int64 buffer_position = MediaFoundation_FrameFromMF(timestamp, sample_rate);
-			SNDDBG(("WindowsMediaFoundation read: While seeking to nextFrame:%d, WMF put us at buffer_position:%ld\n", 
+			SNDDBG2("WindowsMediaFoundation read: While seeking to nextFrame:%d, WMF put us at buffer_position:%ld\n", 
 				media_foundation_file_container->nextFrame,
 				buffer_position
-			));
+			);
 
             if (media_foundation_file_container->nextFrame < buffer_position)
 			{
@@ -734,7 +734,7 @@ static size_t MediaFoundation_read(Sound_Sample* sample)
 
                 if(offshoot_frames <= frames_needed)
 				{
-					SNDDBG(("WindowsMediaFoundation read: Working around inaccurate seeking. Writing silence for:%ld offshoot frames\n", offshoot_frames));
+					SNDDBG2("WindowsMediaFoundation read: Working around inaccurate seeking. Writing silence for:%ld offshoot frames\n", offshoot_frames);
 
 					// Set offshoot_frames * num_channels samples to zero.
 					memset(buffer_current_position, 0,
@@ -752,7 +752,7 @@ static size_t MediaFoundation_read(Sound_Sample* sample)
 					// try to get on with our lives.
 					media_foundation_file_container->isSeeking = false;
 					media_foundation_file_container->nextFrame = buffer_position;
-					SNDDBG(("WindowsMediaFoundation read: Seek offshoot is too drastic. Cutting losses and pretending the current decoded audio buffer is the right seek point.\n"));
+					SNDDBG2("WindowsMediaFoundation read: Seek offshoot is too drastic. Cutting losses and pretending the current decoded audio buffer is the right seek point.\n");
 				}
 			}
 
@@ -812,14 +812,14 @@ releaseSample:
 	{
         if(frames_needed != 0)
 		{
-			SNDDBG(("WindowsMediaFoundation read: Expected frames needed to be 0. Abandoning this file.\n"));
+			SNDERR("WindowsMediaFoundation read: Expected frames needed to be 0. Abandoning this file.\n");
             media_foundation_file_container->isDead = true;
         }
         media_foundation_file_container->leftoverBufferPosition = media_foundation_file_container->nextFrame;
     }
     long samples_read = requested_sample_size - frames_needed * num_channels;
     media_foundation_file_container->currentPosition += samples_read;
-	SNDDBG(("WindowsMediaFoundation read for requested_sample_size:%d returning %d samples_read.\n", requested_sample_size, samples_read));
+	SNDDBG2("WindowsMediaFoundation read for requested_sample_size:%d returning %d samples_read.\n", requested_sample_size, samples_read);
 	
 	/* // I don't want float samples
 	const int sample_max = 1 << (media_foundation_file_container->bitsPerSample-1);
@@ -909,7 +909,7 @@ static int MediaFoundation_seek(Sound_Sample *sample, size_t ms)
 
     if(media_foundation_file_container->isDead)
 	{
-		SNDDBG(("WindowsMediaFoundation in seek(), isDead\n"));
+		SNDERR("WindowsMediaFoundation in seek(), isDead\n");
 //		sample->flags |= SOUND_SAMPLEFLAG_ERROR;
 		// more C++ BS
 		sample->flags = (SoundDecoder_SampleFlags)(sample->flags | SOUND_SAMPLEFLAG_ERROR);
@@ -923,7 +923,7 @@ static int MediaFoundation_seek(Sound_Sample *sample, size_t ms)
     hr = media_foundation_file_container->sourceReader->Flush(MF_SOURCE_READER_FIRST_AUDIO_STREAM);
     if(FAILED(hr))
 	{
-		SNDDBG(("WindowsMediaFoundation failed to flush before seek\n"));
+		SNDERR("WindowsMediaFoundation failed to flush before seek\n");
 //		sample->flags |= SOUND_SAMPLEFLAG_ERROR;
 		// more C++ BS
 		sample->flags = (SoundDecoder_SampleFlags)(sample->flags | SOUND_SAMPLEFLAG_ERROR);

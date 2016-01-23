@@ -219,12 +219,12 @@ IMFByteStreamRWops::Seek(MFBYTESTREAM_SEEK_ORIGIN seek_origin, LONGLONG seek_off
 	INT64 new_position;
 	if(msoBegin == seek_origin)
 	{
-		SNDDBG(("WindowsMediaFoundation IMFByteStreamRWops: Seek() msoBegin"));
+		SNDDBG2("WindowsMediaFoundation IMFByteStreamRWops: Seek() msoBegin");
 		new_position = seek_offset;
 	}
 	else
 	{
-		SNDDBG(("WindowsMediaFoundation IMFByteStreamRWops: Seek() msoCurrent"));
+		SNDDBG2("WindowsMediaFoundation IMFByteStreamRWops: Seek() msoCurrent");
 		INT64 current_position = ALmixer_RWtell(rwOps);
 		new_position = seek_offset + current_position;
 	}
