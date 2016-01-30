@@ -37,7 +37,18 @@
 	NSString* music_file = [[[NSBundle mainBundle] resourcePath] stringByAppendingPathComponent:@"battle_hymn_of_the_republic.mp3"];
 	_musicHandle = ALmixer_LoadStream([music_file fileSystemRepresentation], 0, 0, 0, 0, AL_FALSE);
 	
-	ALmixer_PlayChannel(-1, _musicHandle, 0);
+	if(ALmixer_IsPredecoded(_musicHandle))
+	{
+		NSLog(@"oops, predecoded. Your sample is too short to test LoadStream. It got promoted into a LoadAll");
+		assert(1);
+	}
+	else
+	{
+		NSLog(@"good to go");
+	}
+	
+	
+	ALmixer_PlayChannel(-1, _musicHandle, 1);
 
 }
 
