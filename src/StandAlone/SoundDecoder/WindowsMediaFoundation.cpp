@@ -401,7 +401,10 @@ static int MediaFoundation_open(Sound_Sample *sample, const char *ext)
 			hr = uncompressed_audio_type->GetUINT32(MF_MT_SAMPLE_SIZE, &leftover_buffer_size);
 			if(FAILED(hr))
 			{
-				SNDERR("WindowsMediaFoundation: Failed to get leftover_buffer_size\n");
+				// EW: MS docs say this will fail for varible length samples (proably aac, etc?)
+				// So this could happen a lot.
+				// So far, haven't noticed adverse effects.
+				SNDDBG2("WindowsMediaFoundation: Failed to get leftover_buffer_size\n");
 				leftover_buffer_size = 32;
 			}
 
