@@ -25,3 +25,8 @@ So in your finished callback, you can decrement the reference count. Once the re
 This system was also designed to those building wrappers around ALmixer, perhaps for priority level management of channels. As such, the finished callbacks are also your friends as they are designed to reliably tell you which channels/sources are stil in use.
 
 
+
+====
+Garbage Collection and shutdown
+====
+ALmixer_QuitWithoutFreeData is a hack introduced to deal with a case where ALmixer was being used in JavaScript (but could be any GC language), but lived in a really difficult layer of code that didn’t have access to main. The issue was ALmixer might be quit before garbage collection was guaranteed to collect all ALmixer_Data objects. Due to implementation details (partly due to how OpenAL memory will be lost (and maybe leaked) when the OpenAL device is closed), if ALmixer_FreeData is called after Quit, crashes could occur. QuitWithoutFreeData was a hack that tried to shutdown without necessarily releasing all the memory. So if GC came in later, there was still a chance the object could be cleaned up. (There is a chance of a leak this way, but it was considered better than crashing.)
