@@ -644,76 +644,38 @@ struct ALmixer_AudioInfo
 %newobject ALmixer_LoadSample_RW;
 extern ALMIXER_DECLSPEC ALmixer_Data* ALMIXER_CALL ALmixer_LoadSample_RW(ALmixer_RWops* rw_ops, const char* file_ext, ALuint buffer_size, ALboolean decode_mode_is_predecoded, ALuint max_queue_buffers, ALuint num_startup_buffers, ALuint suggested_number_of_buffers_to_queue_per_update_pass, ALuint access_data);
 
-#ifdef DOXYGEN_ONLY
-ALmixer_Data* ALmixer_LoadStream_RW(ALmixer_RWops* rw_ops, const char* file_ext, ALuint buffer_size, ALuint max_queue_buffers, ALuint num_startup_buffers, ALuint suggested_number_of_buffers_to_queue_per_update_pass, ALuint access_data);
-#else
 %newobject ALmixer_LoadStream_RW;
-ALmixer_Data* ALmixer_LoadStream_RW(ALmixer_RWops* rw_ops, const char* file_ext, ALuint buffer_size, ALuint max_queue_buffers, ALuint num_startup_buffers, ALuint suggested_number_of_buffers_to_queue_per_update_pass, ALuint access_data);
-//#define ALmixer_LoadStream_RW(rw_ops, file_ext, buffer_size, max_queue_buffers, num_startup_buffers, suggested_number_of_buffers_to_queue_per_update_pass, access_data) ALmixer_LoadSample_RW(rw_ops,file_ext, buffer_size, AL_FALSE, max_queue_buffers, num_startup_buffers, suggested_number_of_buffers_to_queue_per_update_pass, access_data)
-#endif
+extern ALMIXER_DECLSPEC ALmixer_Data* ALMIXER_CALL ALmixer_LoadStream_RW(ALmixer_RWops* rw_ops, const char* file_ext, ALuint buffer_size, ALuint max_queue_buffers, ALuint num_startup_buffers, ALuint suggested_number_of_buffers_to_queue_per_update_pass, ALuint access_data);
 
-#ifdef DOXYGEN_ONLY
-ALmixer_Data* ALmixer_LoadAll_RW(ALmixer_RWops* rw_ops, const char* file_ext, ALuint access_data);
-#else
 %newobject ALmixer_LoadAll_RW;
-ALmixer_Data* ALmixer_LoadAll_RW(ALmixer_RWops* rw_ops, const char* file_ext, ALuint access_data=0);
-//#define ALmixer_LoadAll_RW(rw_ops, file_ext, access_data) ALmixer_LoadSample_RW(rw_ops, fileext, ALMIXER_DEFAULT_PREDECODED_BUFFERSIZE, AL_TRUE, 0, 0, 0, access_data)
-#endif
+extern ALMIXER_DECLSPEC ALmixer_Data* ALMIXER_CALL ALmixer_LoadAll_RW(struct ALmixer_RWops* rw_ops, const char* file_ext, ALuint access_data);
 
+%newobject ALmixer_LoadSample;
 extern ALMIXER_DECLSPEC ALmixer_Data * ALMIXER_CALL ALmixer_LoadSample(const char* file_name, ALuint buffer_size, ALboolean decode_mode_is_predecoded, ALuint max_queue_buffers, ALuint num_startup_buffers, ALuint suggested_number_of_buffers_to_queue_per_update_pass, ALuint access_data);
 
-#ifdef DOXYGEN_ONLY
-ALmixer_Data* ALmixer_LoadStream(const char* file_name, ALuint buffer_size, ALuint max_queue_buffers, ALuint num_startup_buffers, ALuint suggested_number_of_buffers_to_queue_per_update_pass, ALuint access_data);
-#else
 %newobject ALmixer_LoadStream;
-ALmixer_Data* ALmixer_LoadStream(const char* file_name, ALuint buffer_size=0, ALuint max_queue_buffers=0, ALuint num_startup_buffers=0, ALuint suggested_number_of_buffers_to_queue_per_update_pass=0, ALuint access_data=0);
-//#define ALmixer_LoadStream(file_name, buffer_size, max_queue_buffers, num_startup_buffers, suggested_number_of_buffers_to_queue_per_update_pass, access_data) ALmixer_LoadSample(file_name, buffer_size, AL_FALSE, max_queue_buffers, num_startup_buffers, suggested_number_of_buffers_to_queue_per_update_pass, access_data)
-#endif
+extern ALMIXER_DECLSPEC ALmixer_Data* ALMIXER_CALL ALmixer_LoadStream(const char* file_name, ALuint buffer_size, ALuint max_queue_buffers, ALuint num_startup_buffers, ALuint suggested_number_of_buffers_to_queue_per_update_pass, ALuint access_data);
 
-#ifdef DOXYGEN_ONLY
-ALmixer_Data* ALmixer_LoadAll(const char* file_name, ALuint access_data);
-#else
 %newobject ALmixer_LoadAll;
-ALmixer_Data* ALmixer_LoadAll(const char* file_name, ALuint access_data=0);
-//#define ALmixer_LoadAll(file_name, access_data) ALmixer_LoadSample(file_name, ALMIXER_DEFAULT_PREDECODED_BUFFERSIZE, AL_TRUE, 0, 0, 0, access_data)
-#endif
+extern ALMIXER_DECLSPEC ALmixer_Data* ALMIXER_CALL ALmixer_LoadAll(const char* file_name, ALuint access_data);
 
 %newobject ALmixer_LoadSample_RAW_RW;
 extern ALMIXER_DECLSPEC ALmixer_Data * ALMIXER_CALL ALmixer_LoadSample_RAW_RW(ALmixer_RWops* rw_ops, const char* file_ext, ALmixer_AudioInfo* desired_format, ALuint buffer_size, ALboolean decode_mode_is_predecoded, ALuint max_queue_buffers, ALuint num_startup_buffers, ALuint suggested_number_of_buffers_to_queue_per_update_pass, ALuint access_data);
 
-#ifdef DOXYGEN_ONLY
-ALmixer_Data* ALmixer_LoadStream_RAW_RW(ALmixer_RWops* rw_ops, const char* file_ext, ALmixer_AudioInfo* desired_format, ALuint buffer_size, ALuint max_queue_buffers, ALuint num_startup_buffers, ALuint suggested_number_of_buffers_to_queue_per_update_pass, ALuint access_data);
-#else
 %newobject ALmixer_LoadStream_RAW_RW;
-ALmixer_Data* ALmixer_LoadStream_RAW_RW(ALmixer_RWops* rw_ops, const char* file_ext, ALmixer_AudioInfo* desired_format, ALuint buffer_size, ALuint max_queue_buffers, ALuint num_startup_buffers, ALuint suggested_number_of_buffers_to_queue_per_update_pass, ALuint access_data);
-//#define ALmixer_LoadStream_RAW_RW(rw_ops, file_ext, desired_format, buffer_size, max_queue_buffers, num_startup_buffers, suggested_number_of_buffers_to_queue_per_update_pass, access_data) ALmixer_LoadSample_RAW_RW(rw_ops, file_ext, desired_format, buffer_size, AL_FALSE, max_queue_buffers, num_startup_buffers, suggested_number_of_buffers_to_queue_per_update_pass, access_data)
-#endif
+extern ALMIXER_DECLSPEC ALmixer_Data* ALMIXER_CALL ALmixer_LoadStream_RAW_RW(struct ALmixer_RWops* rw_ops, const char* file_ext, ALmixer_AudioInfo* desired_format, ALuint buffer_size, ALuint max_queue_buffers, ALuint num_startup_buffers, ALuint suggested_number_of_buffers_to_queue_per_update_pass, ALuint access_data);
 
-#ifdef DOXYGEN_ONLY
-ALmixer_Data* ALmixer_LoadAll_RAW_RW(ALmixer_RWops* rw_ops, const char* file_ext, ALmixer_AudioInfo* desired_format, ALuint access_data);
-#else
 %newobject ALmixer_LoadAll_RAW_RW;
-ALmixer_Data* ALmixer_LoadAll_RAW_RW(ALmixer_RWops* rw_ops, const char* file_ext, ALmixer_AudioInfo* desired_format, ALuint access_data=0);
-//#define ALmixer_LoadAll_RAW_RW(rw_ops, file_ext, desired_format, access_data) ALmixer_LoadSample_RAW_RW(rw_ops, file_ext, desired_format, ALMIXER_DEFAULT_PREDECODED_BUFFERSIZE, AL_TRUE, 0, 0, 0, access_data)
-#endif
+extern ALMIXER_DECLSPEC ALmixer_Data* ALMIXER_CALL ALmixer_LoadAll_RAW_RW(struct ALmixer_RWops* rw_ops, const char* file_ext, ALmixer_AudioInfo* desired_format, ALuint access_data);
 
+%newobject ALmixer_LoadSample_RAW;
 extern ALMIXER_DECLSPEC ALmixer_Data * ALMIXER_CALL ALmixer_LoadSample_RAW(const char* file_name, ALmixer_AudioInfo* desired_format, ALuint buffer_size, ALboolean decode_mode_is_predecoded, ALuint max_queue_buffers, ALuint num_startup_buffers, ALuint suggested_number_of_buffers_to_queue_per_update_pass, ALuint access_data);
 
-#ifdef DOXYGEN_ONLY
-ALmixer_Data* ALmixer_LoadStream_RAW(const char* file_name, ALmixer_AudioInfo* desired_format, ALuint buffer_size, ALuint max_queue_buffers, ALuint num_startup_buffers, ALuint suggested_number_of_buffers_to_queue_per_update_pass, ALuint access_data);
-#else
 %newobject ALmixer_LoadStream_RAW;
-ALmixer_Data* ALmixer_LoadStream_RAW(const char* file_name, ALmixer_AudioInfo* desired_format, ALuint buffer_size=0, ALuint max_queue_buffers=0, ALuint num_startup_buffers=0, ALuint suggested_number_of_buffers_to_queue_per_update_pass=0, ALuint access_data=0);
-//#define ALmixer_LoadStream_RAW(file_name, desired_format, buffer_size, max_queue_buffers, num_startup_buffers, suggested_number_of_buffers_to_queue_per_update_pass, access_data) ALmixer_LoadSample_RAW(file_name, desired_format, buffer_size, AL_FALSE, max_queue_buffers, num_startup_buffers, suggested_number_of_buffers_to_queue_per_update_pass, access_data)
-#endif
+extern ALMIXER_DECLSPEC ALmixer_Data* ALMIXER_CALL ALmixer_LoadStream_RAW(const char* file_name, ALmixer_AudioInfo* desired_format, ALuint buffer_size, ALuint max_queue_buffers, ALuint num_startup_buffers, ALuint suggested_number_of_buffers_to_queue_per_update_pass, ALuint access_data);
 
-#ifdef DOXYGEN_ONLY
-ALmixer_Data* ALmixer_LoadAll_RAW(const char* file_name, ALmixer_AudioInfo* desired_format, ALuint access_data);
-#else
 %newobject ALmixer_LoadAll_RAW;
-ALmixer_Data* ALmixer_LoadAll_RAW(const char* file_name, ALmixer_AudioInfo* desired_format, ALuint access_data=0);
-//#define ALmixer_LoadAll_RAW(file_name, desired_format, access_data) ALmixer_LoadSample_RAW(file_name, desired_format, ALMIXER_DEFAULT_PREDECODED_BUFFERSIZE, AL_TRUE, 0, 0, 0, access_data)
-#endif
+extern ALMIXER_DECLSPEC ALmixer_Data* ALMIXER_CALL ALmixer_LoadAll_RAW(const char* file_name, ALmixer_AudioInfo* desired_format, ALuint access_data);
 
 %delobject ALmixer_FreeData;
 extern ALMIXER_DECLSPEC void ALMIXER_CALL ALmixer_FreeData(ALmixer_Data* almixer_data);
@@ -736,21 +698,11 @@ extern ALMIXER_DECLSPEC ALint ALMIXER_CALL ALmixer_FindFreeChannel(ALint start_c
 
 extern ALMIXER_DECLSPEC ALint ALMIXER_CALL ALmixer_PlayChannelTimed(ALint which_channel, ALmixer_Data* almixer_data, ALint number_of_loops=0, ALint number_of_milliseconds=-1);
 
-#ifdef DOXYGEN_ONLY
-ALint ALmixer_PlayChannelTimed(ALint which_channel, ALmixer_Data* almixer_data, ALint number_of_loops);
-#else
-ALint ALmixer_PlayChannel(ALint which_channel, ALmixer_Data* almixer_data, ALint number_of_loops=0);
-//#define ALmixer_PlayChannel(channel,data,loops) ALmixer_PlayChannelTimed(channel,data,loops,-1)
-#endif
+extern ALMIXER_DECLSPEC ALint ALMIXER_CALL ALmixer_PlayChannel(ALint which_channel, ALmixer_Data* almixer_data, ALint number_of_loops);
 
 extern ALMIXER_DECLSPEC ALuint ALMIXER_CALL ALmixer_PlaySourceTimed(ALuint al_source, ALmixer_Data* almixer_data, ALint number_of_loops=0, ALint number_of_milliseconds=-1);
 
-#ifdef DOXYGEN_ONLY
-ALint ALmixer_PlaySourceTimed(ALuint al_source, ALmixer_Data* almixer_data, ALint number_of_loops);
-#else
-ALint ALmixer_PlaySource(ALuint al_source, ALmixer_Data* almixer_data, ALint number_of_loops=0);
-//#define ALmixer_PlaySource(al_source, almixer_data, number_of_loops) ALmixer_PlaySourceTimed(al_source, almixer_data, number_of_loops, -1)
-#endif
+extern ALMIXER_DECLSPEC ALuint ALMIXER_CALL ALmixer_PlaySource(ALuint al_source, ALmixer_Data* almixer_data, ALint number_of_loops);
 
 extern ALMIXER_DECLSPEC ALint ALMIXER_CALL ALmixer_HaltChannel(ALint which_channel);
 
@@ -779,21 +731,11 @@ extern ALMIXER_DECLSPEC ALint ALMIXER_CALL ALmixer_ExpireSource(ALuint al_source
 
 extern ALMIXER_DECLSPEC ALint ALMIXER_CALL ALmixer_FadeInChannelTimed(ALint which_channel, ALmixer_Data* almixer_data, ALint number_of_loops, ALuint fade_ticks, ALint expire_ticks);
 
-#ifdef DOXYGEN_ONLY
-ALint ALmixer_FadeInChannel(ALint which_channel, ALmixer_Data* almixer_data, ALint number_of_loops, ALuint fade_ticks);
-#else
-ALint ALmixer_FadeInChannel(ALint which_channel, ALmixer_Data* almixer_data, ALint number_of_loops, ALuint fade_ticks);
-#define ALmixer_FadeInChannel(which_channel, almixer_data, number_of_loops, fade_ticks) ALmixer_FadeInChannelTimed(which_channel, almixer_data, number_of_loops, fade_ticks, -1)
-#endif
+extern ALMIXER_DECLSPEC ALint ALMIXER_CALL ALmixer_FadeInChannel(ALint which_channel, ALmixer_Data* almixer_data, ALint number_of_loops, ALuint fade_ticks);
 
 extern ALMIXER_DECLSPEC ALuint ALMIXER_CALL ALmixer_FadeInSourceTimed(ALuint al_source, ALmixer_Data* almixer_data, ALint number_of_loops, ALuint fade_ticks, ALint expire_ticks);
 
-#ifdef DOXYGEN_ONLY
-extern ALuint ALmixer_FadeInSource(ALuint al_source, ALmixer_Data* almixer_data, ALint number_of_loops, ALuint fade_ticks);
-#else
-ALuint ALmixer_FadeInSource(ALuint al_source, ALmixer_Data* almixer_data, ALint number_of_loops, ALuint fade_ticks);
-#define ALmixer_FadeInSource(al_source, almixer_data, number_of_loops, fade_ticks) ALmixer_FadeInSourceTimed(al_source, almixer_data, number_of_loops, fade_ticks, -1)
-#endif
+extern ALMIXER_DECLSPEC ALuint ALMIXER_CALL ALmixer_FadeInSource(ALuint al_source, ALmixer_Data* almixer_data, ALint number_of_loops, ALuint fade_ticks);
 
 extern ALMIXER_DECLSPEC ALint ALMIXER_CALL ALmixer_FadeOutChannel(ALint which_channel, ALuint fade_ticks);
 
@@ -852,20 +794,11 @@ extern ALMIXER_DECLSPEC ALuint ALMIXER_CALL ALmixer_CountAllUsedChannels(void);
 extern ALMIXER_DECLSPEC ALuint ALMIXER_CALL ALmixer_CountUnreservedUsedChannels(void);
 
 
-#ifdef DOXYGEN_ONLY
-ALuint ALmixer_CountTotalChannels(void);
-#else
-ALuint ALmixer_CountTotalChannels(void);
-#define ALmixer_CountTotalChannels() ALmixer_AllocateChannels(-1)
-#endif
+extern ALMIXER_DECLSPEC ALuint ALMIXER_CALL ALmixer_CountTotalChannels(void);
 
 
-#ifdef DOXYGEN_ONLY
-ALuint ALmixer_CountReservedChannels(void);
-#else
-ALuint ALmixer_CountReservedChannels(void);
-#define ALmixer_CountReservedChannels() ALmixer_ReserveChannels(-1)
-#endif
+extern ALMIXER_DECLSPEC ALuint ALMIXER_CALL ALmixer_CountReservedChannels(void);
+
 
 /* For testing */
 #if 0
