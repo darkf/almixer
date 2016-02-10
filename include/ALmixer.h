@@ -617,7 +617,6 @@ struct ALmixer_AudioInfo
  */
 extern ALMIXER_DECLSPEC ALmixer_Data* ALMIXER_CALL ALmixer_LoadSample_RW(struct ALmixer_RWops* rw_ops, const char* file_ext, ALuint buffer_size, ALboolean decode_mode_is_predecoded, ALuint max_queue_buffers, ALuint num_startup_buffers, ALuint suggested_number_of_buffers_to_queue_per_update_pass, ALuint access_data);
 
-#ifdef DOXYGEN_ONLY
 /**
  * This is the loader function to load an audio resource from an RWops as a stream.
  * @param rw_ops The rwops pointing to the audio resource you want to load.
@@ -637,12 +636,8 @@ extern ALMIXER_DECLSPEC ALmixer_Data* ALMIXER_CALL ALmixer_LoadSample_RW(struct 
  * using this feature, so if you don't need data callbacks, you should pass false to this function.
  * @return Returns an ALmixer_Data* of the loaded sample or NULL if failed.
  */
-ALmixer_Data* ALmixer_LoadStream_RW(struct ALmixer_RWops* rw_ops, const char* file_ext, ALuint buffer_size, ALuint max_queue_buffers, ALuint num_startup_buffers, ALuint suggested_number_of_buffers_to_queue_per_update_pass, ALuint access_data);
-#else
-#define ALmixer_LoadStream_RW(rw_ops, file_ext, buffer_size, max_queue_buffers, num_startup_buffers, suggested_number_of_buffers_to_queue_per_update_pass, access_data) ALmixer_LoadSample_RW(rw_ops,file_ext, buffer_size, AL_FALSE, max_queue_buffers, num_startup_buffers, suggested_number_of_buffers_to_queue_per_update_pass, access_data)
-#endif
+extern ALMIXER_DECLSPEC ALmixer_Data* ALMIXER_CALL ALmixer_LoadStream_RW(struct ALmixer_RWops* rw_ops, const char* file_ext, ALuint buffer_size, ALuint max_queue_buffers, ALuint num_startup_buffers, ALuint suggested_number_of_buffers_to_queue_per_update_pass, ALuint access_data);
 
-#ifdef DOXYGEN_ONLY
 /**
  * This is the loader function to completely preload an audio resource from an RWops into RAM.
  * @param rw_ops The rwops pointing to the audio resource you want to load.
@@ -655,10 +650,7 @@ ALmixer_Data* ALmixer_LoadStream_RW(struct ALmixer_RWops* rw_ops, const char* fi
  * using this feature, so if you don't need data callbacks, you should pass false to this function.
  * @return Returns an ALmixer_Data* of the loaded sample or NULL if failed.
  */
-ALmixer_Data* ALmixer_LoadAll_RW(struct ALmixer_RWops* rw_ops, const char* file_ext, ALuint access_data);
-#else
-#define ALmixer_LoadAll_RW(rw_ops, file_ext, access_data) ALmixer_LoadSample_RW(rw_ops, file_ext, ALMIXER_DEFAULT_PREDECODED_BUFFERSIZE, AL_TRUE, 0, 0, 0, access_data)
-#endif
+extern ALMIXER_DECLSPEC ALmixer_Data* ALMIXER_CALL ALmixer_LoadAll_RW(struct ALmixer_RWops* rw_ops, const char* file_ext, ALuint access_data);
 
 /**
  * This is a general loader function to load an audio resource from a file.
@@ -682,7 +674,6 @@ ALmixer_Data* ALmixer_LoadAll_RW(struct ALmixer_RWops* rw_ops, const char* file_
  */
 extern ALMIXER_DECLSPEC ALmixer_Data * ALMIXER_CALL ALmixer_LoadSample(const char* file_name, ALuint buffer_size, ALboolean decode_mode_is_predecoded, ALuint max_queue_buffers, ALuint num_startup_buffers, ALuint suggested_number_of_buffers_to_queue_per_update_pass, ALuint access_data);
 
-#ifdef DOXYGEN_ONLY
 /**
  * This is the loader function to load an audio resource from a file.
  * @param file_name The file to the audio resource you want to load.
@@ -703,12 +694,8 @@ extern ALMIXER_DECLSPEC ALmixer_Data * ALMIXER_CALL ALmixer_LoadSample(const cha
  * using this feature, so if you don't need data callbacks, you should pass false to this function.
  * @return Returns an ALmixer_Data* of the loaded sample or NULL if failed.
  */
-ALmixer_Data* ALmixer_LoadStream(const char* file_name, ALuint buffer_size, ALuint max_queue_buffers, ALuint num_startup_buffers, ALuint suggested_number_of_buffers_to_queue_per_update_pass, ALuint access_data);
-#else
-#define ALmixer_LoadStream(file_name, buffer_size, max_queue_buffers, num_startup_buffers, suggested_number_of_buffers_to_queue_per_update_pass, access_data) ALmixer_LoadSample(file_name, buffer_size, AL_FALSE, max_queue_buffers, num_startup_buffers, suggested_number_of_buffers_to_queue_per_update_pass, access_data)
-#endif
+extern ALMIXER_DECLSPEC ALmixer_Data* ALMIXER_CALL ALmixer_LoadStream(const char* file_name, ALuint buffer_size, ALuint max_queue_buffers, ALuint num_startup_buffers, ALuint suggested_number_of_buffers_to_queue_per_update_pass, ALuint access_data);
 
-#ifdef DOXYGEN_ONLY
 /**
  * This is the loader function to completely preload an audio resource from a file into RAM.
  * @param file_name The file to the audio resource you want to load.
@@ -719,10 +706,7 @@ ALmixer_Data* ALmixer_LoadStream(const char* file_name, ALuint buffer_size, ALui
  * using this feature, so if you don't need data callbacks, you should pass false to this function.
  * @return Returns an ALmixer_Data* of the loaded sample or NULL if failed.
  */
-ALmixer_Data* ALmixer_LoadAll(const char* file_name, ALuint access_data);
-#else
-#define ALmixer_LoadAll(file_name, access_data) ALmixer_LoadSample(file_name, ALMIXER_DEFAULT_PREDECODED_BUFFERSIZE, AL_TRUE, 0, 0, 0, access_data)
-#endif
+extern ALMIXER_DECLSPEC ALmixer_Data* ALMIXER_CALL ALmixer_LoadAll(const char* file_name, ALuint access_data);
 
 /**
  * This is a back door general loader function for RAW samples or if you need to specify the ALmixer_AudioInfo field.
@@ -750,7 +734,6 @@ ALmixer_Data* ALmixer_LoadAll(const char* file_name, ALuint access_data);
  */
 extern ALMIXER_DECLSPEC ALmixer_Data * ALMIXER_CALL ALmixer_LoadSample_RAW_RW(struct ALmixer_RWops* rw_ops, const char* file_ext, ALmixer_AudioInfo* desired_format, ALuint buffer_size, ALboolean decode_mode_is_predecoded, ALuint max_queue_buffers, ALuint num_startup_buffers, ALuint suggested_number_of_buffers_to_queue_per_update_pass, ALuint access_data);
 
-#ifdef DOXYGEN_ONLY
 /**
  * This is a back door stream loader function for RAW samples or if you need to specify the ALmixer_AudioInfo field.
  * Use at your own risk.
@@ -773,12 +756,8 @@ extern ALMIXER_DECLSPEC ALmixer_Data * ALMIXER_CALL ALmixer_LoadSample_RAW_RW(st
  * using this feature, so if you don't need data callbacks, you should pass false to this function.
  * @return Returns an ALmixer_Data* of the loaded sample or NULL if failed.
  */
-ALmixer_Data* ALmixer_LoadStream_RAW_RW(struct ALmixer_RWops* rw_ops, const char* file_ext, ALmixer_AudioInfo* desired_format, ALuint buffer_size, ALuint max_queue_buffers, ALuint num_startup_buffers, ALuint suggested_number_of_buffers_to_queue_per_update_pass, ALuint access_data);
-#else
-#define ALmixer_LoadStream_RAW_RW(rw_ops, file_ext, desired_format, buffer_size, max_queue_buffers, num_startup_buffers, suggested_number_of_buffers_to_queue_per_update_pass, access_data) ALmixer_LoadSample_RAW_RW(rw_ops, file_ext, desired_format, buffer_size, AL_FALSE, max_queue_buffers, num_startup_buffers, suggested_number_of_buffers_to_queue_per_update_pass, access_data)
-#endif
+extern ALMIXER_DECLSPEC ALmixer_Data* ALMIXER_CALL ALmixer_LoadStream_RAW_RW(struct ALmixer_RWops* rw_ops, const char* file_ext, ALmixer_AudioInfo* desired_format, ALuint buffer_size, ALuint max_queue_buffers, ALuint num_startup_buffers, ALuint suggested_number_of_buffers_to_queue_per_update_pass, ALuint access_data);
 
-#ifdef DOXYGEN_ONLY
 /**
  * This is a back door loader function for complete preloading RAW samples into RAM or if you need to specify the ALmixer_AudioInfo field.
  * Use at your own risk.
@@ -793,10 +772,7 @@ ALmixer_Data* ALmixer_LoadStream_RAW_RW(struct ALmixer_RWops* rw_ops, const char
  * using this feature, so if you don't need data callbacks, you should pass false to this function.
  * @return Returns an ALmixer_Data* of the loaded sample or NULL if failed.
  */
-ALmixer_Data* ALmixer_LoadAll_RAW_RW(struct ALmixer_RWops* rw_ops, const char* file_ext, ALmixer_AudioInfo* desired_format, ALuint access_data);
-#else
-#define ALmixer_LoadAll_RAW_RW(rw_ops, file_ext, desired_format, access_data) ALmixer_LoadSample_RAW_RW(rw_ops, file_ext, desired_format, ALMIXER_DEFAULT_PREDECODED_BUFFERSIZE, AL_TRUE, 0, 0, 0, access_data)
-#endif
+extern ALMIXER_DECLSPEC ALmixer_Data* ALMIXER_CALL ALmixer_LoadAll_RAW_RW(struct ALmixer_RWops* rw_ops, const char* file_ext, ALmixer_AudioInfo* desired_format, ALuint access_data);
 
 /**
  * This is a back door general loader function for RAW samples or if you need to specify the ALmixer_AudioInfo field.
@@ -820,9 +796,8 @@ ALmixer_Data* ALmixer_LoadAll_RAW_RW(struct ALmixer_RWops* rw_ops, const char* f
  * using this feature, so if you don't need data callbacks, you should pass false to this function.
  * @return Returns an ALmixer_Data* of the loaded sample or NULL if failed.
  */
-extern ALMIXER_DECLSPEC ALmixer_Data * ALMIXER_CALL ALmixer_LoadSample_RAW(const char* file_name, ALmixer_AudioInfo* desired_format, ALuint buffer_size, ALboolean decode_mode_is_predecoded, ALuint max_queue_buffers, ALuint num_startup_buffers, ALuint suggested_number_of_buffers_to_queue_per_update_pass, ALuint access_data);
+extern ALMIXER_DECLSPEC ALmixer_Data* ALMIXER_CALL ALmixer_LoadSample_RAW(const char* file_name, ALmixer_AudioInfo* desired_format, ALuint buffer_size, ALboolean decode_mode_is_predecoded, ALuint max_queue_buffers, ALuint num_startup_buffers, ALuint suggested_number_of_buffers_to_queue_per_update_pass, ALuint access_data);
 
-#ifdef DOXYGEN_ONLY
 /**
  * This is a back door stream loader function for RAW samples or if you need to specify the ALmixer_AudioInfo field.
  * Use at your own risk.
@@ -843,12 +818,8 @@ extern ALMIXER_DECLSPEC ALmixer_Data * ALMIXER_CALL ALmixer_LoadSample_RAW(const
  * using this feature, so if you don't need data callbacks, you should pass false to this function.
  * @return Returns an ALmixer_Data* of the loaded sample or NULL if failed.
  */
-ALmixer_Data* ALmixer_LoadStream_RAW(const char* file_name, ALmixer_AudioInfo* desired_format, ALuint buffer_size, ALuint max_queue_buffers, ALuint num_startup_buffers, ALuint suggested_number_of_buffers_to_queue_per_update_pass, ALuint access_data);
-#else
-#define ALmixer_LoadStream_RAW(file_name, desired_format, buffer_size, max_queue_buffers, num_startup_buffers, suggested_number_of_buffers_to_queue_per_update_pass, access_data) ALmixer_LoadSample_RAW(file_name, desired_format, buffer_size, AL_FALSE, max_queue_buffers, num_startup_buffers, suggested_number_of_buffers_to_queue_per_update_pass, access_data)
-#endif
+extern ALMIXER_DECLSPEC ALmixer_Data* ALMIXER_CALL ALmixer_LoadStream_RAW(const char* file_name, ALmixer_AudioInfo* desired_format, ALuint buffer_size, ALuint max_queue_buffers, ALuint num_startup_buffers, ALuint suggested_number_of_buffers_to_queue_per_update_pass, ALuint access_data);
 
-#ifdef DOXYGEN_ONLY
 /**
  * This is a back door loader function for complete preloading RAW samples into RAM or if you need to specify the ALmixer_AudioInfo field.
  * Use at your own risk.
@@ -861,10 +832,7 @@ ALmixer_Data* ALmixer_LoadStream_RAW(const char* file_name, ALmixer_AudioInfo* d
  * using this feature, so if you don't need data callbacks, you should pass false to this function.
  * @return Returns an ALmixer_Data* of the loaded sample or NULL if failed.
  */
-ALmixer_Data* ALmixer_LoadAll_RAW(const char* file_name, ALmixer_AudioInfo* desired_format, ALuint access_data);
-#else
-#define ALmixer_LoadAll_RAW(file_name, desired_format, access_data) ALmixer_LoadSample_RAW(file_name, desired_format, ALMIXER_DEFAULT_PREDECODED_BUFFERSIZE, AL_TRUE, 0, 0, 0, access_data)
-#endif
+extern ALMIXER_DECLSPEC ALmixer_Data* ALMIXER_CALL ALmixer_LoadAll_RAW(const char* file_name, ALmixer_AudioInfo* desired_format, ALuint access_data);
 
 /**
  * Frees an ALmixer_Data.
@@ -1091,15 +1059,11 @@ extern ALMIXER_DECLSPEC ALint ALMIXER_CALL ALmixer_FindFreeChannel(ALint start_c
  */
 extern ALMIXER_DECLSPEC ALint ALMIXER_CALL ALmixer_PlayChannelTimed(ALint which_channel, ALmixer_Data* almixer_data, ALint number_of_loops, ALint number_of_milliseconds);
 
-#ifdef DOXYGEN_ONLY
 /**
  * The same as ALmixer_PlayChannelTimed, but the sound is played without time limits.
  * @see ALmixer_PlayChannelTimed.
  */ 
-ALint ALmixer_PlayChannelTimed(ALint which_channel, ALmixer_Data* almixer_data, ALint number_of_loops);
-#else
-#define ALmixer_PlayChannel(channel,data,loops) ALmixer_PlayChannelTimed(channel,data,loops,-1)
-#endif
+extern ALMIXER_DECLSPEC ALint ALMIXER_CALL ALmixer_PlayChannel(ALint which_channel, ALmixer_Data* almixer_data, ALint number_of_loops);
 
 
 /**
@@ -1122,15 +1086,11 @@ ALint ALmixer_PlayChannelTimed(ALint which_channel, ALmixer_Data* almixer_data, 
  */
 extern ALMIXER_DECLSPEC ALuint ALMIXER_CALL ALmixer_PlaySourceTimed(ALuint al_source, ALmixer_Data* almixer_data, ALint number_of_loops, ALint number_of_milliseconds);
 
-#ifdef DOXYGEN_ONLY
 /**
  * The same as ALmixer_PlaySourceTimed, but the sound is played without time limits.
  * @see ALmixer_PlaySourceTimed.
  */ 
-ALint ALmixer_PlaySource(ALuint al_source, ALmixer_Data* almixer_data, ALint number_of_loops);
-#else
-#define ALmixer_PlaySource(al_source, almixer_data, number_of_loops) ALmixer_PlaySourceTimed(al_source, almixer_data, number_of_loops, -1)
-#endif
+extern ALMIXER_DECLSPEC ALuint ALMIXER_CALL ALmixer_PlaySource(ALuint al_source, ALmixer_Data* almixer_data, ALint number_of_loops);
 
 /**
  * Stops playback on a channel.
@@ -1284,15 +1244,11 @@ extern ALMIXER_DECLSPEC ALint ALMIXER_CALL ALmixer_ExpireSource(ALuint al_source
  */
 extern ALMIXER_DECLSPEC ALint ALMIXER_CALL ALmixer_FadeInChannelTimed(ALint which_channel, ALmixer_Data* almixer_data, ALint number_of_loops, ALuint fade_ticks, ALint expire_ticks);
 
-#ifdef DOXYGEN_ONLY
 /**
  * The same as ALmixer_FadeInChannelTimed, but the sound is played without time limits.
  * @see ALmixer_FadeInChannelTimed, ALmixer_PlayChannel.
  */ 
-ALint ALmixer_FadeInChannel(ALint which_channel, ALmixer_Data* almixer_data, ALint number_of_loops, ALuint fade_ticks);
-#else
-#define ALmixer_FadeInChannel(which_channel, almixer_data, number_of_loops, fade_ticks) ALmixer_FadeInChannelTimed(which_channel, almixer_data, number_of_loops, fade_ticks, -1)
-#endif
+extern ALMIXER_DECLSPEC ALint ALMIXER_CALL ALmixer_FadeInChannel(ALint which_channel, ALmixer_Data* almixer_data, ALint number_of_loops, ALuint fade_ticks);
 
 /**
  * Similar to ALmixer_PlaySourceTimed except that sound volume fades in from the minimum volume to the max volume over the specified amount of time.
@@ -1300,15 +1256,11 @@ ALint ALmixer_FadeInChannel(ALint which_channel, ALmixer_Data* almixer_data, ALi
  */
 extern ALMIXER_DECLSPEC ALuint ALMIXER_CALL ALmixer_FadeInSourceTimed(ALuint al_source, ALmixer_Data* almixer_data, ALint number_of_loops, ALuint fade_ticks, ALint expire_ticks);
 
-#ifdef DOXYGEN_ONLY
 /**
  * The same as ALmixer_FadeInSourceTimed, but the sound is played without time limits.
  * @see ALmixer_FadeInSourceTimed, ALmixer_PlaySource.
  */ 
-extern ALuint ALmixer_FadeInSource(ALuint al_source, ALmixer_Data* almixer_data, ALint number_of_loops, ALuint fade_ticks);
-#else
-#define ALmixer_FadeInSource(al_source, almixer_data, number_of_loops, fade_ticks) ALmixer_FadeInSourceTimed(al_source, almixer_data, number_of_loops, fade_ticks, -1)
-#endif
+extern ALMIXER_DECLSPEC ALuint ALMIXER_CALL ALmixer_FadeInSource(ALuint al_source, ALmixer_Data* almixer_data, ALint number_of_loops, ALuint fade_ticks);
 
 /**
  * Fade out a current playing channel.
@@ -1590,30 +1542,22 @@ extern ALMIXER_DECLSPEC ALuint ALMIXER_CALL ALmixer_CountAllUsedChannels(void);
 extern ALMIXER_DECLSPEC ALuint ALMIXER_CALL ALmixer_CountUnreservedUsedChannels(void);
 
 
-#ifdef DOXYGEN_ONLY
 /**
  * Returns the number of allocated channels.
  * This is just a convenience alias to ALmixer_AllocateChannels(-1).
  * @see ALmixer_AllocateChannels
  */ 
-ALuint ALmixer_CountTotalChannels(void);
-#else
-#define ALmixer_CountTotalChannels() ALmixer_AllocateChannels(-1)
-#endif
+extern ALMIXER_DECLSPEC ALuint ALMIXER_CALL ALmixer_CountTotalChannels(void);
 
 
 
 
-#ifdef DOXYGEN_ONLY
 /**
  * Returns the number of reserved channels.
  * This is just a convenience alias to ALmixer_ReserveChannels(-1).
  * @see ALmixer_ReserveChannels
  */ 
-ALuint ALmixer_CountReservedChannels(void);
-#else
-#define ALmixer_CountReservedChannels() ALmixer_ReserveChannels(-1)
-#endif
+extern ALMIXER_DECLSPEC ALuint ALMIXER_CALL ALmixer_CountReservedChannels(void);
 
 /**
  * @}
