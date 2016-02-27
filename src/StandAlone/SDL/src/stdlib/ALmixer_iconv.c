@@ -34,6 +34,9 @@
 /* Needed for ALmixer_bool */
 #include "ALmixer_RWops.h"
 
+/* Needed because I'm missing a header declaration for this */
+extern char * ALmixer_getenv(const char *name);
+
 #ifdef HAVE_ICONV
 
 /* Depending on which standard the iconv() was implemented with,

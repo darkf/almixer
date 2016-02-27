@@ -69,6 +69,30 @@
 #define ERR_IO_ERROR "I/O error"
 #define assert(x)
 
+
+
+#ifndef MY_INLINE
+#if defined(__GNUC__)
+#	define MY_INLINE __inline__
+#elif defined(_MSC_VER) || defined(__BORLANDC__) || \
+      defined(__DMC__) || defined(__SC__) || \
+      defined(__WATCOMC__) || defined(__LCC__) || \
+      defined(__DECC)
+#	define MY_INLINE __inline
+#	ifndef __inline__
+#		define __inline__ __inline
+#	endif
+#else
+#	define MY_INLINE inline
+#	ifndef __inline__
+#		define __inline__ inline
+#	endif
+#	endif
+#endif /* MY_INLINE not defined */
+
+/* declaration because the header situation is getting kind of crazy */
+extern uint32_t __Sound_convertMsToBytePos(Sound_AudioInfo *info, uint32_t ms);
+
 static int WAV_init(void);
 static void WAV_quit(void);
 static int WAV_open(Sound_Sample *sample, const char *ext);
@@ -98,7 +122,7 @@ const Sound_DecoderFunctions __Sound_DecoderFunctions_WAV =
 
 
 /* Better than SDL_ReadLE16, since you can detect i/o errors... */
-static __inline__ int read_le16(ALmixer_RWops *rw, uint16_t *ui16)
+static MY_INLINE int read_le16(ALmixer_RWops *rw, uint16_t *ui16)
 {
     int rc = ALmixer_RWread(rw, ui16, sizeof (uint16_t), 1);
     BAIL_IF_MACRO(rc != 1, ERR_IO_ERROR, 0);
@@ -108,7 +132,7 @@ static __inline__ int read_le16(ALmixer_RWops *rw, uint16_t *ui16)
 
 
 /* Better than SDL_ReadLE32, since you can detect i/o errors... */
-static __inline__ int read_le32(ALmixer_RWops *rw, uint32_t *ui32)
+static MY_INLINE int read_le32(ALmixer_RWops *rw, uint32_t *ui32)
 {
     int rc = ALmixer_RWread(rw, ui32, sizeof (uint32_t), 1);
     BAIL_IF_MACRO(rc != 1, ERR_IO_ERROR, 0);
@@ -118,7 +142,7 @@ static __inline__ int read_le32(ALmixer_RWops *rw, uint32_t *ui32)
 
 
 /* This is just cleaner on the caller's end... */
-static __inline__ int read_uint8_t(ALmixer_RWops *rw, uint8_t *ui8)
+static MY_INLINE int read_uint8_t(ALmixer_RWops *rw, uint8_t *ui8)
 {
     int rc = ALmixer_RWread(rw, ui8, sizeof (uint8_t), 1);
     BAIL_IF_MACRO(rc != 1, ERR_IO_ERROR, 0);
@@ -126,7 +150,7 @@ static __inline__ int read_uint8_t(ALmixer_RWops *rw, uint8_t *ui8)
 } /* read_uint8_t */
 
 #if 0
-static __inline__ uint16_t SDL_ReadLE16( ALmixer_RWops *rw )
+static MY_INLINE uint16_t SDL_ReadLE16( ALmixer_RWops *rw )
 {
 	uint16_t result = 0;
 
@@ -134,7 +158,7 @@ static __inline__ uint16_t SDL_ReadLE16( ALmixer_RWops *rw )
 
 	return result;
 }
-static __inline__ uint32_t SDL_ReadLE32( ALmixer_RWops *rw )
+static MY_INLINE uint32_t SDL_ReadLE32( ALmixer_RWops *rw )
 {
 	uint32_t result = 0;
 
@@ -371,7 +395,7 @@ static int read_fmt_normal(ALmixer_RWops *rw, fmt_t *fmt)
 #define SMALLEST_ADPCM_DELTA       16
 
 
-static __inline__ int read_adpcm_block_headers(Sound_Sample *sample)
+static MY_INLINE int read_adpcm_block_headers(Sound_Sample *sample)
 {
     Sound_SampleInternal *internal = (Sound_SampleInternal *) sample->opaque;
     ALmixer_RWops *rw = internal->rw;
@@ -407,7 +431,7 @@ static __inline__ int read_adpcm_block_headers(Sound_Sample *sample)
 } /* read_adpcm_block_headers */
 
 
-static __inline__ void do_adpcm_nibble(uint8_t nib,
+static MY_INLINE void do_adpcm_nibble(uint8_t nib,
                                        ADPCMBLOCKHEADER *header,
                                        int32_t lPredSamp)
 {
@@ -445,7 +469,7 @@ static __inline__ void do_adpcm_nibble(uint8_t nib,
 } /* do_adpcm_nibble */
 
 
-static __inline__ int decode_adpcm_sample_frame(Sound_Sample *sample)
+static MY_INLINE int decode_adpcm_sample_frame(Sound_Sample *sample)
 {
     Sound_SampleInternal *internal = (Sound_SampleInternal *) sample->opaque;
     wav_t *w = (wav_t *) internal->decoder_private;
@@ -484,7 +508,7 @@ static __inline__ int decode_adpcm_sample_frame(Sound_Sample *sample)
 } /* decode_adpcm_sample_frame */
 
 
-static __inline__ void put_adpcm_sample_frame1(void *_buf, fmt_t *fmt)
+static MY_INLINE void put_adpcm_sample_frame1(void *_buf, fmt_t *fmt)
 {
     uint16_t *buf = (uint16_t *) _buf;
     ADPCMBLOCKHEADER *headers = fmt->fmt.adpcm.blockheaders;
@@ -494,7 +518,7 @@ static __inline__ void put_adpcm_sample_frame1(void *_buf, fmt_t *fmt)
 } /* put_adpcm_sample_frame1 */
 
 
-static __inline__ void put_adpcm_sample_frame2(void *_buf, fmt_t *fmt)
+static MY_INLINE void put_adpcm_sample_frame2(void *_buf, fmt_t *fmt)
 {
     uint16_t *buf = (uint16_t *) _buf;
     ADPCMBLOCKHEADER *headers = fmt->fmt.adpcm.blockheaders;
