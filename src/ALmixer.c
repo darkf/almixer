@@ -270,6 +270,7 @@ static ALuint Is_Playing_global = 0;
 static ALboolean g_StreamThreadEnabled = AL_FALSE;
 static SDL_mutex* s_simpleLock = NULL;
 static SDL_Thread* Stream_Thread_global = NULL;
+static SDL_mutex* s_dataListLock = NULL;
 /*
 static size_t s_originatingThreadID = 0;
 */
@@ -7060,12 +7061,29 @@ ALboolean ALmixer_Init(ALuint frequency, ALuint num_sources, ALuint refresh)
 		Number_of_Channels_global = 0;
 		return AL_FALSE;
 	}
-		
+
+	s_dataListLock =  SDL_CreateMutex();
+	if(NULL == s_dataListLock)
+	{
+		/* SDL sets the error message already? */
+		SDL_DestroyMutex(s_simpleLock);
+		free(source);
+		free(ALmixer_Channel_List);
+		free(Source_Map_List);
+		LinkedList_Free(s_listOfALmixerData);		
+		alcDestroyContext(context);
+		alcCloseDevice(dev);
+		ALmixer_Initialized = AL_FALSE;
+		Number_of_Channels_global = 0;
+		return AL_FALSE;
+	}
+	
 	g_StreamThreadEnabled = AL_TRUE;
 	Stream_Thread_global = SDL_CreateThread(Stream_Data_Thread_Callback, "ALmixerUpdate", NULL);
 	if(NULL == Stream_Thread_global)
 	{
 		/* SDL sets the error message already? */
+		SDL_DestroyMutex(s_dataListLock);
 		SDL_DestroyMutex(s_simpleLock);
 		free(source);
 		free(ALmixer_Channel_List);
@@ -7625,13 +7643,26 @@ ALboolean ALmixer_InitMixer(ALuint num_sources)
 		Number_of_Channels_global = 0;
 		return AL_FALSE;
 	}
-		
+
+	s_dataListLock =  SDL_CreateMutex();
+	if(NULL == s_dataListLock)
+	{
+		/* SDL sets the error message already? */
+		SDL_DestroyMutex(s_simpleLock);
+		free(source);
+		free(ALmixer_Channel_List);
+		free(Source_Map_List);
+		ALmixer_Initialized = AL_FALSE;
+		Number_of_Channels_global = 0;
+		return AL_FALSE;
+	}		
 
 	g_StreamThreadEnabled = AL_TRUE;
 	Stream_Thread_global = SDL_CreateThread(Stream_Data_Thread_Callback, "ALmixerUpdate", NULL);
 	if(NULL == Stream_Thread_global)
 	{
 		/* SDL sets the error message already? */
+		SDL_DestroyMutex(s_dataListLock);
 		SDL_DestroyMutex(s_simpleLock);
 		free(source);
 		free(ALmixer_Channel_List);
@@ -8001,6 +8032,9 @@ void ALmixer_Quit()
 	/* Delete the list of ALmixerData's before Sound_Quit deletes
 	 * its own underlying information and I potentially have dangling pointers.
 	 */
+#ifdef ENABLE_ALMIXER_THREADS
+	SDL_LockMutex(s_dataListLock);
+#endif
 	while(LinkedList_Size(s_listOfALmixerData) > 0)
 	{
 		/* Note that ALmixer_FreeData will remove the data from the linked list for us so don't pop the list here. */
@@ -8010,7 +8044,13 @@ void ALmixer_Quit()
 	}
 	LinkedList_Free(s_listOfALmixerData);
 	s_listOfALmixerData = NULL;
+#ifdef ENABLE_ALMIXER_THREADS
+	SDL_UnlockMutex(s_dataListLock);
+	SDL_DestroyMutex(s_dataListLock);
+	s_dataListLock = NULL;
+#endif
 	
+
 	
 	/* Need to get the device before I close the context */
 	dev = alcGetContextsDevice(context);
@@ -8139,6 +8179,9 @@ void ALmixer_QuitWithoutFreeData()
 	 * In the best case, the application exits, the rest of the ALmixer static pointers are cleared, and we don't leak.
 	 * In the worst case, we leak a small amount of memory for the linked list and ALmixer_Data shells.
 	 */
+#ifdef ENABLE_ALMIXER_THREADS
+	SDL_LockMutex(s_dataListLock);
+#endif
 	fprintf(stderr, "ALmixer_QuitWithoutFreeData has %d ALmixer_Data references outstanding\n", (int)LinkedList_Size(s_listOfALmixerData));
 	if(LinkedList_Size(s_listOfALmixerData) > 0)
 	{
@@ -8167,6 +8210,11 @@ void ALmixer_QuitWithoutFreeData()
 		LinkedList_Free(s_listOfALmixerData);
 		s_listOfALmixerData = NULL;
 	}
+#ifdef ENABLE_ALMIXER_THREADS
+	SDL_UnlockMutex(s_dataListLock);
+	SDL_DestroyMutex(s_dataListLock);
+	s_dataListLock = NULL;
+#endif
 	
 	/* Need to get the device before I close the context */
 	dev = alcGetContextsDevice(context);
@@ -9089,7 +9137,13 @@ static ALmixer_Data* DoLoad(Sound_Sample* sample, ALuint buffersize, ALboolean d
 	/* Add the ALmixerData to an internal linked list so we can delete it on 
 	 * quit and avoid messy dangling issues with Sound_Quit
 	 */
+#ifdef ENABLE_ALMIXER_THREADS
+	SDL_LockMutex(s_dataListLock);
+#endif
 	LinkedList_PushBack(s_listOfALmixerData, ret_data);
+#ifdef ENABLE_ALMIXER_THREADS
+	SDL_UnlockMutex(s_dataListLock);
+#endif
 	return ret_data;
 }
 
@@ -9362,7 +9416,13 @@ void ALmixer_FreeData(ALmixer_Data* data)
 		return;
 	}
 	*/
+#ifdef ENABLE_ALMIXER_THREADS
+	SDL_LockMutex(s_dataListLock);
+#endif
 	Internal_FreeData(data);
+#ifdef ENABLE_ALMIXER_THREADS
+	SDL_UnlockMutex(s_dataListLock);
+#endif
 }
 
 ALint ALmixer_GetTotalTime(ALmixer_Data* data)
